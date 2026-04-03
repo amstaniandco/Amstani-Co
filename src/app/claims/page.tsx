@@ -91,11 +91,11 @@ export default function ClaimPage() {
   };
 
   return (
-    <div className="min-h-screen px-4 py-6 flex flex-col items-center gap-5">
+    <div className="min-h-screen px-4 py-6 flex flex-col items-center gap-5 text-base">
       {/* Select Disputed Item */}
       <div className="bg-white rounded-2xl p-6 w-full shadow-sm">
         <div className="flex justify-between items-center mb-5">
-          <h2 className="text-sm font-semibold text-gray-800">
+          <h2 className="text-base font-semibold text-gray-800">
             Select Disputed Item
           </h2>
           <span className="text-xs font-medium text-red-500 cursor-pointer">
@@ -107,7 +107,7 @@ export default function ClaimPage() {
           {products.map((product) => (
             <div
               key={product.id}
-              className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl bg-gray-50"
+              className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl"
             >
               <img
                 src={product.image}
@@ -115,19 +115,20 @@ export default function ClaimPage() {
                 className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
               />
 
-              <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-semibold text-teal-500 tracking-widest uppercase">
-                  {product.store}
-                </p>
-                <p className="text-xs font-semibold text-gray-800 truncate mt-0.5">
-                  {product.name}
-                </p>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  {product.variant}
-                </p>
-              </div>
+              <div className="flex-1 min-w-0 flex items-center justify-between gap-6">
+                <div className="min-w-0 max-w-[55%]">
+                  <p className="text-xs font-semibold text-teal-500 tracking-widest uppercase">
+                    {product.store}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 truncate mt-0.5">
+                    {product.name}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {product.variant}
+                  </p>
+                </div>
 
-              <div className="flex items-center justify-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center justify-center gap-1.5 min-w-[92px]">
                 <button
                   onClick={() => handleQty(product.id, -1)}
                   className="w-5 h-5 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-500 text-sm leading-none hover:bg-gray-100 cursor-pointer"
@@ -143,11 +144,12 @@ export default function ClaimPage() {
                 >
                   +
                 </button>
-              </div>
+                </div>
 
-              <span className="text-sm font-bold text-gray-800 flex-shrink-0 w-16 text-center">
-                ${product.price}
-              </span>
+                <span className="text-sm font-bold text-gray-800 flex-shrink-0 w-16 text-center">
+                  ${product.price}
+                </span>
+              </div>
 
               <div
                 onClick={() => toggleSelect(product.id)}
@@ -176,10 +178,10 @@ export default function ClaimPage() {
 
       {/* Claim Form */}
       <div className="bg-white rounded-2xl p-6 w-full  shadow-sm">
-        <h2 className="text-sm font-bold text-gray-800 tracking-widest uppercase mb-1">
+        <h2 className="text-base font-bold text-gray-800 tracking-widest uppercase mb-1">
           CLAIM
         </h2>
-        <p className="text-xs text-gray-400 mb-5">
+        <p className="text-sm text-gray-500 mb-5">
           Please let us know the issue you are facing
         </p>
 
@@ -261,7 +263,7 @@ export default function ClaimPage() {
                   (h) => (
                     <th
                       key={h}
-                      className="pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide pr-3"
+                      className="pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide pr-3"
                     >
                       {h}
                     </th>
@@ -276,14 +278,14 @@ export default function ClaimPage() {
                   className="border-b border-gray-50 last:border-0"
                 >
                   <td
-                    className={`py-3 text-[11px] font-semibold pr-3 ${claim.highlight ? "text-red-500" : "text-gray-600"}`}
+                    className={`py-3 text-sm font-semibold pr-3 ${claim.highlight ? "text-red-500" : "text-gray-700"}`}
                   >
                     {claim.id}
                   </td>
-                  <td className="py-3 text-[11px] text-gray-500 pr-3 whitespace-nowrap">
+                  <td className="py-3 text-sm text-gray-600 pr-3 whitespace-nowrap">
                     {claim.customer}
                   </td>
-                  <td className="py-3 text-[11px] text-gray-500 pr-3 whitespace-nowrap">
+                  <td className="py-3 text-sm text-gray-600 pr-3 whitespace-nowrap">
                     {claim.issueType}
                   </td>
                   <td
