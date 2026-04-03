@@ -209,12 +209,13 @@ export default function Header() {
             <CartIcon />
           </Link>
 
-          <button
+          <Link
+            href="/notifications"
             aria-label="Notifications"
             className="hover:text-white transition-colors duration-200"
           >
             <BellIcon />
-          </button>
+          </Link>
 
           {/* Avatar — replace src with your actual user image or session data */}
           <Link

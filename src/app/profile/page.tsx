@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type Card = {
@@ -240,7 +241,27 @@ export default function ProfilePage() {
                       {order.status}
                     </span>
                   </td>
-                  <td className="py-3 text-cyan-600 hover:text-cyan-700">View Receipt</td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-cyan-600">View Receipt</span>
+                      <Link
+                        href="/claims"
+                        aria-label="Open claims"
+                        className="inline-flex items-center justify-center text-slate-500 hover:text-slate-700"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-4 w-4"
+                        >
+                          <circle cx="12" cy="6" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="18" r="1.5" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
