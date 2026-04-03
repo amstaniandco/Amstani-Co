@@ -23,31 +23,31 @@ const LIVE_STORES = [
     id: 3,
     name: "Brand Name",
     img: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=80&h=80&fit=crop",
-    live: false,
+    live: true,
   },
   {
     id: 4,
     name: "Brand Name",
     img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=80&h=80&fit=crop",
-    live: false,
+    live: true,
   },
   {
     id: 5,
     name: "Brand Name",
     img: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=80&h=80&fit=crop",
-    live: false,
+    live: true,
   },
   {
     id: 6,
     name: "Brand Name",
     img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=80&h=80&fit=crop",
-    live: false,
+    live: true,
   },
   {
     id: 7,
     name: "Brand Name",
     img: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=80&h=80&fit=crop",
-    live: false,
+    live: true,
   },
 ];
 
