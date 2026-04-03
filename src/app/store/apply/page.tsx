@@ -2,13 +2,16 @@ import Link from "next/link";
 
 export default function StoreOwnershipApplicationPage() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-6xl bg-white rounded-3xl shadow-xl overflow-hidden">
         {/* Header */}
         <div className="bg-gray-700 text-white px-8 py-6 rounded-t-3xl">
-          <div className="text-2xl font-semibold">Store Ownership Application</div>
+          <div className="text-2xl font-semibold">
+            Store Ownership Application
+          </div>
           <div className="text-sm text-gray-300 mt-1">
-            Official registration for the State Founder Program. Please provide accurate legal documentation.
+            Official registration for the State Founder Program. Please provide
+            accurate legal documentation.
           </div>
         </div>
 
@@ -41,7 +44,10 @@ export default function StoreOwnershipApplicationPage() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path strokeWidth="2" d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z" />
+                    <path
+                      strokeWidth="2"
+                      d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z"
+                    />
                   </svg>
                   <div>Search for a State...</div>
                 </div>
@@ -94,7 +100,10 @@ export default function StoreOwnershipApplicationPage() {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              <path
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+              />
             </svg>
             Confidential high-security application environment.
           </div>
@@ -103,7 +112,6 @@ export default function StoreOwnershipApplicationPage() {
             Submit Request
           </button>
         </div>
-
       </div>
     </div>
   );
