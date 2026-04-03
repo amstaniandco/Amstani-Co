@@ -257,7 +257,17 @@ const ChevronDown = () => (
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function LiveStoreAvatar({ store }) {
+type LiveStore = {
+  img: string;
+  name: string;
+  live?: boolean;
+  rating?: number | string;
+  description?: string;
+  state?: string;
+  subscribers?: string;
+};
+
+function LiveStoreAvatar({ store }: { store: LiveStore }) {
   return (
     <div className="flex flex-col items-center gap-1.5 cursor-pointer group">
       <div
@@ -280,7 +290,7 @@ function LiveStoreAvatar({ store }) {
   );
 }
 
-function StoreCard({ store }) {
+function StoreCard({ store }: { store: LiveStore & { badge: string; badgeColor: string } }) {
   return (
     <div className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-xl transition-shadow duration-300">
       {/* Image */}
