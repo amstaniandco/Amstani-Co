@@ -7,11 +7,12 @@ if (!process.env.MONGODB_URI) {
 const uri = process.env.MONGODB_URI;
 
 declare global {
-  var _mongoClientPromise: Promise<MongoClient> | null;
+  // _mongoClientPromise will hold a Promise<MongoClient>
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-let client: MongoClient | null = null;
-let clientPromise: Promise<MongoClient> | null = null;
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === "development") {
   // Avoid cold reload creating many clients in dev

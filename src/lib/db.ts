@@ -34,18 +34,19 @@ export async function getUserById(id: string): Promise<User | null> {
 export async function createUser(user: Omit<User, "id">): Promise<User> {
   const client = await clientPromise;
   const now = new Date();
+  const nowISO = now.toISOString();
   const result = await client.db(DB_NAME).collection("users").insertOne({
     ...user,
     role: user.role || "user",
-    createdAt: now,
-    updatedAt: now,
+    createdAt: nowISO,
+    updatedAt: nowISO,
   });
 
   return {
     id: result.insertedId.toString(),
     ...user,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: nowISO,
+    updatedAt: nowISO,
   } as User;
 }
 
