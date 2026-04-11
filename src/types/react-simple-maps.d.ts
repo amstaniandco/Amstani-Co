@@ -14,6 +14,7 @@ declare module "react-simple-maps" {
     fill?: string;
     outline?: string;
     stroke?: string;
+    strokeWidth?: number | string;
     cursor?: string;
   };
 

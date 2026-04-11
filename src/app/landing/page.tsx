@@ -11,48 +11,21 @@ import AmericaMap from "../../components/AmericaMap";
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white">
-        <div className=" mx-auto px-6 py-20 lg:py-28">
-          <div className="text-center">
-            <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6">
-              Welcome to <span className="text-blue-600">Amstani Co</span>
-            </h1>
-            <p className="text-xl lg:text-2xl text-slate-600 mb-8 max-w-3xl mx-auto">
-              Your premier destination for quality products and exceptional
-              service. Discover a world of possibilities with our curated
-              selection.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="inline-flex items-center px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
-                Start Shopping
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </button>
-              <button className="inline-flex items-center px-8 py-3 border-2 border-slate-300 text-slate-700 font-semibold rounded-lg hover:border-slate-400 transition-colors">
-                Learn More
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Map Section */}
-      <section className="bg-slate-900 py-8 sm:py-10">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 sm:p-6">
-            <AmericaMap />
-          </div>
+      {/* Map Hero Section */}
+      <section className="py-2 sm:py-4">
+        <div className="w-full px-4 sm:px-6">
+          <AmericaMap />
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-20 bg-slate-50">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="w-full px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
               Why Choose Amstani Co?
             </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            <p className="text-lg text-slate-600">
               We're committed to providing the best experience for our customers
               through quality, service, and innovation.
             </p>
@@ -103,7 +76,7 @@ export default function LandingPage() {
 
       {/* Stats Section */}
       <section className="py-20 bg-blue-600 text-white">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="w-full px-6">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-4xl lg:text-5xl font-bold mb-2">10K+</div>
@@ -123,7 +96,7 @@ export default function LandingPage() {
 
       {/* Testimonials Section */}
       <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="w-full px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
               What Our Customers Say
@@ -224,7 +197,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="py-20 bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+        <div className="w-full px-6 text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-xl text-slate-300 mb-8">
             Join thousands of satisfied customers and discover what makes
