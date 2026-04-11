@@ -6,13 +6,14 @@ import {
   Truck,
   Users,
 } from "lucide-react";
+import AmericaMap from "../../components/AmericaMap";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-white">
-        <div className="max-w-6xl mx-auto px-6 py-20 lg:py-28">
+        <div className=" mx-auto px-6 py-20 lg:py-28">
           <div className="text-center">
             <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6">
               Welcome to <span className="text-blue-600">Amstani Co</span>
@@ -31,6 +32,15 @@ export default function LandingPage() {
                 Learn More
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Map Section */}
+      <section className="bg-slate-900 py-8 sm:py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 sm:p-6">
+            <AmericaMap />
           </div>
         </div>
       </section>
