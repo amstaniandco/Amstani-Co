@@ -126,6 +126,7 @@ export default function Header() {
   const pathname = usePathname();
   const [city, setCity] = useState("New York");
   const [searchQuery, setSearchQuery] = useState("");
+  const [token, setToken] = useState<string | null>(null);
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -135,103 +136,126 @@ export default function Header() {
 
   return (
     <header className="w-full bg-[#1a1a2e] border-b border-white/10 px-8 py-5 sticky top-0 z-50">
-      <div className="max-w-screen-xl mx-auto flex items-center gap-8">
+      <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-8">
         {/* Logo */}
         <Logo />
 
-        {/* Nav Links */}
-        <nav className="flex items-center gap-5 ml-4">
-          {NAV_LINKS.map(({ label, href }) => (
+        {token ? (
+          <>
+            {/* Nav Links */}
+            <nav className="flex items-center gap-5 ml-4">
+              {NAV_LINKS.map(({ label, href }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`text-sm font-medium transition-colors duration-200 ${
+                    pathname === href
+                      ? "text-white"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="flex-1 mx-4">
+              <div className="relative max-w-xs">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search a Products"
+                  className="w-full bg-transparent border border-white/20 rounded-full px-5 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
+                />
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4DB8B8] transition-colors duration-200"
+                >
+                  <SearchIcon />
+                </button>
+              </div>
+            </form>
+          </>
+        ) : null}
+
+        {token ? (
+          <>
+            {/* Location Selector */}
+            <div className="flex items-center border border-white/20 rounded-full overflow-hidden text-sm shrink-0">
+              <span className="px-4 py-2 text-white text-sm">{city}</span>
+              <button
+                onClick={() =>
+                  setCity((prev) =>
+                    prev === "New York" ? "Los Angeles" : "New York",
+                  )
+                }
+                className="bg-[#4DB8B8] text-white text-sm font-semibold px-4 py-2 hover:bg-[#3aa3a3] transition-colors duration-200"
+              >
+                Change
+              </button>
+            </div>
+
+            {/* Icon Actions */}
+            <div className="flex items-center gap-4 text-gray-400 shrink-0">
+              <Link
+                href="/wishlist"
+                aria-label="Wishlist"
+                className="hover:text-white transition-colors duration-200"
+              >
+                <HeartIcon />
+              </Link>
+
+              <Link
+                href="/cart"
+                aria-label="Cart"
+                className="hover:text-white transition-colors duration-200 relative"
+              >
+                <CartIcon />
+              </Link>
+
+              <Link
+                href="/notifications"
+                aria-label="Notifications"
+                className="hover:text-white transition-colors duration-200"
+              >
+                <BellIcon />
+              </Link>
+
+              {/* Avatar — replace src with your actual user image or session data */}
+              <Link
+                href="/profile"
+                aria-label="Profile"
+                className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
+              >
+                <Image
+                  src="https://i.pravatar.cc/64?img=47"
+                  alt="User Avatar"
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                />
+              </Link>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-3 shrink-0">
             <Link
-              key={href}
-              href={href}
-              className={`text-sm font-medium transition-colors duration-200 ${
-                pathname === href
-                  ? "text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
+              href="/signup"
+              className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors duration-200"
             >
-              {label}
+              Sign up
             </Link>
-          ))}
-        </nav>
-
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex-1 mx-4">
-          <div className="relative max-w-xs">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search a Products"
-              className="w-full bg-transparent border border-white/20 rounded-full px-5 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
-            />
-            <button
-              type="submit"
-              aria-label="Search"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4DB8B8] transition-colors duration-200"
+            <Link
+              href="/login"
+              className="rounded-full bg-[#4DB8B8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3aa3a3] transition-colors duration-200"
             >
-              <SearchIcon />
-            </button>
+              Log in
+            </Link>
           </div>
-        </form>
-
-        {/* Location Selector */}
-        <div className="flex items-center border border-white/20 rounded-full overflow-hidden text-sm shrink-0">
-          <span className="px-4 py-2 text-white text-sm">{city}</span>
-          <button
-            onClick={() =>
-              setCity((prev) =>
-                prev === "New York" ? "Los Angeles" : "New York",
-              )
-            }
-            className="bg-[#4DB8B8] text-white text-sm font-semibold px-4 py-2 hover:bg-[#3aa3a3] transition-colors duration-200"
-          >
-            Change
-          </button>
-        </div>
-
-        {/* Icon Actions */}
-        <div className="flex items-center gap-4 text-gray-400 shrink-0">
-          <Link
-            href="/wishlist"
-            aria-label="Wishlist"
-            className="hover:text-white transition-colors duration-200"
-          >
-            <HeartIcon />
-          </Link>
-
-          <Link
-            href="/cart"
-            aria-label="Cart"
-            className="hover:text-white transition-colors duration-200 relative"
-          >
-            <CartIcon />
-          </Link>
-
-          <Link
-            href="/notifications"
-            aria-label="Notifications"
-            className="hover:text-white transition-colors duration-200"
-          >
-            <BellIcon />
-          </Link>
-
-          {/* Avatar — replace src with your actual user image or session data */}
-          <Link
-            href="/profile"
-            aria-label="Profile"
-            className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
-          >
-            <Image
-              src="https://i.pravatar.cc/64?img=47"
-              alt="User Avatar"
-              fill
-              sizes="32px"
-              className="object-cover"
-            />
-          </Link>
-        </div>
+        )}
       </div>
     </header>
   );
