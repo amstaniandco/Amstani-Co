@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import AmericaMap from "../../components/AmericaMap";
 import BroadcastingRoomSection from "../../components/pages/BroadcastingRoomSection";
+import ClaimStoreSection from "../../components/pages/ClaimStoreSection";
 import DigitalMallSection from "../../components/pages/DigitalMallSection";
 
 export default function LandingPage() {
@@ -22,6 +23,7 @@ export default function LandingPage() {
 
       <DigitalMallSection />
       <BroadcastingRoomSection />
+      <ClaimStoreSection />
 
       {/* Features Section */}
       <section className="py-20 bg-slate-50">
