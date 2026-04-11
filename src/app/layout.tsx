@@ -25,6 +25,9 @@ export default function RootLayout({
       className={`${montserrat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="preload" href="/us-states.json" as="fetch" crossOrigin="anonymous" />
+      </head>
       <body className={`${montserrat.className} min-h-full bg-slate-50 text-slate-800`}>
         {children}
       </body>
