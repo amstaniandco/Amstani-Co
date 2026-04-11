@@ -1,15 +1,137 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { Fragment, useEffect, useState } from "react";
+import {
+  ComposableMap,
+  Geographies,
+  Geography,
+  useMapContext,
+} from "react-simple-maps";
 import { ChevronDown } from "lucide-react";
+
+type Position = [number, number];
 
 type StateFeature = {
   rsmKey: string;
+  geometry?: {
+    type?: "Polygon" | "MultiPolygon";
+    coordinates?: Position[][] | Position[][][];
+  };
   properties?: {
     NAME?: string;
   };
 };
+
+function ringArea(ring: Position[]): number {
+  let area = 0;
+
+  for (let i = 0; i < ring.length; i += 1) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[(i + 1) % ring.length];
+    area += x1 * y2 - x2 * y1;
+  }
+
+  return Math.abs(area / 2);
+}
+
+function polygonCenter(polygon: Position[][]): Position | null {
+  const outerRing = polygon[0];
+  if (!outerRing || outerRing.length === 0) {
+    return null;
+  }
+
+  let minLon = Infinity;
+  let maxLon = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+
+  for (const [lon, lat] of outerRing) {
+    if (lon < minLon) {
+      minLon = lon;
+    }
+    if (lon > maxLon) {
+      maxLon = lon;
+    }
+    if (lat < minLat) {
+      minLat = lat;
+    }
+    if (lat > maxLat) {
+      maxLat = lat;
+    }
+  }
+
+  return [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
+}
+
+function getStateLabelPosition(feature: StateFeature): Position | null {
+  const geometry = feature.geometry;
+  if (!geometry || !geometry.coordinates || !geometry.type) {
+    return null;
+  }
+
+  if (geometry.type === "Polygon") {
+    return polygonCenter(geometry.coordinates as Position[][]);
+  }
+
+  const multipolygon = geometry.coordinates as Position[][][];
+  if (multipolygon.length === 0) {
+    return null;
+  }
+
+  let bestPolygon: Position[][] | null = null;
+  let bestArea = -1;
+
+  for (const polygon of multipolygon) {
+    const outerRing = polygon[0];
+    if (!outerRing || outerRing.length === 0) {
+      continue;
+    }
+
+    const area = ringArea(outerRing);
+    if (area > bestArea) {
+      bestArea = area;
+      bestPolygon = polygon;
+    }
+  }
+
+  if (!bestPolygon) {
+    return null;
+  }
+
+  return polygonCenter(bestPolygon);
+}
+
+function StateLabel({
+  coordinates,
+  name,
+}: {
+  coordinates: Position;
+  name: string;
+}) {
+  const { projection } = useMapContext();
+  const projected = projection(coordinates);
+
+  if (!projected || !Array.isArray(projected) || projected.length < 2) {
+    return null;
+  }
+
+  const [x, y] = projected;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fontSize={6}
+      fontWeight={700}
+      fill="#0f172a"
+      pointerEvents="none"
+    >
+      {name}
+    </text>
+  );
+}
 
 const GEO_URL = "/us-states.json";
 
@@ -129,36 +251,42 @@ export default function AmericaMap() {
                   {({ geographies }: { geographies: StateFeature[] }) =>
                     geographies.map((geo) => {
                       const stateName = geo.properties?.NAME ?? "Unknown state";
+                      const labelPosition = getStateLabelPosition(geo);
 
                       return (
-                        <Geography
-                          key={geo.rsmKey}
-                          geography={geo}
-                          onMouseEnter={() => setHoveredState(stateName)}
-                          onMouseLeave={() => setHoveredState(null)}
-                          onClick={() => setSelectedState(stateName)}
-                          style={{
-                            default: {
-                              fill: "#3fb5d0",
-                              outline: "none",
-                              stroke: "#3f93a8",
-                              strokeWidth: 0.4,
-                            },
-                            hover: {
-                              fill: "#63c7de",
-                              outline: "none",
-                              stroke: "#559fb3",
-                              strokeWidth: 0.5,
-                              cursor: "pointer",
-                            },
-                            pressed: {
-                              fill: "#2c9fbc",
-                              outline: "none",
-                              stroke: "#559fb3",
-                              strokeWidth: 0.5,
-                            },
-                          }}
-                        />
+                        <Fragment key={geo.rsmKey}>
+                          <Geography
+                            geography={geo}
+                            onMouseEnter={() => setHoveredState(stateName)}
+                            onMouseLeave={() => setHoveredState(null)}
+                            onClick={() => setSelectedState(stateName)}
+                            style={{
+                              default: {
+                                fill: "#3fb5d0",
+                                outline: "none",
+                                stroke: "#3f93a8",
+                                strokeWidth: 0.4,
+                              },
+                              hover: {
+                                fill: "#63c7de",
+                                outline: "none",
+                                stroke: "#559fb3",
+                                strokeWidth: 0.5,
+                                cursor: "pointer",
+                              },
+                              pressed: {
+                                fill: "#2c9fbc",
+                                outline: "none",
+                                stroke: "#559fb3",
+                                strokeWidth: 0.5,
+                              },
+                            }}
+                          />
+
+                          {labelPosition && (
+                            <StateLabel coordinates={labelPosition} name={stateName} />
+                          )}
+                        </Fragment>
                       );
                     })
                   }
