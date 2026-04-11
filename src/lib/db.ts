@@ -1,11 +1,11 @@
 import { ObjectId } from "mongodb";
-import clientPromise from "./mongoClient";
+import getMongoClientPromise from "./mongoClient";
 import { User } from "../types";
 
 const DB_NAME = process.env.MONGODB_DBNAME ?? "amstani";
 
 export async function getUsers(): Promise<User[]> {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   const users = await client
     .db(DB_NAME)
     .collection<User>("users")
@@ -15,7 +15,7 @@ export async function getUsers(): Promise<User[]> {
 }
 
 export async function getUsersByRole(role: "admin" | "store" | "user") {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   return client
     .db(DB_NAME)
     .collection<User>("users")
@@ -24,7 +24,7 @@ export async function getUsersByRole(role: "admin" | "store" | "user") {
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   return client
     .db(DB_NAME)
     .collection<User>("users")
@@ -32,7 +32,7 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 export async function createUser(user: Omit<User, "id">): Promise<User> {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   const now = new Date();
   const nowISO = now.toISOString();
   const result = await client.db(DB_NAME).collection("users").insertOne({
@@ -51,7 +51,7 @@ export async function createUser(user: Omit<User, "id">): Promise<User> {
 }
 
 export async function updateUser(id: string, update: Partial<Omit<User, "id">>) {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   await client
     .db(DB_NAME)
     .collection("users")
