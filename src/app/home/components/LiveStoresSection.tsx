@@ -1,6 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { LiveStore } from "../mockData";
-import LiveStoreAvatar from "./LiveStoreAvatar";
 
 export default function LiveStoresSection({ liveStores }: { liveStores: LiveStore[] }) {
   return (
@@ -16,7 +16,24 @@ export default function LiveStoresSection({ liveStores }: { liveStores: LiveStor
 
       <div className="flex items-start gap-4 overflow-x-auto pb-2 scrollbar-hide">
         {liveStores.map((store) => (
-          <LiveStoreAvatar key={store.id} store={store} />
+          <div key={store.id} className="flex flex-col items-center gap-1.5 cursor-pointer group">
+            <div
+              className={`relative w-16 h-20 rounded-sm overflow-hidden ${store.live ? "border-2 border-red-500" : "border-2 border-gray-200"}`}
+            >
+              <div className="w-full h-full rounded-sm relative">
+                <Image
+                  src={store.img}
+                  alt={store.name}
+                  fill
+                  sizes="64px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            </div>
+            <span className="text-[11px] text-gray-600 font-medium text-center truncate w-16">
+              {store.name}
+            </span>
+          </div>
         ))}
       </div>
     </section>
