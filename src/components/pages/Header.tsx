@@ -27,7 +27,7 @@ const SearchIcon = () => (
 const HeartIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className="w-5 h-5"
+    className="w-6 h-6"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -44,7 +44,7 @@ const HeartIcon = () => (
 const CartIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className="w-5 h-5"
+    className="w-6 h-6"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -61,7 +61,7 @@ const CartIcon = () => (
 const BellIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className="w-5 h-5"
+    className="w-6 h-6"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -134,8 +134,8 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-[#1a1a2e] border-b border-white/10 px-6 py-3 sticky top-0 z-50">
-      <div className="max-w-screen-xl mx-auto flex items-center gap-6">
+    <header className="w-full bg-[#1a1a2e] border-b border-white/10 px-8 py-5 sticky top-0 z-50">
+      <div className="max-w-screen-xl mx-auto flex items-center gap-8">
         {/* Logo */}
         <Logo />
 
@@ -164,7 +164,7 @@ export default function Header() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search a Products"
-              className="w-full bg-transparent border border-white/20 rounded-full px-4 py-1.5 pr-9 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
+              className="w-full bg-transparent border border-white/20 rounded-full px-5 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
             />
             <button
               type="submit"
@@ -178,14 +178,14 @@ export default function Header() {
 
         {/* Location Selector */}
         <div className="flex items-center border border-white/20 rounded-full overflow-hidden text-sm shrink-0">
-          <span className="px-3 py-1.5 text-white text-xs">{city}</span>
+          <span className="px-4 py-2 text-white text-sm">{city}</span>
           <button
             onClick={() =>
               setCity((prev) =>
                 prev === "New York" ? "Los Angeles" : "New York",
               )
             }
-            className="bg-[#4DB8B8] text-white text-xs font-semibold px-3 py-1.5 hover:bg-[#3aa3a3] transition-colors duration-200"
+            className="bg-[#4DB8B8] text-white text-sm font-semibold px-4 py-2 hover:bg-[#3aa3a3] transition-colors duration-200"
           >
             Change
           </button>
@@ -221,7 +221,7 @@ export default function Header() {
           <Link
             href="/profile"
             aria-label="Profile"
-            className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
+            className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
           >
             <Image
               src="https://i.pravatar.cc/64?img=47"
