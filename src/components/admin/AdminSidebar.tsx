@@ -19,7 +19,7 @@ const defaultItems: AdminSidebarItem[] = [
   { label: "Stores", href: "/admin/stores", icon: Store },
   { label: "Global Catalog", href: "/admin/global-catalog", icon: Store },
   { label: "Finance & Stock", href: "/admin/finance-stock", icon: WalletCards },
-  { label: "Communications", href: "/admin/dashboard", icon: Megaphone },
+  { label: "Communications", href: "/admin/communications", icon: Megaphone },
   { label: "Claims", href: "/admin/dashboard", icon: FileWarning },
 ];
 
