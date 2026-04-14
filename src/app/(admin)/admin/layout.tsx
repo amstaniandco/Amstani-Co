@@ -1,13 +1,9 @@
 import type { ReactNode } from "react";
-import Header from "../../../components/pages/Header";
-import Footer from "../../../components/pages/Footer";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <Header />
-      <main className="mx-auto max-w-5xl p-8">{children}</main>
-      <Footer />
+    <div className="min-h-screen bg-[#f1f5f6] text-slate-900">
+      <main>{children}</main>
     </div>
   );
 }
