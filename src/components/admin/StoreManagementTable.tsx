@@ -1,0 +1,173 @@
+import { CircleCheck, CircleSlash, Download, Ellipsis, Filter, PhoneCall, Search, ShieldAlert } from "lucide-react";
+
+export type StoreStatus = "Active" | "Suspended" | "Dormant";
+
+export type StoreRow = {
+  id: string;
+  name: string;
+  status: StoreStatus;
+  owner: string;
+  onboarding: string;
+  revenue: string;
+  rating: string;
+};
+
+type StoreManagementTableProps = {
+  rows?: StoreRow[];
+};
+
+const defaultRows: StoreRow[] = [
+  {
+    id: "STN-8232",
+    name: "Artisanal Goods",
+    status: "Active",
+    owner: "Elina Rodriguez",
+    onboarding: "12 Jan 2024",
+    revenue: "$12,450",
+    rating: "4.8",
+  },
+  {
+    id: "STN-8905",
+    name: "The Spice Merchant",
+    status: "Suspended",
+    owner: "Rajesh Patel",
+    onboarding: "05 Nov 2023",
+    revenue: "$2,100",
+    rating: "4.2",
+  },
+  {
+    id: "STN-8895",
+    name: "Vintage Vault",
+    status: "Dormant",
+    owner: "Sarah Jenkins",
+    onboarding: "20 Dec 2023",
+    revenue: "$0",
+    rating: "0.0",
+  },
+  {
+    id: "STN-8901",
+    name: "Vintage Vault",
+    status: "Dormant",
+    owner: "Sarah Jenkins",
+    onboarding: "20 Dec 2023",
+    revenue: "$0",
+    rating: "0.0",
+  },
+];
+
+const statusStyles: Record<StoreStatus, string> = {
+  Active: "bg-emerald-50 text-emerald-600 border-emerald-100",
+  Suspended: "bg-rose-50 text-rose-500 border-rose-100",
+  Dormant: "bg-slate-50 text-slate-500 border-slate-200",
+};
+
+function ActionPill({
+  icon: Icon,
+  tone,
+}: {
+  icon: typeof CircleCheck;
+  tone: "green" | "slate" | "rose";
+}) {
+  const toneStyles: Record<typeof tone, string> = {
+    green: "border-emerald-200 text-emerald-500 hover:bg-emerald-50",
+    slate: "border-slate-200 text-slate-500 hover:bg-slate-50",
+    rose: "border-rose-200 text-rose-500 hover:bg-rose-50",
+  };
+
+  return (
+    <button
+      type="button"
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${toneStyles[tone]}`}
+      aria-label="Store action"
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+}
+
+export default function StoreManagementTable({ rows = defaultRows }: StoreManagementTableProps) {
+  return (
+    <div className="overflow-hidden rounded-[22px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
+      <div className="flex items-center justify-between gap-3 border-b border-[#e5edf1] bg-[#f8fbfc] px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-2 rounded-full border border-[#d8e3e8] bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+          <Search className="h-4 w-4" />
+          <span>Search by Store Name, ID, or Owner...</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button className="rounded-xl border border-[#d8e3e8] bg-white px-4 py-2 text-sm text-slate-700 transition hover:bg-slate-50" type="button">
+            All Status
+          </button>
+          <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e3e8] bg-white text-slate-600 transition hover:bg-slate-50" type="button" aria-label="Filter stores">
+            <Filter className="h-4 w-4" />
+          </button>
+          <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e3e8] bg-white text-slate-600 transition hover:bg-slate-50" type="button" aria-label="Download stores">
+            <Download className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <div className="min-w-[1040px]">
+          <div className="grid grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr_0.8fr] border-b border-[#e7eef2] bg-[#fbfcfd] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+            <div>Store ID</div>
+            <div>Store Name</div>
+            <div>Status</div>
+            <div>Vendor/Owner</div>
+            <div>Onboarding</div>
+            <div>Revenue (30d)</div>
+            <div>Rating</div>
+            <div className="text-right">Actions</div>
+          </div>
+
+          <div className="divide-y divide-[#edf2f5]">
+            {rows.map((row, index) => (
+              <div
+                key={`${row.id}-${index}`}
+                className="grid grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr_0.8fr] items-center px-5 py-4 text-sm text-slate-800"
+              >
+                <div className="font-semibold text-slate-600">{row.id}</div>
+                <div className="flex items-center gap-3 font-semibold text-slate-900">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#dff2f5] text-xs font-bold text-[#4faebd]">
+                    {row.name.charAt(0)}
+                  </span>
+                  <span>{row.name}</span>
+                </div>
+                <div>
+                  <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[row.status]}`}>
+                    {row.status}
+                  </span>
+                </div>
+                <div className="text-slate-700">{row.owner}</div>
+                <div className="text-slate-700">{row.onboarding}</div>
+                <div className="font-semibold text-slate-900">{row.revenue}</div>
+                <div className="text-amber-500">{row.rating === "0.0" ? "n/a" : `★ ${row.rating}`}</div>
+                <div className="flex items-center justify-end gap-2">
+                  {row.status === "Active" ? (
+                    <>
+                      <ActionPill icon={CircleSlash} tone="slate" />
+                      <ActionPill icon={PhoneCall} tone="green" />
+                    </>
+                  ) : row.status === "Suspended" ? (
+                    <>
+                      <ActionPill icon={ShieldAlert} tone="rose" />
+                      <ActionPill icon={PhoneCall} tone="slate" />
+                    </>
+                  ) : (
+                    <>
+                      <ActionPill icon={CircleCheck} tone="green" />
+                      <ActionPill icon={PhoneCall} tone="slate" />
+                    </>
+                  )}
+                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" type="button" aria-label="More actions">
+                    <Ellipsis className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
