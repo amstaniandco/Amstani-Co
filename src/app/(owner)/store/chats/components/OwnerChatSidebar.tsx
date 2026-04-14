@@ -4,7 +4,9 @@ import {
   ChartLine,
   LogOut,
   MessageCircle,
+  Music2,
   Package,
+  TriangleAlert,
   Store,
   Timer,
   UserRound,
@@ -23,6 +25,8 @@ const sidebarItems: SidebarItem[] = [
   { label: "Products", icon: Boxes },
   { label: "Timings", icon: Timer },
   { label: "Communications", icon: Bell },
+  { label: "Claims", icon: TriangleAlert },
+  { label: "Music", icon: Music2 },
   { label: "Profile", icon: UserRound },
 ];
 
