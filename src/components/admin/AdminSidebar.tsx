@@ -20,7 +20,7 @@ const defaultItems: AdminSidebarItem[] = [
   { label: "Global Catalog", href: "/admin/global-catalog", icon: Store },
   { label: "Finance & Stock", href: "/admin/finance-stock", icon: WalletCards },
   { label: "Communications", href: "/admin/communications", icon: Megaphone },
-  { label: "Claims", href: "/admin/dashboard", icon: FileWarning },
+  { label: "Claims", href: "/admin/claims", icon: FileWarning },
 ];
 
 export default function AdminSidebar({
