@@ -50,4 +50,19 @@ declare module "react-simple-maps" {
   }
 
   export const Geography: React.FC<GeographyProps>;
+
+  export interface MarkerProps extends React.SVGProps<SVGGElement> {
+    coordinates: [number, number];
+    children?: React.ReactNode;
+  }
+
+  export const Marker: React.FC<MarkerProps>;
+
+  export interface MapContextValue {
+    projection: (coordinates: [number, number]) => [number, number] | null;
+    width: number;
+    height: number;
+  }
+
+  export function useMapContext(): MapContextValue;
 }
