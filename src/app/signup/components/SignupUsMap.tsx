@@ -21,7 +21,7 @@ type StateFeature = {
   };
 };
 
-type AdminUsMapProps = {
+type SignupUsMapProps = {
   selectedState?: string;
   onStateSelect?: (state: string) => void;
 };
@@ -144,9 +144,9 @@ function StateLabel({
       y={y}
       textAnchor="middle"
       dominantBaseline="middle"
-      fontSize={4.5}
+      fontSize={4.6}
       fontWeight={700}
-      fill="#ffffff"
+      fill="#d7f5fb"
       pointerEvents="none"
     >
       {name}
@@ -154,12 +154,11 @@ function StateLabel({
   );
 }
 
-export default function AdminUsMap({
+export default function SignupUsMap({
   selectedState,
   onStateSelect,
-}: AdminUsMapProps = {}) {
+}: SignupUsMapProps = {}) {
   const [geoData, setGeoData] = useState<object | null>(null);
-  const [hoveredState, setHoveredState] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -182,72 +181,60 @@ export default function AdminUsMap({
   }, []);
 
   return (
-    <div className="rounded-xl border border-[#d6e3e8] bg-[#39abc4] p-3 sm:p-5">
-      <div className="rounded-lg border border-[#d2dde3] bg-[#e7edf1] p-3 sm:p-4">
-        {geoData ? (
-          <ComposableMap
-            projection="geoAlbersUsa"
-            width={980}
-            height={540}
-            className="h-auto w-full"
-          >
-            <Geographies geography={geoData}>
-              {({ geographies }: { geographies: StateFeature[] }) =>
-                geographies.map((geo) => {
-                  const stateName = geo.properties?.NAME ?? "Unknown state";
-                  const labelPosition = getStateLabelPosition(geo);
+    <div className="w-full">
+      {geoData ? (
+        <ComposableMap
+          projection="geoAlbersUsa"
+          width={980}
+          height={540}
+          className="h-auto w-full"
+        >
+          <Geographies geography={geoData}>
+            {({ geographies }: { geographies: StateFeature[] }) =>
+              geographies.map((geo) => {
+                const stateName = geo.properties?.NAME ?? "Unknown state";
+                const labelPosition = getStateLabelPosition(geo);
 
-                  return (
-                    <Fragment key={geo.rsmKey}>
-                      <Geography
-                        geography={geo}
-                        onMouseEnter={() => setHoveredState(stateName)}
-                        onMouseLeave={() => setHoveredState(null)}
-                        onClick={() => onStateSelect?.(stateName)}
-                        style={{
-                          default: {
-                            fill: selectedState === stateName ? "#2f8ea3" : "#56bfd3",
-                            outline: "none",
-                            stroke: "#2f8ea3",
-                            strokeWidth: 0.75,
-                          },
-                          hover: {
-                            fill: "#73cfe0",
-                            outline: "none",
-                            stroke: "#2a8196",
-                            strokeWidth: 0.9,
-                            cursor: "pointer",
-                          },
-                          pressed: {
-                            fill: "#49b4ca",
-                            outline: "none",
-                            stroke: "#2f8ea3",
-                            strokeWidth: 0.85,
-                          },
-                        }}
-                      />
+                return (
+                  <Fragment key={geo.rsmKey}>
+                    <Geography
+                      geography={geo}
+                      onClick={() => onStateSelect?.(stateName)}
+                      style={{
+                        default: {
+                          fill: selectedState === stateName ? "#2f8ea3" : "#38aac4",
+                          outline: "none",
+                          stroke: "#68c4d8",
+                          strokeWidth: 0.75,
+                        },
+                        hover: {
+                          fill: "#4db8cf",
+                          outline: "none",
+                          stroke: "#79cada",
+                          strokeWidth: 0.85,
+                          cursor: "pointer",
+                        },
+                        pressed: {
+                          fill: "#2f8ea3",
+                          outline: "none",
+                          stroke: "#68c4d8",
+                          strokeWidth: 0.8,
+                        },
+                      }}
+                    />
 
-                      {labelPosition ? (
-                        <StateLabel coordinates={labelPosition} name={stateName} />
-                      ) : null}
-                    </Fragment>
-                  );
-                })
-              }
-            </Geographies>
-          </ComposableMap>
-        ) : (
-          <div className="h-[230px] w-full animate-pulse rounded-lg bg-cyan-800/30 sm:h-[290px]" />
-        )}
-
-        <div className="mt-3 inline-flex rounded-lg bg-white px-3 py-2 shadow-md">
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.1em] text-slate-400">Total revenue in state</p>
-            <p className="text-xs font-semibold text-slate-700">{hoveredState || selectedState || "Name of the state"}</p>
-            <p className="text-2xl font-extrabold text-slate-900">$450,230</p>
-          </div>
-        </div>
-      </div>
+                    {labelPosition ? (
+                      <StateLabel coordinates={labelPosition} name={stateName} />
+                    ) : null}
+                  </Fragment>
+                );
+              })
+            }
+          </Geographies>
+        </ComposableMap>
+      ) : (
+        <div className="h-[210px] w-full animate-pulse rounded-lg bg-[#d9edf2] sm:h-[250px]" />
+      )}
     </div>
   );
 }

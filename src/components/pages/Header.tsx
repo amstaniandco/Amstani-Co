@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -124,15 +124,68 @@ const NAV_LINKS = [
 
 export default function Header() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [city, setCity] = useState("New York");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [token, setToken] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams?.get("q") ?? ""
+  );
+  const token = "mock-token"; // Replace with actual authentication logic
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const searchTimeoutRef = useRef<number | null>(null);
+  const router = useRouter();
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // wire up your router.push or search logic here
-    console.log("Searching for:", searchQuery);
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+
+    const query = searchQuery.trim();
+    if (!query) {
+      router.replace("/our-products", { scroll: false });
+      return;
+    }
+    router.replace(`/our-products?q=${encodeURIComponent(query)}`, {
+      scroll: false,
+    });
   };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    const query = value.trim();
+
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (pathname !== "/our-products") {
+      searchTimeoutRef.current = window.setTimeout(() => {
+        if (query) {
+          router.replace(`/our-products?q=${encodeURIComponent(query)}`, {
+            scroll: false,
+          });
+        } else {
+          router.replace("/our-products", { scroll: false });
+        }
+      }, 150);
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (query) {
+      url.searchParams.set("q", query);
+    } else {
+      url.searchParams.delete("q");
+    }
+    window.history.replaceState({}, "", url);
+  };
+
+  useEffect(() => {
+    if (pathname === "/our-products") {
+      searchRef.current?.focus();
+    }
+  }, [pathname]);
 
   return (
     <header className="w-full bg-[#1a1a2e] border-b border-white/10 px-8 py-5 sticky top-0 z-50">
@@ -163,9 +216,10 @@ export default function Header() {
             <form onSubmit={handleSearch} className="flex-1 mx-4">
               <div className="relative max-w-xs">
                 <input
+                  ref={searchRef}
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search a Products"
                   className="w-full bg-transparent border border-white/20 rounded-full px-5 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
                 />
