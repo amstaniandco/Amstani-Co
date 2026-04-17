@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -124,11 +124,8 @@ const NAV_LINKS = [
 
 export default function Header() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [city, setCity] = useState("New York");
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams?.get("q") ?? ""
-  );
+  const [searchQuery, setSearchQuery] = useState("");
   const token = "mock-token"; // Replace with actual authentication logic
   const searchRef = useRef<HTMLInputElement | null>(null);
   const searchTimeoutRef = useRef<number | null>(null);
@@ -185,6 +182,16 @@ export default function Header() {
     if (pathname === "/our-products") {
       searchRef.current?.focus();
     }
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname === "/our-products") {
+      const query = new URL(window.location.href).searchParams.get("q") ?? "";
+      setSearchQuery(query);
+      return;
+    }
+
+    setSearchQuery("");
   }, [pathname]);
 
   return (

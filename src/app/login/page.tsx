@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   DEMO_CREDENTIALS,
   authenticateDemoUser,
@@ -81,12 +81,15 @@ const DuckDuckGoIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [redirectPath, setRedirectPath] = useState("");
 
-  const redirectPath = searchParams?.get("redirect") || "";
+  useEffect(() => {
+    const redirect = new URL(window.location.href).searchParams.get("redirect") || "";
+    setRedirectPath(redirect);
+  }, []);
 
   const canRoleAccessPath = (role: DemoRole, path: string): boolean => {
     if (!path) {

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ShoppingCart, Star, Box } from "lucide-react";
 
 const products = [
@@ -92,9 +92,13 @@ const products = [
 
 export default function StoreProductsView() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const query = searchParams?.get("q")?.trim().toLowerCase() ?? "";
+  const [query, setQuery] = useState("");
   const activeFilter = pathname === "/new-arrivals" ? "new-arrivals" : "sale";
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    setQuery((url.searchParams.get("q") ?? "").trim().toLowerCase());
+  }, [pathname]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
