@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface CartSummaryProps {
   subtotal: number;
 }
@@ -37,9 +39,12 @@ export default function CartSummary({ subtotal }: CartSummaryProps) {
         </div>
       </div>
 
-      <button className="w-full rounded-full bg-teal-400 py-3 text-white font-medium hover:bg-teal-500 transition">
+      <Link
+        href="/checkout"
+        className="block w-full rounded-full bg-teal-400 py-3 text-center text-white font-medium hover:bg-teal-500 transition"
+      >
         Continue to Checkout
-      </button>
+      </Link>
     </aside>
   );
 }
