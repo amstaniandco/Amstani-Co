@@ -8,8 +8,6 @@ import {
   useMapContext,
 } from "react-simple-maps";
 
-const GEO_URL = "/us-states.json";
-
 type Position = [number, number];
 
 type StateFeature = {
@@ -23,10 +21,27 @@ type StateFeature = {
   };
 };
 
-type FormMapCardProps = {
+type SignupUsMapProps = {
   selectedState?: string;
   onStateSelect?: (state: string) => void;
 };
+
+const GEO_URL = "/us-states.json";
+
+let geoJsonPromise: Promise<unknown> | null = null;
+
+function loadGeoJson(): Promise<unknown> {
+  if (!geoJsonPromise) {
+    geoJsonPromise = fetch(GEO_URL).then((res) => {
+      if (!res.ok) {
+        throw new Error("Failed to load map data");
+      }
+      return res.json();
+    });
+  }
+
+  return geoJsonPromise;
+}
 
 function ringArea(ring: Position[]): number {
   let area = 0;
@@ -139,22 +154,16 @@ function StateLabel({
   );
 }
 
-export default function FormMapCard({
+export default function SignupUsMap({
   selectedState,
   onStateSelect,
-}: FormMapCardProps) {
+}: SignupUsMapProps = {}) {
   const [geoData, setGeoData] = useState<object | null>(null);
 
   useEffect(() => {
     let active = true;
 
-    fetch(GEO_URL)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to load map data");
-        }
-        return res.json();
-      })
+    loadGeoJson()
       .then((data) => {
         if (active) {
           setGeoData(data as object);
@@ -172,7 +181,7 @@ export default function FormMapCard({
   }, []);
 
   return (
-    <div className="w-full rounded-2xl border border-[#d9e3ea] bg-[#edf3f6] p-3">
+    <div className="w-full">
       {geoData ? (
         <ComposableMap
           projection="geoAlbersUsa"
@@ -183,44 +192,39 @@ export default function FormMapCard({
           <Geographies geography={geoData}>
             {({ geographies }: { geographies: StateFeature[] }) =>
               geographies.map((geo) => {
+                const stateName = geo.properties?.NAME ?? "Unknown state";
                 const labelPosition = getStateLabelPosition(geo);
 
                 return (
                   <Fragment key={geo.rsmKey}>
                     <Geography
                       geography={geo}
-                      onClick={() => onStateSelect?.(geo.properties?.NAME || "")}
+                      onClick={() => onStateSelect?.(stateName)}
                       style={{
                         default: {
-                          fill:
-                            selectedState === geo.properties?.NAME
-                              ? "#2f8ea3"
-                              : "#38aac4",
+                          fill: selectedState === stateName ? "#2f8ea3" : "#38aac4",
+                          outline: "none",
                           stroke: "#68c4d8",
                           strokeWidth: 0.75,
-                          outline: "none",
                         },
                         hover: {
                           fill: "#4db8cf",
+                          outline: "none",
                           stroke: "#79cada",
                           strokeWidth: 0.85,
-                          outline: "none",
                           cursor: "pointer",
                         },
                         pressed: {
                           fill: "#2f8ea3",
+                          outline: "none",
                           stroke: "#68c4d8",
                           strokeWidth: 0.8,
-                          outline: "none",
                         },
                       }}
                     />
 
                     {labelPosition ? (
-                      <StateLabel
-                        coordinates={labelPosition}
-                        name={geo.properties?.NAME || ""}
-                      />
+                      <StateLabel coordinates={labelPosition} name={stateName} />
                     ) : null}
                   </Fragment>
                 );
@@ -229,7 +233,7 @@ export default function FormMapCard({
           </Geographies>
         </ComposableMap>
       ) : (
-        <div className="h-[220px] w-full animate-pulse rounded-lg bg-[#d9edf2] sm:h-[255px]" />
+        <div className="h-[210px] w-full animate-pulse rounded-lg bg-[#d9edf2] sm:h-[250px]" />
       )}
     </div>
   );

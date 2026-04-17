@@ -21,6 +21,11 @@ type StateFeature = {
   };
 };
 
+type AdminUsMapProps = {
+  selectedState?: string;
+  onStateSelect?: (state: string) => void;
+};
+
 const GEO_URL = "/us-states.json";
 
 let geoJsonPromise: Promise<unknown> | null = null;
@@ -149,7 +154,10 @@ function StateLabel({
   );
 }
 
-export default function AdminUsMap() {
+export default function AdminUsMap({
+  selectedState,
+  onStateSelect,
+}: AdminUsMapProps = {}) {
   const [geoData, setGeoData] = useState<object | null>(null);
   const [hoveredState, setHoveredState] = useState<string | null>(null);
 
@@ -195,9 +203,10 @@ export default function AdminUsMap() {
                         geography={geo}
                         onMouseEnter={() => setHoveredState(stateName)}
                         onMouseLeave={() => setHoveredState(null)}
+                        onClick={() => onStateSelect?.(stateName)}
                         style={{
                           default: {
-                            fill: "#56bfd3",
+                            fill: selectedState === stateName ? "#2f8ea3" : "#56bfd3",
                             outline: "none",
                             stroke: "#2f8ea3",
                             strokeWidth: 0.75,
@@ -234,7 +243,7 @@ export default function AdminUsMap() {
         <div className="mt-3 inline-flex rounded-lg bg-white px-3 py-2 shadow-md">
           <div>
             <p className="text-[9px] uppercase tracking-[0.1em] text-slate-400">Total revenue in state</p>
-            <p className="text-xs font-semibold text-slate-700">{hoveredState || "Name of the state"}</p>
+            <p className="text-xs font-semibold text-slate-700">{hoveredState || selectedState || "Name of the state"}</p>
             <p className="text-2xl font-extrabold text-slate-900">$450,230</p>
           </div>
         </div>

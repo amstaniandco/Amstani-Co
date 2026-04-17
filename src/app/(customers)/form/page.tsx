@@ -1,11 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FormMapCard from "./components/FormMapCard";
 import { ChevronDown, Search } from "lucide-react";
 
+type UsStatesGeoJson = {
+  features?: Array<{
+    properties?: {
+      NAME?: string;
+    };
+  }>;
+};
+
 export default function FormPage() {
   const [state, setState] = useState("");
+  const [states, setStates] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/us-states.json")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load states");
+        }
+        return res.json() as Promise<UsStatesGeoJson>;
+      })
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+
+        const names = (data.features || [])
+          .map((feature) => feature.properties?.NAME)
+          .filter((name): name is string => Boolean(name))
+          .sort((a, b) => a.localeCompare(b));
+
+        setStates(names);
+      })
+      .catch(() => {
+        if (active) {
+          setStates([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center py-4">
@@ -29,9 +71,10 @@ export default function FormPage() {
               Select Jurisdiction
             </h3>
 
-            <div className="rounded-3xl bg-gray-50 p-4 shadow-sm">
-              <FormMapCard />
-            </div>
+            <FormMapCard
+              selectedState={state}
+              onStateSelect={(value) => setState(value)}
+            />
           </div>
 
           {/* RIGHT SIDE - FORM */}
@@ -50,9 +93,11 @@ export default function FormPage() {
                   className="w-full rounded-3xl bg-white px-10 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400 appearance-none"
                 >
                   <option value="">Search for a State...</option>
-                  <option>California</option>
-                  <option>Texas</option>
-                  <option>Florida</option>
+                  {states.map((entry) => (
+                    <option key={entry} value={entry}>
+                      {entry}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
