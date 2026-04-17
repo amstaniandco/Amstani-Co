@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ShoppingCart, Star, Box } from "lucide-react";
@@ -131,16 +132,18 @@ export default function StoreProductsView() {
                 key={index}
                 className="bg-white rounded-3xl p-4 shadow-sm"
               >
-                <div className="w-full h-56 relative rounded-2xl overflow-hidden mb-4">
+                <Link href="/product" className="block w-full h-56 relative rounded-2xl overflow-hidden mb-4">
                   <Image
                     src={item.image}
                     alt={item.name}
                     fill
                     className="object-cover"
                   />
-                </div>
+                </Link>
                 <div className="flex justify-between items-center mb-1">
-                  <h3 className="font-medium text-black">{item.name}</h3>
+                  <Link href="/product" className="font-medium text-black hover:text-cyan-600">
+                    {item.name}
+                  </Link>
                   <div className="flex items-center gap-1 text-cyan-600 text-sm">
                     <Star size={14} />
                     {item.rating}
@@ -158,9 +161,9 @@ export default function StoreProductsView() {
                       </span>
                     )}
                   </div>
-                  <button className="bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-full transition">
+                  <Link href="/cart" className="bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-full transition">
                     <ShoppingCart size={18} />
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))

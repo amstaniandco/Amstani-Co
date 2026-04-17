@@ -31,7 +31,7 @@ export default function OfferingSection() {
         </div>
 
         <Link
-          href="/store/apply"
+          href="/form"
           className="h-11 rounded-xl border border-gray-200 bg-white px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 inline-flex items-center justify-center"
         >
           Fill form

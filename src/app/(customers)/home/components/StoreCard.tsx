@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { BrowseStore } from "../mockData";
 
 const StarIcon = () => (
@@ -22,7 +23,10 @@ const LocationIcon = () => (
 
 export default function StoreCard({ store }: { store: BrowseStore }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-xl transition-shadow duration-300">
+    <Link
+      href="/store"
+      className="relative block rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-xl transition-shadow duration-300"
+    >
       <div className="relative h-[200px]">
         <Image
           src={store.img}
@@ -50,9 +54,9 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
               <StarIcon />
               <span className="text-white text-[10px] font-semibold">{store.rating}</span>
             </div>
-            <button className="w-7 h-7 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-colors">
+            <span className="w-7 h-7 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/40 transition-colors">
               <BookmarkIcon />
-            </button>
+            </span>
           </div>
 
           <h3 className="text-white font-bold text-sm leading-tight">{store.name}</h3>
@@ -64,6 +68,6 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

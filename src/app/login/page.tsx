@@ -3,6 +3,14 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  DEMO_CREDENTIALS,
+  authenticateDemoUser,
+  getRouteForRole,
+  setDemoSession,
+  type DemoRole,
+} from "@/src/lib/auth/demoAuth";
 
 const GoogleIcon = () => (
   <svg
@@ -72,12 +80,96 @@ const DuckDuckGoIcon = () => (
 );
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const redirectPath = searchParams?.get("redirect") || "";
+
+  const canRoleAccessPath = (role: DemoRole, path: string): boolean => {
+    if (!path) {
+      return false;
+    }
+
+    if (role === "admin") {
+      return path === "/admin" || path.startsWith("/admin/");
+    }
+
+    if (role === "owner") {
+      return (
+        path === "/store/chats" ||
+        path.startsWith("/store/chats/") ||
+        path === "/store/apply" ||
+        path.startsWith("/store/apply/") ||
+        path === "/chats" ||
+        path.startsWith("/chats/") ||
+        path === "/orders" ||
+        path.startsWith("/orders/") ||
+        path === "/performance" ||
+        path.startsWith("/performance/") ||
+        path === "/products" ||
+        path.startsWith("/products/") ||
+        path === "/timings" ||
+        path.startsWith("/timings/") ||
+        path === "/communications" ||
+        path.startsWith("/communications/") ||
+        path === "/music" ||
+        path.startsWith("/music/") ||
+        path === "/owner" ||
+        path.startsWith("/owner/")
+      );
+    }
+
+    return (
+      path === "/home" ||
+      path.startsWith("/home/") ||
+      path === "/cart" ||
+      path.startsWith("/cart/") ||
+      path === "/checkout" ||
+      path.startsWith("/checkout/") ||
+      path === "/claims" ||
+      path.startsWith("/claims/") ||
+      path === "/form" ||
+      path.startsWith("/form/") ||
+      path === "/new-arrivals" ||
+      path.startsWith("/new-arrivals/") ||
+      path === "/notifications" ||
+      path.startsWith("/notifications/") ||
+      path === "/our-products" ||
+      path.startsWith("/our-products/") ||
+      path === "/product" ||
+      path.startsWith("/product/") ||
+      path === "/profile" ||
+      path.startsWith("/profile/") ||
+      path === "/sale" ||
+      path.startsWith("/sale/") ||
+      path === "/store" ||
+      path.startsWith("/store/") ||
+      path === "/wishlist" ||
+      path.startsWith("/wishlist/")
+    );
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("Logging in", { email, password });
+
+    const role = authenticateDemoUser(email, password);
+    if (!role) {
+      setError("Invalid credentials. Use one of the demo accounts listed below.");
+      return;
+    }
+
+    setError("");
+    setDemoSession(role, email.trim().toLowerCase());
+
+    if (redirectPath && canRoleAccessPath(role, redirectPath)) {
+      router.push(redirectPath);
+      return;
+    }
+
+    router.push(getRouteForRole(role));
   };
 
   return (
@@ -169,6 +261,19 @@ export default function LoginPage() {
                 Log in
               </button>
             </form>
+
+            {error ? (
+              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="mt-4 rounded-xl border border-[#d9e3e8] bg-white/70 p-3 text-xs text-black/70">
+              <p className="font-semibold text-black">Demo logins</p>
+              <p className="mt-1">Admin: {DEMO_CREDENTIALS.admin.email} / {DEMO_CREDENTIALS.admin.password}</p>
+              <p>Customer: {DEMO_CREDENTIALS.customer.email} / {DEMO_CREDENTIALS.customer.password}</p>
+              <p>Store owner: {DEMO_CREDENTIALS.owner.email} / {DEMO_CREDENTIALS.owner.password}</p>
+            </div>
 
             <p className="mt-5 text-center text-sm text-black/80">
               Dont have an account?{" "}

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ActiveOrder, OnSaleStore } from "../mockData";
 
 interface SidebarProps {
@@ -19,7 +20,7 @@ export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
 
         <div className="space-y-3">
           {onSaleStores.map((store) => (
-            <div key={store.id} className="flex items-center gap-2 cursor-pointer group">
+            <Link key={store.id} href="/store" className="flex items-center gap-2 cursor-pointer group">
               <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0">
                 <Image
                   src={store.img}
@@ -32,13 +33,13 @@ export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
               <span className="text-xs text-gray-700 font-medium group-hover:text-teal-600 transition-colors">
                 {store.name}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
 
-        <button className="mt-4 w-full border border-gray-200 rounded-full text-xs text-gray-600 py-1.5 hover:border-teal-400 hover:text-teal-600 transition-colors font-medium">
+        <Link href="/sale" className="mt-4 block w-full border border-gray-200 rounded-full text-xs text-gray-600 py-1.5 hover:border-teal-400 hover:text-teal-600 transition-colors font-medium text-center">
           View All
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-4">
@@ -68,9 +69,9 @@ export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
           </div>
         ))}
 
-        <button className="mt-4 w-full border border-gray-200 rounded-full text-xs text-gray-600 py-1.5 hover:border-teal-400 hover:text-teal-600 transition-colors font-medium">
+        <Link href="/profile" className="mt-4 block w-full border border-gray-200 rounded-full text-xs text-gray-600 py-1.5 hover:border-teal-400 hover:text-teal-600 transition-colors font-medium text-center">
           View All History
-        </button>
+        </Link>
       </div>
     </aside>
   );

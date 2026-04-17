@@ -9,14 +9,14 @@ export default function LiveStoresSection({ liveStores }: { liveStores: LiveStor
         <h2 className="text-lg font-bold text-gray-900">
           Live Stores <span className="text-gray-400 font-normal">(11)</span>
         </h2>
-        <Link href="/stores/live" className="text-sm text-teal-600 font-medium hover:underline">
+        <Link href="/store" className="text-sm text-teal-600 font-medium hover:underline">
           View All
         </Link>
       </div>
 
       <div className="flex items-start gap-4 overflow-x-auto pb-2 scrollbar-hide">
         {liveStores.map((store) => (
-          <div key={store.id} className="flex flex-col items-center gap-1.5 cursor-pointer group">
+          <Link key={store.id} href="/store" className="flex flex-col items-center gap-1.5 cursor-pointer group">
             <div
               className={`relative w-16 h-20 rounded-sm overflow-hidden ${store.live ? "border-2 border-red-500" : "border-2 border-gray-200"}`}
             >
@@ -33,7 +33,7 @@ export default function LiveStoresSection({ liveStores }: { liveStores: LiveStor
             <span className="text-[11px] text-gray-600 font-medium text-center truncate w-16">
               {store.name}
             </span>
-          </div>
+          </Link>
         ))}
       </div>
     </section>

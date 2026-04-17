@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut } from "lucide-react";
+import { clearDemoSession } from "@/src/lib/auth/demoAuth";
 
 export type AdminSidebarItem = {
   label: string;
@@ -28,7 +32,13 @@ export default function AdminSidebar({
   items = defaultItems,
   variant = "dark",
 }: AdminSidebarProps) {
+  const router = useRouter();
   const isLight = variant === "light";
+
+  const handleLogout = () => {
+    clearDemoSession();
+    router.push("/login");
+  };
 
   return (
     <aside
@@ -109,6 +119,7 @@ export default function AdminSidebar({
 
       <button
         type="button"
+        onClick={handleLogout}
         className={`relative mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
           isLight
             ? "border border-[#e0e7ec] bg-white text-slate-700 hover:bg-slate-50"

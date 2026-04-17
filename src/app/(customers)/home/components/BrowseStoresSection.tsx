@@ -1,4 +1,5 @@
 import type { BrowseStore } from "../mockData";
+import Link from "next/link";
 import StoreCard from "./StoreCard";
 
 const SearchIcon = () => (
@@ -60,9 +61,9 @@ export default function BrowseStoresSection({ stores, searchQuery, onSearchQuery
       </div>
 
       <div className="flex justify-center mt-6">
-        <button className="flex flex-col items-center gap-1 text-gray-400 hover:text-teal-500 transition-colors">
+        <Link href="/store" className="flex flex-col items-center gap-1 text-gray-400 hover:text-teal-500 transition-colors">
           <ChevronDown />
-        </button>
+        </Link>
       </div>
     </section>
   );

@@ -1,3 +1,7 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   Boxes,
@@ -11,23 +15,25 @@ import {
   Timer,
   UserRound,
 } from "lucide-react";
+import { clearDemoSession } from "@/src/lib/auth/demoAuth";
 
 type SidebarItem = {
   label: string;
+  href: string;
   icon: React.ComponentType<{ className?: string }>;
   active?: boolean;
 };
 
 const sidebarItems: SidebarItem[] = [
-  { label: "Chats", icon: MessageCircle },
-  { label: "Orders", icon: Package },
-  { label: "Performance", icon: ChartLine },
-  { label: "Products", icon: Boxes },
-  { label: "Timings", icon: Timer },
-  { label: "Communications", icon: Bell },
-  { label: "Claims", icon: TriangleAlert },
-  { label: "Music", icon: Music2 },
-  { label: "Profile", icon: UserRound },
+  { label: "Chats", href: "/store/chats", icon: MessageCircle },
+  { label: "Orders", href: "/orders", icon: Package },
+  { label: "Performance", href: "/performance", icon: ChartLine },
+  { label: "Products", href: "/products", icon: Boxes },
+  { label: "Timings", href: "/timings", icon: Timer },
+  { label: "Communications", href: "/communications", icon: Bell },
+  { label: "Claims", href: "/owner/claims", icon: TriangleAlert },
+  { label: "Music", href: "/music", icon: Music2 },
+  { label: "Profile", href: "/owner/profile", icon: UserRound },
 ];
 
 type OwnerChatSidebarProps = {
@@ -35,6 +41,13 @@ type OwnerChatSidebarProps = {
 };
 
 export default function OwnerChatSidebar({ activeLabel = "Chats" }: OwnerChatSidebarProps) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    clearDemoSession();
+    router.push("/login");
+  };
+
   return (
     <aside className="w-full border-b border-slate-200 bg-[#f7f7f7] p-4 md:flex md:min-h-full md:max-w-[220px] md:flex-col md:border-b-0 md:border-r">
       <div className="mb-4 flex items-center gap-2 px-2 pt-1 md:mb-8 md:pt-2">
@@ -48,9 +61,9 @@ export default function OwnerChatSidebar({ activeLabel = "Chats" }: OwnerChatSid
           const isActive = item.label === activeLabel;
 
           return (
-            <button
+            <Link
               key={item.label}
-              type="button"
+              href={item.href}
               className={`flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition md:w-full ${
                 isActive
                   ? "bg-[#65bbc5] text-white shadow-sm"
@@ -59,13 +72,14 @@ export default function OwnerChatSidebar({ activeLabel = "Chats" }: OwnerChatSid
             >
               <Icon className="h-4 w-4" />
               {item.label}
-            </button>
+            </Link>
           );
         })}
       </nav>
 
       <button
         type="button"
+        onClick={handleLogout}
         className="mt-3 flex items-center gap-3 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-400 transition hover:bg-red-50 md:mt-auto md:border-0"
       >
         <LogOut className="h-4 w-4" />
