@@ -1,6 +1,21 @@
-export default function StepThree() {
+import { ArrowLeft } from "lucide-react";
+
+type StepProps = {
+  onBack: () => void;
+};
+
+export default function StepThree({ onBack }: StepProps) {
   return (
     <div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-150"
+      >
+        <ArrowLeft size={16} />
+        <span>Back</span>
+      </button>
+
       <h2 className="text-xl font-semibold text-center mb-6">Create Account</h2>
 
       <div className="mb-4">

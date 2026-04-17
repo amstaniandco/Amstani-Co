@@ -12,8 +12,10 @@ export default function SignupPage() {
   return (
     <SignupLayout step={step}>
       {step === 1 && <StepOne onNext={() => setStep(2)} />}
-      {step === 2 && <StepTwo onNext={() => setStep(3)} />}
-      {step === 3 && <StepThree />}
+      {step === 2 && (
+        <StepTwo onNext={() => setStep(3)} onBack={() => setStep(1)} />
+      )}
+      {step === 3 && <StepThree onBack={() => setStep(2)} />}
     </SignupLayout>
   );
 }
