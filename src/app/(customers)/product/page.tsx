@@ -42,7 +42,7 @@ const reviews = [
   },
 ];
 
-function StarRating({ rating, interactive = false, onRate }) {
+function StarRating({ rating, interactive = false, onRate }: { rating: number; interactive?: boolean; onRate?: (star: number) => void }) {
   const [hovered, setHovered] = useState(0);
   return (
     <div className="flex gap-1">
@@ -64,7 +64,7 @@ function StarRating({ rating, interactive = false, onRate }) {
   );
 }
 
-function RatingBar({ label, percent }) {
+function RatingBar({ label, percent }: { label: string; percent: number }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span className="w-3 text-gray-500 font-medium">{label}</span>
@@ -80,7 +80,7 @@ function RatingBar({ label, percent }) {
 }
 
 // Inline SVG shoe illustration (no external images needed)
-function ShoeIllustration({ className = "" }) {
+function ShoeIllustration({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 300 180"
@@ -151,7 +151,7 @@ export default function ProductPage() {
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
-  const ThumbBox = ({ index }) => (
+  const ThumbBox = ({ index }: { index: number }) => (
     <button
       onClick={() => setActiveImage(index)}
       className={`flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 transition-all flex items-center justify-center overflow-hidden ${
