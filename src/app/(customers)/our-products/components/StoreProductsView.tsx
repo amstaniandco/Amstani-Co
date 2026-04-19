@@ -118,8 +118,8 @@ export default function StoreProductsView() {
     : "New Arrivals";
 
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center items-start p-6 pt-10">
-      <div className="w-full max-w-6xl rounded-3xl bg-gray-50 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)]">
+    <div className="min-h-screen flex justify-center items-start p-4 pt-10">
+      <div className="w-full rounded-3xl bg-gray-50 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)]">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-8 h-8 rounded-xl bg-cyan-100 flex items-center justify-center">
             <Box className="h-5 w-5 text-cyan-600" />
