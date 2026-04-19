@@ -13,44 +13,54 @@ interface CartItemsProps {
 
 export default function CartItems({ products }: CartItemsProps) {
   return (
-    <div className="w-full rounded-2xl bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h1 className="text-3xl font-bold">Cart ({products.length} products)</h1>
-        <button className="w-fit rounded-full border border-red-200 px-4 py-2 text-red-500 font-semibold transition hover:border-red-300 hover:text-red-600">
+    <div className="w-full rounded-xl border border-[#e5edf1] bg-white p-3 shadow-[0_2px_8px_rgba(15,23,42,0.04)] sm:rounded-2xl sm:p-6">
+      <div className="mb-5 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-slate-900 sm:text-3xl">Cart ({products.length} {products.length === 1 ? 'product' : 'products'})</h1>
+        <button className="w-fit rounded-full border border-[#fca5a5] bg-white px-3 py-1.5 text-xs font-semibold text-[#dc2626] transition hover:bg-[#fef2f2] sm:px-4 sm:py-2 sm:text-sm">
           Clear cart ✕
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {products.map((product) => (
           <div
             key={product.id}
-            className="w-full max-w-full flex flex-col gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-lg border border-[#e5edf1] bg-[#f9fbfc] p-3 transition hover:border-[#d0dce5] sm:rounded-xl sm:p-4 sm:flex-row sm:items-center sm:gap-4"
           >
-            <div className="flex w-full items-start gap-4 min-w-0">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-20 h-20 rounded-lg object-cover"
-              />
-              <div className="min-w-0 w-full">
-                <p className="text-xs font-semibold text-teal-500 tracking-widest uppercase">
-                  {product.store}
-                </p>
-                <p className="text-base font-bold text-gray-900 truncate">{product.name}</p>
-                <p className="text-sm text-gray-500">{product.variant}</p>
-              </div>
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-16 w-16 rounded-lg object-cover sm:h-20 sm:w-20"
+            />
+
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#0f9488] sm:text-xs">
+                {product.store}
+              </p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-900 line-clamp-2 sm:text-base">
+                {product.name}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">{product.variant}</p>
             </div>
 
-            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-              <div className="flex w-full items-center justify-between gap-3 rounded-full border border-gray-300 bg-white p-1 sm:w-auto sm:justify-center">
-                <button className="w-8 h-8 rounded-full border border-gray-300 text-lg leading-none hover:bg-gray-100">−</button>
-                <span className="text-sm font-medium">1</span>
-                <button className="w-8 h-8 rounded-full border border-gray-300 text-lg leading-none hover:bg-gray-100">+</button>
+            <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end sm:gap-3">
+              {/* Quantity Controls */}
+              <div className="flex items-center rounded-lg border border-[#d8e5ea] bg-white">
+                <button className="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-50">
+                  −
+                </button>
+                <span className="w-8 text-center text-xs font-medium text-slate-900">1</span>
+                <button className="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-50">
+                  +
+                </button>
               </div>
-              <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start">
-                <div className="text-2xl font-bold">${product.price}</div>
-                <button className="text-gray-600 hover:text-red-500 font-bold text-3xl leading-none">×</button>
+
+              {/* Price and Remove */}
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-slate-900 sm:text-xl">${product.price}</span>
+                <button className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-[#fee2e2] hover:text-[#dc2626]">
+                  ×
+                </button>
               </div>
             </div>
           </div>
