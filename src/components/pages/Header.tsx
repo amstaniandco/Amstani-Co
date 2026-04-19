@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { DEMO_TOKEN_KEY, clearDemoSession } from "@/src/lib/auth/demoAuth";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,57 @@ const BellIcon = () => (
   </svg>
 );
 
+const HamburgerIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-6 h-6"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 6h16M4 12h16M4 18h16"
+    />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-6 h-6"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M6 18L18 6M6 6l12 12"
+    />
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-5 h-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+    />
+  </svg>
+);
+
 // ── Logo ─────────────────────────────────────────────────────────────────────
 
 const Logo = () => (
@@ -120,16 +172,30 @@ const NAV_LINKS = [
   { label: "New Arrivals", href: "/new-arrivals" },
 ];
 
+// ── Helper function ────────────────────────────────────────────────────────
+
+function getDemoToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(DEMO_TOKEN_KEY);
+}
+
 // ── Header ───────────────────────────────────────────────────────────────────
 
 export default function Header() {
   const pathname = usePathname();
   const [city, setCity] = useState("New York");
   const [searchQuery, setSearchQuery] = useState("");
-  const token = "mock-token"; // Replace with actual authentication logic
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const searchTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
+
+  // Check authentication status on mount only
+  useEffect(() => {
+    const token = getDemoToken();
+    setIsLoggedIn(!!token);
+  }, []);
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -178,6 +244,13 @@ export default function Header() {
     window.history.replaceState({}, "", url);
   };
 
+  const handleLogout = () => {
+    clearDemoSession();
+    setIsLoggedIn(false);
+    setMobileMenuOpen(false);
+    router.push("/login");
+  };
+
   useEffect(() => {
     if (pathname === "/our-products") {
       searchRef.current?.focus();
@@ -194,127 +267,287 @@ export default function Header() {
     setSearchQuery("");
   }, [pathname]);
 
+  // Close mobile menu when clicking on a link
+  const handleMobileNavClick = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <header className="w-full bg-[#1a1a2e] border-b border-white/10 px-8 py-5 sticky top-0 z-50">
-      <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-8">
-        {/* Logo */}
-        <Logo />
+    <header className="w-full bg-[#1a1a2e] border-b border-white/10 sticky top-0 z-50 overflow-x-hidden">
+      <div className="px-3 sm:px-4 md:px-8 py-4 md:py-5">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
+          {/* Logo */}
+          <Logo />
 
-        {token ? (
-          <>
-            {/* Nav Links */}
-            <nav className="flex items-center gap-5 ml-4">
-              {NAV_LINKS.map(({ label, href }) => (
+          {/* Desktop Navigation - Hidden on mobile */}
+          {isLoggedIn && (
+            <>
+              {/* Desktop Nav Links */}
+              <nav className="hidden md:flex items-center gap-5 ml-4">
+                {NAV_LINKS.map(({ label, href }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`text-sm font-medium transition-colors duration-200 ${
+                      pathname === href
+                        ? "text-white"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+
+              {/* Desktop Search Bar */}
+              <form onSubmit={handleSearch} className="hidden md:flex flex-1 mx-4">
+                <div className="relative max-w-xs w-full">
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Search a Products"
+                    className="w-full bg-transparent border border-white/20 rounded-full px-5 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
+                  />
+                  <button
+                    type="submit"
+                    aria-label="Search"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4DB8B8] transition-colors duration-200"
+                  >
+                    <SearchIcon />
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+
+          {/* Desktop Auth Section - Hidden on mobile */}
+          <div className="hidden md:flex items-center gap-4">
+            {isLoggedIn ? (
+              <>
+                {/* Location Selector */}
+                <div className="flex items-center border border-white/20 rounded-full overflow-hidden text-sm shrink-0">
+                  <span className="px-4 py-2 text-white text-sm">{city}</span>
+                  <button
+                    onClick={() =>
+                      setCity((prev) =>
+                        prev === "New York" ? "Los Angeles" : "New York",
+                      )
+                    }
+                    className="bg-[#4DB8B8] text-white text-sm font-semibold px-4 py-2 hover:bg-[#3aa3a3] transition-colors duration-200"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                {/* Icon Actions */}
+                <div className="flex items-center gap-4 text-gray-400 shrink-0">
+                  <Link
+                    href="/wishlist"
+                    aria-label="Wishlist"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    <HeartIcon />
+                  </Link>
+
+                  <Link
+                    href="/cart"
+                    aria-label="Cart"
+                    className="hover:text-white transition-colors duration-200 relative"
+                  >
+                    <CartIcon />
+                  </Link>
+
+                  <Link
+                    href="/notifications"
+                    aria-label="Notifications"
+                    className="hover:text-white transition-colors duration-200"
+                  >
+                    <BellIcon />
+                  </Link>
+
+                  {/* Avatar */}
+                  <Link
+                    href="/profile"
+                    aria-label="Profile"
+                    className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
+                  >
+                    <Image
+                      src="https://i.pravatar.cc/64?img=47"
+                      alt="User Avatar"
+                      fill
+                      sizes="32px"
+                      className="object-cover"
+                    />
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 shrink-0">
                 <Link
-                  key={href}
-                  href={href}
-                  className={`text-sm font-medium transition-colors duration-200 ${
-                    pathname === href
-                      ? "text-white"
-                      : "text-gray-400 hover:text-white"
-                  }`}
+                  href="/signup"
+                  className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors duration-200"
                 >
-                  {label}
+                  Sign up
                 </Link>
-              ))}
-            </nav>
-
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="flex-1 mx-4">
-              <div className="relative max-w-xs">
-                <input
-                  ref={searchRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="Search a Products"
-                  className="w-full bg-transparent border border-white/20 rounded-full px-5 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
-                />
-                <button
-                  type="submit"
-                  aria-label="Search"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4DB8B8] transition-colors duration-200"
+                <Link
+                  href="/login"
+                  className="rounded-full bg-[#4DB8B8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3aa3a3] transition-colors duration-200"
                 >
-                  <SearchIcon />
+                  Log in
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Button - Visible only on mobile */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden text-white hover:text-[#4DB8B8] transition-colors duration-200"
+            aria-label="Toggle mobile menu"
+          >
+            {mobileMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
+          </button>
+        </div>
+
+        {/* Mobile Menu - Visible when mobileMenuOpen is true */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-3 pt-3 border-t border-white/10 max-w-full overflow-x-hidden">
+            {isLoggedIn ? (
+              <div className="space-y-3">
+                {/* Mobile Search Bar */}
+                <form onSubmit={handleSearch}>
+                  <div className="relative w-full">
+                    <input
+                      ref={searchRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      placeholder="Search Products"
+                      className="w-full bg-transparent border border-white/20 rounded-full px-4 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
+                    />
+                    <button
+                      type="submit"
+                      aria-label="Search"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4DB8B8] transition-colors duration-200"
+                    >
+                      <SearchIcon />
+                    </button>
+                  </div>
+                </form>
+
+                {/* Mobile Nav Links */}
+                <nav className="flex flex-col gap-1 bg-white/5 rounded-lg p-2">
+                  {NAV_LINKS.map(({ label, href }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={handleMobileNavClick}
+                      className={`text-sm font-medium transition-colors duration-200 py-2.5 px-3 rounded ${
+                        pathname === href
+                          ? "text-white bg-[#4DB8B8]/30 border border-[#4DB8B8]/50"
+                          : "text-gray-300 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+
+                {/* Mobile Location Selector */}
+                <div className="flex items-center border border-white/20 rounded-lg overflow-hidden text-sm">
+                  <span className="px-3 py-2 text-gray-300 text-sm flex-1">{city}</span>
+                  <button
+                    onClick={() =>
+                      setCity((prev) =>
+                        prev === "New York" ? "Los Angeles" : "New York",
+                      )
+                    }
+                    className="bg-[#4DB8B8] text-white text-sm font-semibold px-3 py-2 hover:bg-[#3aa3a3] transition-colors duration-200 whitespace-nowrap"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                {/* Mobile Icon Actions - Horizontal Layout */}
+                <div className="bg-white/5 rounded-lg p-2 flex gap-1 overflow-x-auto">
+                  <Link
+                    href="/wishlist"
+                    onClick={handleMobileNavClick}
+                    aria-label="Wishlist"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                  >
+                    <HeartIcon />
+                    <span className="text-xs">Wishlist</span>
+                  </Link>
+
+                  <Link
+                    href="/cart"
+                    onClick={handleMobileNavClick}
+                    aria-label="Cart"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                  >
+                    <CartIcon />
+                    <span className="text-xs">Cart</span>
+                  </Link>
+
+                  <Link
+                    href="/notifications"
+                    onClick={handleMobileNavClick}
+                    aria-label="Notifications"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                  >
+                    <BellIcon />
+                    <span className="text-xs">Notify</span>
+                  </Link>
+
+                  <Link
+                    href="/profile"
+                    onClick={handleMobileNavClick}
+                    aria-label="Profile"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                  >
+                    <div className="relative w-6 h-6 rounded-full overflow-hidden border border-[#4DB8B8]/50">
+                      <Image
+                        src="https://i.pravatar.cc/64?img=47"
+                        alt="User Avatar"
+                        fill
+                        sizes="24px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <span className="text-xs">Profile</span>
+                  </Link>
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 hover:text-red-400 transition-colors duration-200 py-2 px-3 rounded hover:bg-red-400/10 text-gray-400 border border-red-400/30 font-medium"
+                >
+                  <LogoutIcon />
+                  <span className="text-sm">Logout</span>
                 </button>
               </div>
-            </form>
-          </>
-        ) : null}
-
-        {token ? (
-          <>
-            {/* Location Selector */}
-            <div className="flex items-center border border-white/20 rounded-full overflow-hidden text-sm shrink-0">
-              <span className="px-4 py-2 text-white text-sm">{city}</span>
-              <button
-                onClick={() =>
-                  setCity((prev) =>
-                    prev === "New York" ? "Los Angeles" : "New York",
-                  )
-                }
-                className="bg-[#4DB8B8] text-white text-sm font-semibold px-4 py-2 hover:bg-[#3aa3a3] transition-colors duration-200"
-              >
-                Change
-              </button>
-            </div>
-
-            {/* Icon Actions */}
-            <div className="flex items-center gap-4 text-gray-400 shrink-0">
-              <Link
-                href="/wishlist"
-                aria-label="Wishlist"
-                className="hover:text-white transition-colors duration-200"
-              >
-                <HeartIcon />
-              </Link>
-
-              <Link
-                href="/cart"
-                aria-label="Cart"
-                className="hover:text-white transition-colors duration-200 relative"
-              >
-                <CartIcon />
-              </Link>
-
-              <Link
-                href="/notifications"
-                aria-label="Notifications"
-                className="hover:text-white transition-colors duration-200"
-              >
-                <BellIcon />
-              </Link>
-
-              {/* Avatar — replace src with your actual user image or session data */}
-              <Link
-                href="/profile"
-                aria-label="Profile"
-                className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
-              >
-                <Image
-                  src="https://i.pravatar.cc/64?img=47"
-                  alt="User Avatar"
-                  fill
-                  sizes="32px"
-                  className="object-cover"
-                />
-              </Link>
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/signup"
-              className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors duration-200"
-            >
-              Sign up
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-full bg-[#4DB8B8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3aa3a3] transition-colors duration-200"
-            >
-              Log in
-            </Link>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link
+                  href="/signup"
+                  onClick={handleMobileNavClick}
+                  className="rounded-lg border border-white/30 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors duration-200 text-center"
+                >
+                  Sign up
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={handleMobileNavClick}
+                  className="rounded-lg bg-[#4DB8B8] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#3aa3a3] transition-colors duration-200 text-center"
+                >
+                  Log in
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
