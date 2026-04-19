@@ -103,62 +103,94 @@ export default function AdminClaimsPage() {
               </p>
             </div>
 
-            <div className="mt-4 grid gap-3 lg:grid-cols-3">
-              <article className="rounded-xl border border-[#dbe5ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.03)]">
-                <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+            <div className="mt-4 grid gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <article className="rounded-lg border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4">
+                <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 sm:text-[11px]">
                   <FileBarChart2 className="h-4 w-4" />
                   Total Active Claims
                 </p>
-                <p className="mt-2 text-4xl font-extrabold text-slate-900">124</p>
-                <p className="mt-2 text-xs font-semibold text-[#16a34a]">↘ 4% decrease from last week</p>
+                <p className="mt-2 text-2xl font-extrabold text-slate-900 sm:text-4xl">124</p>
+                <p className="mt-1 text-xs font-semibold text-[#16a34a]">↘ 4% decrease</p>
               </article>
 
-              <article className="rounded-xl border border-[#f1b4b4] bg-[#fff1f1] p-4 shadow-[0_2px_6px_rgba(15,23,42,0.03)]">
-                <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#dc2626]">
+              <article className="rounded-lg border border-[#f1b4b4] bg-[#fff1f1] p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4">
+                <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#dc2626] sm:text-[11px]">
                   <ShieldAlert className="h-4 w-4" />
                   Escalations Pending
                 </p>
-                <p className="mt-2 text-4xl font-extrabold text-[#b91c1c]">12</p>
-                <p className="mt-2 text-xs font-semibold text-[#dc2626]">Requires immediate intervention</p>
+                <p className="mt-2 text-2xl font-extrabold text-[#b91c1c] sm:text-4xl">12</p>
+                <p className="mt-1 text-xs font-semibold text-[#dc2626]">Needs action</p>
               </article>
 
-              <article className="rounded-xl border border-[#dbe5ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.03)]">
-                <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+              <article className="rounded-lg border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4 sm:col-span-2 lg:col-span-1">
+                <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 sm:text-[11px]">
                   <Clock3 className="h-4 w-4" />
                   Avg. Resolution Time
                 </p>
-                <p className="mt-2 text-4xl font-extrabold text-slate-900">18h</p>
-                <p className="mt-2 text-xs font-semibold text-slate-500">Within target SLA (24h)</p>
+                <p className="mt-2 text-2xl font-extrabold text-slate-900 sm:text-4xl">18h</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">Within SLA (24h)</p>
               </article>
             </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-[2fr_1fr]">
-              <section className="rounded-xl border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:p-4">
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-[2fr_1fr]">
+              <section className="rounded-lg border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4">
                 <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="inline-flex items-center gap-2 text-xl font-bold text-slate-900 sm:text-2xl">
+                  <h2 className="inline-flex items-center gap-2 text-base font-bold text-slate-900 sm:text-xl md:text-2xl">
                     <AlertTriangle className="h-4 w-4 text-[#0f766e]" />
                     Global Claims & Escalations
                   </h2>
 
-                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                     <button
                       type="button"
-                      className="inline-flex w-full items-center justify-center rounded-lg border border-[#dbe5ea] bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
+                      className="inline-flex items-center justify-center rounded-lg border border-[#dbe5ea] bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       Export CSV
                     </button>
                     <button
                       type="button"
-                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#6ec0c9] px-3 py-2 text-xs font-semibold text-white hover:bg-[#5db1bb] sm:w-auto"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#6ec0c9] px-3 py-2 text-xs font-semibold text-white hover:bg-[#5db1bb]"
                     >
                       <Filter className="h-3.5 w-3.5" />
-                      Filter by Priority
+                      Filter
                     </button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-lg border border-[#e6edf2]">
-                  <table className="w-full min-w-[760px] border-collapse text-left text-xs sm:text-sm">
+                {/* Mobile Card View */}
+                <div className="space-y-2.5 md:hidden">
+                  {claimRows.map((row) => (
+                    <div key={row.id} className="rounded-lg border border-[#e6edf2] bg-[#f8fbfd] p-3">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <p className="text-[10px] font-medium text-[#8ca3b6]">{row.id}</p>
+                          <p className="text-sm font-semibold text-slate-800 mt-0.5">{row.storeName}</p>
+                        </div>
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold flex-shrink-0 uppercase tracking-[0.06em] ${getStatusClass(row.status)} ${row.status === "Escalated" ? "bg-[#ffe9e9]" : row.status === "Responded" ? "bg-[#d7f3f0]" : "bg-[#f3f4f6]"}`}>
+                          {row.status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-600 mb-2 space-y-0.5">
+                        <div>Customer: <span className="font-medium">{row.customer}</span></div>
+                        <div>Issue: <span className="inline-block bg-[#eef3f7] px-1.5 py-0.5 rounded text-[10px]">{row.issueType}</span></div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`w-full inline-flex items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold ${
+                          row.action === "Intervene"
+                            ? "bg-[#dc2626] text-white hover:bg-[#b91c1c]"
+                            : "border border-[#dbe5ea] bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        {row.action}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto rounded-lg border border-[#e6edf2]">
+                  <table className="w-full border-collapse text-left text-xs sm:text-sm">
                     <thead className="border-b border-[#e6edf2] bg-[#f8fbfd] text-[10px] uppercase tracking-[0.08em] text-slate-500">
                       <tr>
                         <th className="px-3 py-2.5 font-semibold">Claim ID</th>
@@ -204,25 +236,25 @@ export default function AdminClaimsPage() {
                 </div>
               </section>
 
-              <aside className="rounded-xl border border-[#dbe5ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.03)]">
-                <h2 className="inline-flex items-center gap-2 text-xl font-bold text-slate-900 sm:text-2xl">
+              <aside className="rounded-lg border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4 md:col-span-2 xl:col-span-1">
+                <h2 className="inline-flex items-center gap-2 text-base font-bold text-slate-900 sm:text-lg md:text-xl">
                   <RotateCcw className="h-4 w-4 text-[#0f766e]" />
                   Claim Lifecycle: #CLM-9021
                 </h2>
 
-                <div className="mt-4 space-y-4">
+                <div className="mt-4 space-y-3">
                   {timeline.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <span
-                        className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
+                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
                           item.escalated ? "bg-[#dc2626]" : "bg-[#9fb2c2]"
                         }`}
                       />
-                      <div>
-                        <p className={`text-sm font-semibold ${item.escalated ? "text-[#dc2626]" : "text-slate-800"}`}>
+                      <div className="min-w-0">
+                        <p className={`text-xs font-semibold sm:text-sm ${item.escalated ? "text-[#dc2626]" : "text-slate-800"}`}>
                           {item.title}
                         </p>
-                        <p className={`text-xs ${item.escalated ? "text-[#ef4444]" : "text-slate-500"}`}>{item.time}</p>
+                        <p className={`text-[10px] sm:text-xs ${item.escalated ? "text-[#ef4444]" : "text-slate-500"}`}>{item.time}</p>
                         <p
                           className={`mt-1 rounded-md px-2 py-1 text-xs ${
                             item.escalated ? "bg-[#ffe9e9] text-[#b91c1c]" : "text-slate-600"

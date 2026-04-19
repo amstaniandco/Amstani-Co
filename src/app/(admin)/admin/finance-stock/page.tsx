@@ -102,15 +102,15 @@ export default function AdminFinanceStockPage() {
           <AdminNavbar searchPlaceholder="Search financials or stock..." />
 
           <section className="mt-3 rounded-xl bg-white px-3 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.04)] md:rounded-[26px] sm:px-4 sm:py-4 md:px-5 md:py-5">
-            <div className="flex flex-col gap-3 border-b border-[#e7edf1] pb-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-[#e7edf1] pb-3 sm:pb-4">
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Revenue & Inventory Monitoring</h1>
+                <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl md:text-2xl">Revenue & Inventory Monitoring</h1>
                 <p className="mt-1 text-xs text-slate-600 sm:text-sm">
                   Real-time financial performance and stock logistics oversight.
                 </p>
               </div>
 
-              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                 <button
                   type="button"
                   className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#dbe5ea] bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:w-auto sm:text-sm"
@@ -128,42 +128,42 @@ export default function AdminFinanceStockPage() {
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-[2fr_1fr]">
-              <article className="rounded-xl border border-[#dbe5ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.03)]">
-                <div className="mb-4 flex items-center justify-between">
+            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[2fr_1fr]">
+              <article className="rounded-lg border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-sm font-bold text-slate-800 sm:text-base">Revenue by State</h2>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Total USD (M)</p>
                 </div>
 
                 <div className="overflow-x-auto">
-                  <div className="flex h-[160px] min-w-[420px] items-end justify-between gap-2 border-b border-[#e5edf1] pb-4">
+                  <div className="flex h-[140px] min-w-[280px] items-end justify-between gap-1.5 border-b border-[#e5edf1] pb-4 sm:gap-2 sm:min-w-[420px] sm:h-[160px]">
                     {revenueByState.map((point) => (
-                      <div key={point.state} className="flex min-w-[36px] flex-1 flex-col items-center gap-2">
-                        <span className="text-[10px] font-semibold text-[#2f8ea3]">{point.value}</span>
+                      <div key={point.state} className="flex min-w-[28px] flex-1 flex-col items-center gap-1.5 sm:min-w-[36px] sm:gap-2">
+                        <span className="text-[9px] font-semibold text-[#2f8ea3] sm:text-[10px]">{point.value}</span>
                         <div
-                          className="w-7 rounded-t-md bg-gradient-to-t from-[#6bbdc7] to-[#8fd1d8]"
-                          style={{ height: `${point.barHeight}px` }}
+                          className="w-5 rounded-t-md bg-gradient-to-t from-[#6bbdc7] to-[#8fd1d8] sm:w-7"
+                          style={{ height: `${point.barHeight * 0.85}px` }}
                         />
-                        <span className="text-[10px] font-medium text-slate-600">{point.state}</span>
+                        <span className="text-[9px] font-medium text-slate-600 sm:text-[10px]">{point.state}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </article>
 
-              <article className="rounded-xl border border-[#dbe5ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.03)]">
+              <article className="rounded-lg border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4">
                 <h2 className="mb-4 text-sm font-bold text-slate-800 sm:text-base">Store-wise Revenue</h2>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {storeRevenues.map((store) => (
                     <div key={store.name} className="rounded-lg border border-[#e7edf1] bg-[#fbfdfe] px-3 py-2.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">{store.name}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-slate-800 sm:text-sm">{store.name}</p>
                           <p className="text-[10px] text-slate-500">{store.sales}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-slate-800">{store.amount}</p>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-bold text-slate-800 sm:text-sm">{store.amount}</p>
                           <p className={`text-[10px] font-semibold ${store.positive ? "text-emerald-600" : "text-rose-600"}`}>
                             {store.trend}
                           </p>
@@ -175,19 +175,44 @@ export default function AdminFinanceStockPage() {
               </article>
             </div>
 
-            <article className="mt-4 rounded-xl border border-[#dbe5ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.03)]">
+            <article className="mt-4 rounded-lg border border-[#dbe5ea] bg-white p-3 shadow-[0_2px_6px_rgba(15,23,42,0.03)] sm:rounded-xl sm:p-4">
               <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-sm font-bold text-slate-800 sm:text-base">
                   Master Inventory Monitor
-                  <span className="ml-1 text-[11px] font-normal text-slate-500">(View-Only)</span>
+                  <span className="ml-1 text-[10px] font-normal text-slate-500 sm:text-[11px]">(View-Only)</span>
                 </h2>
                 <span className="w-fit rounded-md bg-[#f4f8fb] px-2 py-1 text-[10px] font-medium text-slate-500">
                   Last Sync: 2 mins ago
                 </span>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] border-collapse text-left text-xs sm:text-sm">
+              {/* Mobile Card View */}
+              <div className="space-y-2.5 md:hidden">
+                {inventoryRows.map((row) => (
+                  <div key={row.sku} className="rounded-lg border border-[#e7edf1] bg-[#fbfdfe] p-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="text-[10px] font-medium text-[#3b8da1]">{row.sku}</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{row.product}</p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 ${getInventoryStatusClass(row.status)}`}
+                      >
+                        {row.status}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 mb-1.5">{row.location}</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500">Stock:</span>
+                      <span className="font-semibold text-slate-800">{row.stock}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full border-collapse text-left text-sm">
                   <thead className="border-y border-[#e5edf1] bg-[#f8fbfc] text-[10px] uppercase tracking-[0.08em] text-slate-500">
                     <tr>
                       <th className="px-3 py-2.5 font-semibold">SKU ID</th>
