@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const products = Array.from({ length: 9 }).map((_, i) => ({
+const products = Array.from({ length: 6 }).map((_, i) => ({
   id: i + 1,
   name: "Name of product",
   price: 51,
   oldPrice: 60,
   rating: 4.9,
-  image: "/product.png",
+  image:
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=900&q=80",
 }));
 
 export default function ProductGrid() {
@@ -15,43 +16,41 @@ export default function ProductGrid() {
     <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-5 flex items-center gap-2">
         <span className="text-[#5fb9c3]">📦</span>
-        <h3 className="text-base font-semibold text-gray-800">Our Products</h3>
+        <h3 className="text-base font-semibold text-slate-900">Our Products</h3>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
-          <div key={product.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-            <Link href="/product" className="block relative h-[230px] w-full overflow-hidden rounded-2xl bg-gray-100">
+          <div key={product.id} className="overflow-hidden rounded-3xl border border-gray-100 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <Link href="/product" className="relative block h-[300px] w-full overflow-hidden bg-white">
               <Image src={product.image} alt={product.name} fill className="object-cover" />
             </Link>
 
-            <div className="mt-3 flex items-start justify-between">
-              <div>
-                <Link href="/product" className="text-sm font-semibold text-gray-800 hover:text-[#5fb9c3]">
-                  {product.name}
-                </Link>
-                <div className="mt-2 flex items-center gap-2">
-                  <p className="text-lg font-bold text-gray-900">${product.price}</p>
-                  <p className="text-sm text-gray-400 line-through">${product.oldPrice}</p>
+            <div className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Link href="/product" className="text-sm font-semibold text-slate-900 hover:text-[#5fb9c3]">
+                    {product.name}
+                  </Link>
+                  <p className="mt-2 text-xs uppercase tracking-[0.16em] text-slate-500">Best seller</p>
                 </div>
-              </div>
 
-              <div className="text-right">
-                <p className="text-xs font-semibold text-[#5fb9c3]">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="inline-block mr-1"
-                  >
+                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#5fb9c3] shadow-sm">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                   </svg>
                   {product.rating}
-                </p>
-                <div className="mt-3 flex items-center justify-end gap-2">
-                  <Link href="/wishlist" className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50">
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-lg font-bold text-slate-900">${product.price}</p>
+                  <p className="text-sm text-slate-400 line-through">${product.oldPrice}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link href="/wishlist" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200 bg-white text-slate-500 transition hover:bg-gray-100">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
                         d="M12.1 21.55l-.1.1-.11-.1C7.14 17.24 4 14.39 4 10.5 4 7.42 6.42 5 9.5 5c1.74 0 3.41.81 4.5 2.09C15.09 5.81 16.76 5 18.5 5 21.58 5 24 7.42 24 10.5c0 3.89-3.14 6.74-7.9 11.05z"
@@ -62,7 +61,7 @@ export default function ProductGrid() {
                       />
                     </svg>
                   </Link>
-                  <Link href="/cart" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5fb9c3] text-white hover:bg-[#4aaab4]">
+                  <Link href="/cart" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#5fb9c3] text-white transition hover:bg-[#4aaab4]">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
                         d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z"

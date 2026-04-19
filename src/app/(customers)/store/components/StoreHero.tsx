@@ -2,48 +2,50 @@ import Image from "next/image";
 
 export default function StoreHero() {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm">
-      <div className="relative h-[220px] w-full overflow-hidden rounded-2xl bg-gray-200">
+    <div className="flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm">
+      <div className="relative h-[260px] w-full overflow-hidden rounded-2xl bg-slate-200">
         <Image
-          src="/store-banner.jpg"
-          alt="store banner"
+          src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1400&q=80"
+          alt="Store banner"
           fill
           className="object-cover"
         />
       </div>
 
-      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-gray-300" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-600">
+            S
+          </div>
 
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Name of the store</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-2xl font-bold text-slate-900">Name of the store</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               Description of the store can be written here
             </p>
 
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
                 Ranked #1
               </span>
-              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600">
+              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">
                 On Sale
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">8</p>
-            <p className="text-xs text-gray-500">Products</p>
+            <p className="text-2xl font-bold text-slate-900">8</p>
+            <p className="text-xs uppercase tracking-[.12em] text-slate-500">Products</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">12K</p>
-            <p className="text-xs text-gray-500">Followers</p>
+            <p className="text-2xl font-bold text-slate-900">12K</p>
+            <p className="text-xs uppercase tracking-[.12em] text-slate-500">Followers</p>
           </div>
 
-          <button className="rounded-xl bg-[#5fb9c3] px-8 py-2 text-sm font-semibold text-white hover:bg-[#4aaab4]">
+          <button className="rounded-full bg-[#5fb9c3] px-7 py-2 text-sm font-semibold text-white transition hover:bg-[#4aaab4]">
             Follow
           </button>
         </div>
