@@ -9,7 +9,7 @@ interface SidebarProps {
 
 export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
   return (
-    <aside className="w-72 shrink-0 space-y-4">
+    <aside className="w-full lg:w-72 shrink-0 space-y-4">
       <div className="bg-white rounded-2xl shadow-sm p-4">
         <div className="flex items-center gap-1.5 mb-3">
           <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">

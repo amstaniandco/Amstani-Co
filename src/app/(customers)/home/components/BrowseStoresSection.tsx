@@ -33,16 +33,16 @@ export default function BrowseStoresSection({ stores, searchQuery, onSearchQuery
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
         <h2 className="text-lg font-bold text-gray-900">Browse Stores</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-auto">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
               placeholder="Search a store"
-              className="pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-full bg-white outline-none focus:border-teal-400 transition-colors w-40"
+              className="pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-full bg-white outline-none focus:border-teal-400 transition-colors w-full max-w-xs"
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
               <SearchIcon />

@@ -10,8 +10,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] font-sans">
-      <div className="w-full mx-auto px-4 py-6 flex gap-5">
+    <div className="min-h-screen font-sans">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-4 py-6 lg:flex-row">
         <div className="flex-1 min-w-0">
           <LiveStoresSection liveStores={LIVE_STORES} />
           <BrowseStoresSection
