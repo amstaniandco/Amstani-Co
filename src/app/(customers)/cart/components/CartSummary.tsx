@@ -10,13 +10,15 @@ export default function CartSummary({ subtotal }: CartSummaryProps) {
       <div className="mb-5">
         <p className="text-sm font-semibold text-gray-900 mb-2">Promo Code</p>
 
-        <div className="flex items-center justify-between border border-gray-300 rounded-full px-4 py-2">
+        <div className="flex flex-col gap-3 border border-gray-300 rounded-full px-4 py-3 sm:flex-row sm:items-center">
           <input
             type="text"
             placeholder="Type here..."
             className="w-full bg-transparent outline-none text-sm text-gray-500 placeholder:text-gray-400"
           />
-          <button className="text-gray-500 hover:text-gray-700">▶</button>
+          <button className="rounded-full bg-teal-100 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-200 sm:py-1">
+            ▶
+          </button>
         </div>
       </div>
 
