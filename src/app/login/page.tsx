@@ -186,9 +186,6 @@ export default function LoginPage() {
           priority
         />
 
-        <div className="absolute top-10 left-10 text-white">
-          <div className="text-2xl font-semibold tracking-wide">AMSTANI & CO</div>
-        </div>
       </div>
 
       <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-8">

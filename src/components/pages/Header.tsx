@@ -4,7 +4,12 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { DEMO_TOKEN_KEY, clearDemoSession } from "@/src/lib/auth/demoAuth";
+import {
+  DEMO_COOKIE_ROLE,
+  DEMO_COOKIE_TOKEN,
+  DEMO_TOKEN_KEY,
+  clearDemoSession,
+} from "@/src/lib/auth/demoAuth";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -159,7 +164,7 @@ const Logo = () => (
       />
     </svg>
     <span className="text-white font-bold tracking-widest text-sm uppercase">
-      Amstani <span className="text-gray-400 font-light">&amp; Co.</span>
+      Amstani <span className="text-gray-200 font-light">&amp; Co.</span>
     </span>
   </Link>
 );
@@ -179,6 +184,28 @@ function getDemoToken(): string | null {
   return localStorage.getItem(DEMO_TOKEN_KEY);
 }
 
+function getCookieValue(name: string): string | null {
+  if (typeof document === "undefined") return null;
+
+  const encodedName = `${encodeURIComponent(name)}=`;
+  const entry = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(encodedName));
+
+  if (!entry) return null;
+  return decodeURIComponent(entry.slice(encodedName.length));
+}
+
+function hasActiveDemoSession(): boolean {
+  const localToken = getDemoToken();
+  const cookieToken = getCookieValue(DEMO_COOKIE_TOKEN);
+  const cookieRole = getCookieValue(DEMO_COOKIE_ROLE);
+
+  // Session is valid only when auth cookies exist and token is consistent.
+  return Boolean(localToken && cookieToken && cookieRole && localToken === cookieToken);
+}
+
 // ── Header ───────────────────────────────────────────────────────────────────
 
 export default function Header() {
@@ -193,8 +220,7 @@ export default function Header() {
 
   // Check authentication status on mount only
   useEffect(() => {
-    const token = getDemoToken();
-    setIsLoggedIn(!!token);
+    setIsLoggedIn(hasActiveDemoSession());
   }, []);
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
@@ -273,7 +299,7 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-[#1a1a2e] border-b border-white/10 sticky top-0 z-50 overflow-x-hidden">
+    <header className="w-full bg-[#151C1DCC] border-b border-white/10 sticky top-0 z-50 overflow-x-hidden">
       <div className="px-3 sm:px-4 md:px-8 py-4 md:py-5">
         <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
@@ -291,7 +317,7 @@ export default function Header() {
                     className={`text-sm font-medium transition-colors duration-200 ${
                       pathname === href
                         ? "text-white"
-                        : "text-gray-400 hover:text-white"
+                        : "text-gray-200 hover:text-white"
                     }`}
                   >
                     {label}
@@ -308,12 +334,12 @@ export default function Header() {
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Search a Products"
-                    className="w-full bg-transparent border border-white/20 rounded-full px-5 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
+                    className="w-full bg-transparent border border-white/30 rounded-full px-5 py-2 pr-10 text-sm text-gray-100 placeholder-gray-300 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
                   />
                   <button
                     type="submit"
                     aria-label="Search"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4DB8B8] transition-colors duration-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-200 hover:text-[#4DB8B8] transition-colors duration-200"
                   >
                     <SearchIcon />
                   </button>
@@ -327,7 +353,7 @@ export default function Header() {
             {isLoggedIn ? (
               <>
                 {/* Location Selector */}
-                <div className="flex items-center border border-white/20 rounded-full overflow-hidden text-sm shrink-0">
+                <div className="flex items-center border border-white/35 rounded-full overflow-hidden text-sm shrink-0">
                   <span className="px-4 py-2 text-white text-sm">{city}</span>
                   <button
                     onClick={() =>
@@ -342,7 +368,7 @@ export default function Header() {
                 </div>
 
                 {/* Icon Actions */}
-                <div className="flex items-center gap-4 text-gray-400 shrink-0">
+                <div className="flex items-center gap-4 text-gray-200 shrink-0">
                   <Link
                     href="/wishlist"
                     aria-label="Wishlist"
@@ -425,12 +451,12 @@ export default function Header() {
                       value={searchQuery}
                       onChange={(e) => handleSearchChange(e.target.value)}
                       placeholder="Search Products"
-                      className="w-full bg-transparent border border-white/20 rounded-full px-4 py-2 pr-10 text-sm text-gray-300 placeholder-gray-500 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
+                      className="w-full bg-transparent border border-white/30 rounded-full px-4 py-2 pr-10 text-sm text-gray-100 placeholder-gray-300 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
                     />
                     <button
                       type="submit"
                       aria-label="Search"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#4DB8B8] transition-colors duration-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-200 hover:text-[#4DB8B8] transition-colors duration-200"
                     >
                       <SearchIcon />
                     </button>
@@ -447,7 +473,7 @@ export default function Header() {
                       className={`text-sm font-medium transition-colors duration-200 py-2.5 px-3 rounded ${
                         pathname === href
                           ? "text-white bg-[#4DB8B8]/30 border border-[#4DB8B8]/50"
-                          : "text-gray-300 hover:text-white hover:bg-white/10"
+                          : "text-gray-100 hover:text-white hover:bg-white/10"
                       }`}
                     >
                       {label}
@@ -456,8 +482,8 @@ export default function Header() {
                 </nav>
 
                 {/* Mobile Location Selector */}
-                <div className="flex items-center border border-white/20 rounded-lg overflow-hidden text-sm">
-                  <span className="px-3 py-2 text-gray-300 text-sm flex-1">{city}</span>
+                <div className="flex items-center border border-white/30 rounded-lg overflow-hidden text-sm">
+                  <span className="px-3 py-2 text-gray-100 text-sm flex-1">{city}</span>
                   <button
                     onClick={() =>
                       setCity((prev) =>
@@ -476,7 +502,7 @@ export default function Header() {
                     href="/wishlist"
                     onClick={handleMobileNavClick}
                     aria-label="Wishlist"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
                   >
                     <HeartIcon />
                     <span className="text-xs">Wishlist</span>
@@ -486,7 +512,7 @@ export default function Header() {
                     href="/cart"
                     onClick={handleMobileNavClick}
                     aria-label="Cart"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
                   >
                     <CartIcon />
                     <span className="text-xs">Cart</span>
@@ -496,7 +522,7 @@ export default function Header() {
                     href="/notifications"
                     onClick={handleMobileNavClick}
                     aria-label="Notifications"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
                   >
                     <BellIcon />
                     <span className="text-xs">Notify</span>
@@ -506,7 +532,7 @@ export default function Header() {
                     href="/profile"
                     onClick={handleMobileNavClick}
                     aria-label="Profile"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-400 flex-1 min-w-fit"
+                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
                   >
                     <div className="relative w-6 h-6 rounded-full overflow-hidden border border-[#4DB8B8]/50">
                       <Image

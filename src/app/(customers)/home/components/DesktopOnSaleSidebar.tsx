@@ -8,12 +8,12 @@ interface DesktopOnSaleSidebarProps {
 
 export default function DesktopOnSaleSidebar({ onSaleStores }: DesktopOnSaleSidebarProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4">
-      <div className="flex items-center gap-1.5 mb-3">
+    <div className="rounded-2xl border border-[#d6dde5] bg-[#f6fafb] p-5">
+      <div className="mb-3 flex items-center gap-1.5">
         <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
           <span className="text-white text-[8px] font-bold">!</span>
         </span>
-        <span className="text-xs font-bold text-gray-800 tracking-wide uppercase">On Sale</span>
+        <span className="text-sm font-semibold text-gray-800 tracking-wide uppercase">On Sale</span>
       </div>
 
       <div className="space-y-3">
@@ -21,18 +21,18 @@ export default function DesktopOnSaleSidebar({ onSaleStores }: DesktopOnSaleSide
           <Link
             key={store.id}
             href="/store"
-            className="flex items-center gap-2 cursor-pointer group"
+            className="group flex items-center gap-2.5 cursor-pointer"
           >
-            <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0">
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[#dbe3eb]">
               <Image
                 src={store.img}
                 alt={store.name}
                 fill
-                sizes="40px"
+                sizes="44px"
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
-            <span className="text-xs text-gray-700 font-medium group-hover:text-teal-600 transition-colors">
+            <span className="text-sm font-medium text-slate-600 transition-colors group-hover:text-teal-700">
               {store.name}
             </span>
           </Link>
@@ -41,7 +41,7 @@ export default function DesktopOnSaleSidebar({ onSaleStores }: DesktopOnSaleSide
 
       <Link
         href="/sale"
-        className="mt-4 block w-full border border-gray-200 rounded-full text-xs text-gray-600 py-1.5 hover:border-teal-400 hover:text-teal-600 transition-colors font-medium text-center"
+        className="mt-5 block w-full rounded-full border border-[#b7cad8] bg-white py-2 text-center text-sm font-medium text-slate-600 transition-colors hover:border-[#7abfce] hover:text-teal-700"
       >
         View All
       </Link>
