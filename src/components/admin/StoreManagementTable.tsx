@@ -10,13 +10,23 @@ export type StoreRow = {
   onboarding: string;
   revenue: string;
   rating: string;
+  ownerEmail?: string;
+  ownerPhone?: string;
+  location?: string;
+  category?: string;
+  monthlyOrders?: string;
+  fulfillmentRate?: string;
+  returnRate?: string;
+  escalationRisk?: string;
 };
 
 type StoreManagementTableProps = {
   rows?: StoreRow[];
+  selectedStoreId?: string;
+  onSelectStore?: (store: StoreRow) => void;
 };
 
-const defaultRows: StoreRow[] = [
+export const defaultRows: StoreRow[] = [
   {
     id: "STN-8232",
     name: "Artisanal Goods",
@@ -25,6 +35,14 @@ const defaultRows: StoreRow[] = [
     onboarding: "12 Jan 2024",
     revenue: "$12,450",
     rating: "4.8",
+    ownerEmail: "elina.r@artisanal-goods.com",
+    ownerPhone: "+1 (415) 555-1948",
+    location: "San Francisco, CA",
+    category: "Home Decor",
+    monthlyOrders: "842",
+    fulfillmentRate: "98.4%",
+    returnRate: "1.7%",
+    escalationRisk: "Low",
   },
   {
     id: "STN-8905",
@@ -34,6 +52,14 @@ const defaultRows: StoreRow[] = [
     onboarding: "05 Nov 2023",
     revenue: "$2,100",
     rating: "4.2",
+    ownerEmail: "rajesh@spicemerchant.io",
+    ownerPhone: "+91 98220 44117",
+    location: "Pune, India",
+    category: "Food & Grocery",
+    monthlyOrders: "197",
+    fulfillmentRate: "83.1%",
+    returnRate: "6.9%",
+    escalationRisk: "High",
   },
   {
     id: "STN-8895",
@@ -43,6 +69,14 @@ const defaultRows: StoreRow[] = [
     onboarding: "20 Dec 2023",
     revenue: "$0",
     rating: "0.0",
+    ownerEmail: "s.jenkins@vintagevault.shop",
+    ownerPhone: "+44 20 7946 1120",
+    location: "London, UK",
+    category: "Vintage Apparel",
+    monthlyOrders: "0",
+    fulfillmentRate: "0%",
+    returnRate: "0%",
+    escalationRisk: "Medium",
   },
   {
     id: "STN-8901",
@@ -52,6 +86,14 @@ const defaultRows: StoreRow[] = [
     onboarding: "20 Dec 2023",
     revenue: "$0",
     rating: "0.0",
+    ownerEmail: "support@vintagevault.shop",
+    ownerPhone: "+44 20 7946 1188",
+    location: "Birmingham, UK",
+    category: "Vintage Apparel",
+    monthlyOrders: "0",
+    fulfillmentRate: "0%",
+    returnRate: "0%",
+    escalationRisk: "Medium",
   },
 ];
 
@@ -85,7 +127,11 @@ function ActionPill({
   );
 }
 
-export default function StoreManagementTable({ rows = defaultRows }: StoreManagementTableProps) {
+export default function StoreManagementTable({
+  rows = defaultRows,
+  selectedStoreId,
+  onSelectStore,
+}: StoreManagementTableProps) {
   return (
     <div className="overflow-hidden rounded-[22px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
       <div className="flex flex-col gap-3 border-b border-[#e5edf1] bg-[#f8fbfc] px-3 py-3 sm:px-5 md:flex-row md:items-center md:justify-between">
@@ -109,7 +155,21 @@ export default function StoreManagementTable({ rows = defaultRows }: StoreManage
 
       <div className="divide-y divide-[#edf2f5] md:hidden">
         {rows.map((row, index) => (
-          <div key={`${row.id}-${index}`} className="px-3 py-3">
+          <div
+            key={`${row.id}-${index}`}
+            className={`px-3 py-3 transition ${
+              selectedStoreId === row.id ? "bg-cyan-50/40" : "hover:bg-slate-50"
+            }`}
+            onClick={() => onSelectStore?.(row)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectStore?.(row);
+              }
+            }}
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-slate-500">{row.id}</p>
@@ -174,7 +234,10 @@ export default function StoreManagementTable({ rows = defaultRows }: StoreManage
             {rows.map((row, index) => (
               <div
                 key={`${row.id}-${index}`}
-                className="grid grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr_0.8fr] items-center px-5 py-4 text-sm text-slate-800"
+                className={`grid cursor-pointer grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr_0.8fr] items-center px-5 py-4 text-sm text-slate-800 transition ${
+                  selectedStoreId === row.id ? "bg-cyan-50/45" : "hover:bg-slate-50"
+                }`}
+                onClick={() => onSelectStore?.(row)}
               >
                 <div className="font-semibold text-slate-600">{row.id}</div>
                 <div className="flex items-center gap-3 font-semibold text-slate-900">

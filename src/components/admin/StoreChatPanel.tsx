@@ -1,29 +1,139 @@
 type StoreChatPanelProps = {
   title: string;
   rightLabel: string;
+  storeId: string;
+  panelType?: "customer" | "owner";
 };
 
-const conversations = [
-  {
-    author: "Marcus H.",
-    time: "2m ago",
-    preview: "My item arrived damaged!...",
-    active: true,
-  },
-  {
-    author: "Lina W.",
-    time: "Today",
-    preview: "Shipping inquiry, international ...",
-    active: false,
-  },
-];
+type Conversation = {
+  author: string;
+  time: string;
+  preview: string;
+  active: boolean;
+};
 
-const messages = [
-  { sender: "customer", author: "Marcus H.", text: "Hi, I just received my order, but the surface is shattered. Can I get a refund? (Claim #5744)" },
-  { sender: "store", author: "Store", text: "I am very sorry to hear that. Can you provide pictures of the damaged jar and the shipping box?" },
-];
+type Message = {
+  sender: "customer" | "store";
+  author: string;
+  text: string;
+};
 
-export default function StoreChatPanel({ title, rightLabel }: StoreChatPanelProps) {
+type PanelData = {
+  customer: {
+    conversations: Conversation[];
+    messages: Message[];
+  };
+  owner: {
+    conversations: Conversation[];
+    messages: Message[];
+  };
+};
+
+const storeChatData: Record<string, PanelData> = {
+  "STN-8232": {
+    customer: {
+      conversations: [
+        { author: "Martha K.", time: "3m ago", preview: "Need help with replacement size...", active: true },
+        { author: "Bruno T.", time: "1h ago", preview: "Shipment arrived, thank you.", active: false },
+      ],
+      messages: [
+        { sender: "customer", author: "Martha K.", text: "Can I exchange this item for a larger size?" },
+        { sender: "store", author: "Store", text: "Yes, please share your order number and we will arrange it." },
+      ],
+    },
+    owner: {
+      conversations: [
+        { author: "Elina Rodriguez", time: "Now", preview: "Weekly report looks healthy.", active: true },
+        { author: "Ops Team", time: "Today", preview: "Any risk flags for this week?", active: false },
+      ],
+      messages: [
+        { sender: "customer", author: "Elina Rodriguez", text: "All operations stable. No critical tickets." },
+        { sender: "store", author: "Admin", text: "Great. Keep the fulfillment rate above 97%." },
+      ],
+    },
+  },
+  "STN-8905": {
+    customer: {
+      conversations: [
+        { author: "Marcus H.", time: "2m ago", preview: "My item arrived damaged!...", active: true },
+        { author: "Lina W.", time: "Today", preview: "Shipping inquiry, international ...", active: false },
+      ],
+      messages: [
+        { sender: "customer", author: "Marcus H.", text: "Hi, I just received my order, but the surface is shattered. Can I get a refund? (Claim #5744)" },
+        { sender: "store", author: "Store", text: "I am very sorry to hear that. Can you provide pictures of the damaged jar and the shipping box?" },
+      ],
+    },
+    owner: {
+      conversations: [
+        { author: "Rajesh Patel", time: "8m ago", preview: "Please review suspension status.", active: true },
+        { author: "Compliance Team", time: "Today", preview: "Pending verification documents.", active: false },
+      ],
+      messages: [
+        { sender: "customer", author: "Rajesh Patel", text: "I have uploaded the requested invoices for verification." },
+        { sender: "store", author: "Admin", text: "Received. We will review and update your status within 24 hours." },
+      ],
+    },
+  },
+  "STN-8895": {
+    customer: {
+      conversations: [
+        { author: "No recent chats", time: "-", preview: "Dormant store with no active chat traffic.", active: true },
+      ],
+      messages: [
+        { sender: "store", author: "System", text: "No customer conversations found for this store in the last 30 days." },
+      ],
+    },
+    owner: {
+      conversations: [
+        { author: "Sarah Jenkins", time: "Yesterday", preview: "Planning to relaunch inventory.", active: true },
+      ],
+      messages: [
+        { sender: "customer", author: "Sarah Jenkins", text: "I will reactivate the catalog next week after stock arrives." },
+        { sender: "store", author: "Admin", text: "Please notify us once products are live to lift dormant flag." },
+      ],
+    },
+  },
+  "STN-8901": {
+    customer: {
+      conversations: [
+        { author: "No recent chats", time: "-", preview: "Dormant store with no active chat traffic.", active: true },
+      ],
+      messages: [
+        { sender: "store", author: "System", text: "No customer conversations found for this store in the last 30 days." },
+      ],
+    },
+    owner: {
+      conversations: [
+        { author: "Support", time: "2d ago", preview: "Store owner requested onboarding refresh.", active: true },
+      ],
+      messages: [
+        { sender: "customer", author: "Support", text: "Please confirm if training session can be scheduled for Monday." },
+        { sender: "store", author: "Admin", text: "Confirmed. You will receive the onboarding link shortly." },
+      ],
+    },
+  },
+};
+
+const fallbackData: PanelData = {
+  customer: {
+    conversations: [{ author: "No chat", time: "-", preview: "No data available.", active: true }],
+    messages: [{ sender: "store", author: "System", text: "No messages available for this store." }],
+  },
+  owner: {
+    conversations: [{ author: "No chat", time: "-", preview: "No data available.", active: true }],
+    messages: [{ sender: "store", author: "System", text: "No messages available for this store." }],
+  },
+};
+export default function StoreChatPanel({
+  title,
+  rightLabel,
+  storeId,
+  panelType = "customer",
+}: StoreChatPanelProps) {
+  const panelData = (storeChatData[storeId] ?? fallbackData)[panelType];
+  const conversations = panelData.conversations;
+  const messages = panelData.messages;
+
   return (
     <section className="overflow-hidden rounded-xl border border-[#d8e1e7] bg-white shadow-[0_10px_25px_rgba(15,23,42,0.04)] sm:rounded-[18px]">
       <div className="flex flex-col gap-2 border-b border-[#e5edf1] bg-[#f8fbfc] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
@@ -48,7 +158,7 @@ export default function StoreChatPanel({ title, rightLabel }: StoreChatPanelProp
                 <div className={`h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${
                   conversation.active ? "bg-[#54b9c9] text-white" : "bg-[#dfe7ec] text-slate-700"
                 }`}>
-                  {conversation.author.charAt(0)}
+                  {conversation.author.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-slate-900">{conversation.author}</p>
@@ -82,17 +192,19 @@ export default function StoreChatPanel({ title, rightLabel }: StoreChatPanelProp
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-[#edf2f5] bg-[#fdfefe] px-3 py-3 sm:px-4 sm:py-4">
-            <div className="flex items-center gap-2 rounded-lg border border-[#dce5ea] bg-white px-3 py-2.5 focus-within:border-[#54b9c9] focus-within:ring-1 focus-within:ring-[#54b9c9]">
-              <input
-                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
-                placeholder="Type a message..."
-              />
-              <button type="button" className="flex-shrink-0 rounded-md bg-[#54b9c9] px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-[#489fad]">
-                Send
-              </button>
+          {panelType === "owner" && (
+            <div className="border-t border-[#edf2f5] bg-[#fdfefe] px-3 py-3 sm:px-4 sm:py-4">
+              <div className="flex items-center gap-2 rounded-lg border border-[#dce5ea] bg-white px-3 py-2.5 focus-within:border-[#54b9c9] focus-within:ring-1 focus-within:ring-[#54b9c9]">
+                <input
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                  placeholder="Type a message..."
+                />
+                <button type="button" className="flex-shrink-0 rounded-md bg-[#54b9c9] px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-[#489fad]">
+                  Send
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

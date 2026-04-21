@@ -67,7 +67,7 @@ export default function StoreHero() {
             <p className="text-xs uppercase tracking-[.12em] text-slate-500">Followers</p>
           </div>
 
-          <button className="rounded-full bg-[#5fb9c3] px-7 py-2 text-sm font-semibold text-white transition hover:bg-[#4aaab4] sm:ml-2">
+          <button className="rounded-full bg-[#68B8C1] px-7 py-2 text-sm font-semibold text-white transition hover:bg-[#4f9ea7] sm:ml-2">
             Follow
           </button>
         </div>

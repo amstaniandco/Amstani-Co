@@ -16,7 +16,7 @@ export default function ProductGrid() {
     <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-5 flex items-center gap-2">
         <span className="text-[#5fb9c3]">📦</span>
-        <h3 className="text-base font-semibold text-slate-900">Our Products</h3>
+        <h3 className="text-base font-semibold text-[#68B8C1]">Our Products</h3>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -29,13 +29,13 @@ export default function ProductGrid() {
             <div className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Link href="/product" className="text-sm font-semibold text-slate-900 hover:text-[#5fb9c3]">
+                  <Link href="/product" className="text-sm font-semibold text-[#68B8C1] hover:text-[#4f9ea7]">
                     {product.name}
                   </Link>
                   <p className="mt-2 text-xs uppercase tracking-[0.16em] text-slate-500">Best seller</p>
                 </div>
 
-                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#5fb9c3] shadow-sm">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#68B8C1] shadow-sm">
                   <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                   </svg>
@@ -61,7 +61,7 @@ export default function ProductGrid() {
                       />
                     </svg>
                   </Link>
-                  <Link href="/cart" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#5fb9c3] text-white transition hover:bg-[#4aaab4]">
+                  <Link href="/cart" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#68B8C1] text-white transition hover:bg-[#4f9ea7]">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
                         d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z"

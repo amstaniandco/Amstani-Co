@@ -268,7 +268,7 @@ export default function OwnerChatsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col p-4">
+            <div className="flex h-full flex-col p-4">
               <header className="mb-4 flex items-center gap-3 border-b border-[#9fb0c6] pb-3">
                 <Image
                   src={ownerCard}

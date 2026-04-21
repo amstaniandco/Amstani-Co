@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import StoreChatPanel from "../../../../components/admin/StoreChatPanel";
-import StoreManagementTable from "../../../../components/admin/StoreManagementTable";
+import StoreManagementTable, { defaultRows, type StoreRow } from "../../../../components/admin/StoreManagementTable";
 
 const tabs = [
   { label: "All Stores", href: "/admin/stores" },
@@ -11,6 +14,8 @@ const tabs = [
 ];
 
 export default function AdminStoresPage() {
+  const [selectedStore, setSelectedStore] = useState<StoreRow>(defaultRows[0]);
+
   return (
     <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
       <div className="mx-auto grid min-h-screen max-w-[1500px] grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
@@ -59,15 +64,74 @@ export default function AdminStoresPage() {
           </section>
 
           <section className="mt-4">
-            <StoreManagementTable />
+            <StoreManagementTable
+              rows={defaultRows}
+              selectedStoreId={selectedStore.id}
+              onSelectStore={setSelectedStore}
+            />
+          </section>
+
+          <section className="mt-4 rounded-[22px] border border-[#d9e2e8] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] sm:p-5">
+            <div className="flex flex-col gap-2 border-b border-[#e8eef2] pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Store Details</h2>
+                <p className="text-sm text-slate-600">Selected store: {selectedStore.name} ({selectedStore.id})</p>
+              </div>
+              <span className="inline-flex rounded-full border border-[#cde7ea] bg-[#ecf8fa] px-3 py-1 text-xs font-semibold text-[#2f7f8d]">
+                {selectedStore.status}
+              </span>
+            </div>
+
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                className="rounded-xl bg-[#65bbc5] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5]"
+              >
+                Promote
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <DetailItem label="Owner" value={selectedStore.owner} />
+              <DetailItem label="Owner Email" value={selectedStore.ownerEmail ?? "-"} />
+              <DetailItem label="Owner Phone" value={selectedStore.ownerPhone ?? "-"} />
+              <DetailItem label="Location" value={selectedStore.location ?? "-"} />
+              <DetailItem label="Category" value={selectedStore.category ?? "-"} />
+              <DetailItem label="Onboarding Date" value={selectedStore.onboarding} />
+              <DetailItem label="Revenue (30d)" value={selectedStore.revenue} />
+              <DetailItem label="Store Rating" value={selectedStore.rating === "0.0" ? "n/a" : selectedStore.rating} />
+              <DetailItem label="Monthly Orders" value={selectedStore.monthlyOrders ?? "-"} />
+              <DetailItem label="Fulfillment Rate" value={selectedStore.fulfillmentRate ?? "-"} />
+              <DetailItem label="Return Rate" value={selectedStore.returnRate ?? "-"} />
+              <DetailItem label="Escalation Risk" value={selectedStore.escalationRisk ?? "-"} />
+            </div>
           </section>
 
           <section className="mt-4 grid gap-4">
-            <StoreChatPanel title="Chat" rightLabel="Monitoring: The Spice Merchant" />
-            <StoreChatPanel title="Store Chat Monitor" rightLabel="Monitoring: The Spice Merchant" />
+            <StoreChatPanel
+              title="Customer Chats"
+              rightLabel={`Monitoring: ${selectedStore.name}`}
+              storeId={selectedStore.id}
+              panelType="customer"
+            />
+            <StoreChatPanel
+              title="Owner Chats"
+              rightLabel={`Monitoring: ${selectedStore.name}`}
+              storeId={selectedStore.id}
+              panelType="owner"
+            />
           </section>
         </main>
       </div>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-[#e6edf2] bg-[#f9fbfd] px-3 py-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
     </div>
   );
 }

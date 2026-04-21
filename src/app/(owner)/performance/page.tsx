@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { ChevronDown, Store, Square } from "lucide-react";
 import OwnerChatSidebar from "../store/chats/components/OwnerChatSidebar";
 
@@ -13,11 +16,18 @@ const revenueBars = [52, 86, 71, 95, 62, 78];
 const visitsLine = [12, 20, 16, 24, 21, 28, 25, 31];
 
 const productRows: ProductRow[] = [
-  { name: "Name Of Product", price: "$51", sales: 467, engagements: 467, conversions: 67 },
-  { name: "Name Of Product", price: "$51", sales: 467, engagements: 467, conversions: 37 },
-  { name: "Name Of Product", price: "$51", sales: 467, engagements: 467, conversions: 61 },
-  { name: "Name Of Product", price: "$51", sales: 467, engagements: 467, conversions: 71 },
-  { name: "Name Of Product", price: "$51", sales: 467, engagements: 467, conversions: 12 },
+  { name: "Classic Linen Shirt", price: "$51", sales: 467, engagements: 467, conversions: 67 },
+  { name: "Urban Fit Chino", price: "$74", sales: 392, engagements: 441, conversions: 37 },
+  { name: "Silk Blend Kurta", price: "$89", sales: 501, engagements: 589, conversions: 61 },
+  { name: "Heritage Denim Jacket", price: "$120", sales: 318, engagements: 472, conversions: 71 },
+  { name: "Premium Cotton Polo", price: "$44", sales: 455, engagements: 498, conversions: 12 },
+  { name: "Monogram Tee", price: "$38", sales: 578, engagements: 640, conversions: 74 },
+  { name: "Signature Waistcoat", price: "$112", sales: 206, engagements: 355, conversions: 58 },
+  { name: "Textured Blazer", price: "$158", sales: 194, engagements: 302, conversions: 42 },
+  { name: "Tailored Formal Trouser", price: "$69", sales: 362, engagements: 410, conversions: 66 },
+  { name: "Lightweight Bomber", price: "$96", sales: 281, engagements: 390, conversions: 55 },
+  { name: "Essential Hoodie", price: "$62", sales: 431, engagements: 530, conversions: 64 },
+  { name: "Relaxed Cargo Pants", price: "$82", sales: 244, engagements: 365, conversions: 49 },
 ];
 
 function RevenueBarsChart() {
@@ -108,10 +118,19 @@ function MetricsCards() {
 }
 
 function ProductPerformanceTable() {
+  const [showAllProducts, setShowAllProducts] = useState(false);
+
   return (
     <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
-      <div className="px-5 py-6 sm:px-7 sm:py-8">
+      <div className="flex items-center justify-between gap-3 px-5 py-6 sm:px-7 sm:py-8">
         <h3 className="text-2xl font-bold text-slate-900">Product Performance</h3>
+        <button
+          type="button"
+          onClick={() => setShowAllProducts((prev) => !prev)}
+          className="inline-flex items-center justify-center rounded-xl bg-[#65bbc5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#53aab5]"
+        >
+          {showAllProducts ? "Show Less" : "Show All Products"}
+        </button>
       </div>
 
       <div className="overflow-x-auto">
@@ -125,7 +144,7 @@ function ProductPerformanceTable() {
             <div>Conversions</div>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className={`${showAllProducts ? "max-h-none" : "max-h-[360px]"} divide-y divide-slate-100 overflow-y-auto`}>
             {productRows.map((row, index) => (
               <div
                 key={`${row.name}-${index}`}

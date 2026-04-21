@@ -1,17 +1,5 @@
 "use client";
 
-const orderItems = [
-  {
-    id: 1,
-    name: "Amstani Horizon Chrono",
-    store: "Name of Store",
-    subtitle: "Bespoke Engraving Included",
-    price: "$4,250",
-    image:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80&h=80&fit=crop",
-  },
-];
-
 const summary = {
   subtotal: "$4,250.00",
   totalTax: "$340.00",
@@ -31,26 +19,6 @@ export default function OrderSummary() {
       <h2 className="text-2xl font-bold text-black mb-5 tracking-tight">
         Order Summary
       </h2>
-
-      <div className="flex items-start gap-4 pb-5 border-b border-gray-100 mb-5">
-        <img
-          src={orderItems[0].image}
-          alt={orderItems[0].name}
-          className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold tracking-widest uppercase text-black mb-0.5">
-            {orderItems[0].store}
-          </p>
-          <p className="text-sm font-semibold text-black truncate">
-            {orderItems[0].name}
-          </p>
-          <p className="text-xs text-black/70 mt-0.5">{orderItems[0].subtitle}</p>
-        </div>
-        <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
-          {orderItems[0].price}
-        </p>
-      </div>
 
       <div className="space-y-2.5 text-sm text-black/80">
         <LineItem label="Store A" value={summary.storeA} />

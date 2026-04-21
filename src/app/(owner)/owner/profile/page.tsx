@@ -1,48 +1,41 @@
-import { Link2, PenLine, Square, Store } from "lucide-react";
+import { PenLine, Square, Store } from "lucide-react";
 import OwnerChatSidebar from "../../store/chats/components/OwnerChatSidebar";
 
-function FacebookIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <circle cx="12" cy="12" r="12" fill="#1877F2" />
-      <path
-        fill="#fff"
-        d="M13.6 7H15V4.5h-1.7C10.9 4.5 9.6 6 9.6 8v1.8H8v2.7h1.6v6h3v-6h2.2l.3-2.7h-2.5V8.4c0-.8.4-1.4 1-1.4Z"
-      />
-    </svg>
-  );
-}
+type StoreApplication = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  requestedAt: string;
+  category: string;
+};
 
-function InstagramIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <defs>
-        <linearGradient id="profileInstagramGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#F58529" />
-          <stop offset="45%" stopColor="#DD2A7B" />
-          <stop offset="100%" stopColor="#515BD4" />
-        </linearGradient>
-      </defs>
-      <rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="url(#profileInstagramGradient)" />
-      <circle cx="12" cy="12" r="4.1" fill="none" stroke="#fff" strokeWidth="1.8" />
-      <circle cx="17.2" cy="6.8" r="1.15" fill="#fff" />
-      <rect x="4.9" y="4.9" width="14.2" height="14.2" rx="4.4" fill="none" stroke="#fff" strokeWidth="1.3" />
-    </svg>
-  );
-}
-
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <circle cx="12" cy="12" r="11" fill="#25D366" />
-      <circle cx="12" cy="11.5" r="5.2" fill="#fff" />
-      <path
-        fill="#25D366"
-        d="M13.5 13.7c-.2.2-1.1-.2-2-1.1-.8-.8-1.4-1.9-1.1-2.1l.4-.2c.1-.1.2-.2.2-.4l-.2-.8c-.1-.3-.2-.4-.5-.4h-.3c-.2 0-.4.1-.6.3-.7.8-.6 1.9.2 3 .8 1.4 2.1 2.4 3.6 2.9 1 .3 1.9.2 2.5-.4.2-.2.3-.4.3-.6v-.3c0-.2-.1-.4-.4-.5l-.8-.2c-.2 0-.3 0-.4.2l-.2.3Z"
-      />
-    </svg>
-  );
-}
+const storeApplications: StoreApplication[] = [
+  {
+    id: "APP-2401",
+    fullName: "Avery James",
+    email: "avery.james@mail.com",
+    phone: "+1 444 912 7812",
+    requestedAt: "Apr 22, 2026",
+    category: "Fashion",
+  },
+  {
+    id: "APP-2402",
+    fullName: "Mia Cooper",
+    email: "mia.cooper@mail.com",
+    phone: "+1 444 221 3378",
+    requestedAt: "Apr 21, 2026",
+    category: "Accessories",
+  },
+  {
+    id: "APP-2403",
+    fullName: "Noah Riley",
+    email: "noah.riley@mail.com",
+    phone: "+1 444 803 1547",
+    requestedAt: "Apr 21, 2026",
+    category: "Lifestyle",
+  },
+];
 
 function EditBadge() {
   return (
@@ -52,18 +45,30 @@ function EditBadge() {
   );
 }
 
-function SocialLinkPill({ icon, title }: { icon: React.ReactNode; title: string }) {
+function ApplicationsCard() {
   return (
-    <button
-      type="button"
-      className="flex min-h-[56px] flex-1 items-center justify-between rounded-[18px] border border-slate-200 bg-white px-4 py-3 shadow-[0_6px_18px_rgba(15,23,42,0.04)] transition hover:bg-slate-50 sm:px-5"
-    >
-      <span className="flex items-center gap-2 font-semibold text-slate-900">
-        {icon}
-        <span className="text-[13.5px] sm:text-[15px]">{title}</span>
-      </span>
-      <Link2 className="h-4 w-4 text-slate-700" />
-    </button>
+    <section className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-[1.2rem] font-bold text-slate-900 sm:text-[1.45rem]">Applications</h3>
+        <span className="rounded-full bg-[#65bbc5]/15 px-3 py-1 text-xs font-semibold text-[#4caeb8]">
+          {storeApplications.length} New
+        </span>
+      </div>
+
+      <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
+        {storeApplications.map((application) => (
+          <div key={application.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <p className="text-sm font-semibold text-slate-900">{application.fullName}</p>
+            <p className="text-xs text-slate-600">{application.email}</p>
+            <p className="text-xs text-slate-600">{application.phone}</p>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+              <span>{application.requestedAt}</span>
+              <span className="font-semibold text-slate-700">{application.category}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -131,17 +136,120 @@ function ProfileHero() {
   );
 }
 
-function BottomCard({ title, subtitle, buttonLabel }: { title: string; subtitle: string; buttonLabel: string }) {
+function EarnReferralCard() {
   return (
     <section className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
-      <h3 className="text-center text-[1.55rem] font-bold text-slate-900 sm:text-[2rem]">{title}</h3>
-      <p className="mt-2 text-center text-[15px] text-slate-500">{subtitle}</p>
+      <h3 className="text-center text-[1.55rem] font-bold text-slate-900 sm:text-[2rem]">Earn $100</h3>
+      <p className="mt-2 text-center text-[15px] text-slate-500">Register applicant details directly</p>
+
+      <div className="mt-4 space-y-3">
+        <input
+          type="text"
+          placeholder="Customer full name"
+          className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-700 outline-none"
+        />
+        <input
+          type="email"
+          placeholder="Customer email"
+          className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-700 outline-none"
+        />
+        <input
+          type="text"
+          placeholder="Phone number"
+          className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-700 outline-none"
+        />
+        <textarea
+          rows={3}
+          placeholder="Application notes"
+          className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none"
+        />
+      </div>
+
       <div className="mt-4 flex justify-center">
         <button
           type="button"
           className="rounded-full border-2 border-slate-900 px-6 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
         >
-          {buttonLabel}
+          Submit Application
+        </button>
+      </div>
+
+      <div className="mx-auto mt-6 flex max-w-[220px] items-center justify-between gap-3 text-[11px] text-slate-500">
+        <span className="whitespace-nowrap">Accepting applications</span>
+        <div className="relative h-5 w-11 rounded-full bg-slate-300">
+          <div className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-[#65bbc5]" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StoreCustomizationCard() {
+  return (
+    <section className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-6">
+      <h3 className="text-[1.2rem] font-bold text-slate-900 sm:text-[1.45rem]">Store Customization</h3>
+      <p className="mt-1 text-sm text-slate-500">Update store name, password, photos and owner contact details.</p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <input
+          type="text"
+          placeholder="Store name"
+          className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700 outline-none"
+        />
+        <input
+          type="text"
+          placeholder="Owner display name"
+          className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700 outline-none"
+        />
+        <input
+          type="email"
+          placeholder="Owner email"
+          className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700 outline-none"
+        />
+        <input
+          type="password"
+          placeholder="New password"
+          className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700 outline-none"
+        />
+        <div className="rounded-lg border border-slate-300 p-3 text-sm text-slate-600 sm:col-span-2">
+          <p className="font-semibold text-slate-800">Languages You Speak</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[
+              "English",
+              "Urdu",
+              "Arabic",
+              "Spanish",
+              "French",
+              "German",
+              "Chinese",
+              "Turkish",
+            ].map((language) => (
+              <label
+                key={language}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700"
+              >
+                <input type="checkbox" className="h-3.5 w-3.5 accent-[#65bbc5]" />
+                {language}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-300 p-3 text-sm text-slate-600">
+          <p className="font-semibold text-slate-800">Profile picture</p>
+          <input type="file" className="mt-2 block w-full text-xs" />
+        </div>
+        <div className="rounded-lg border border-slate-300 p-3 text-sm text-slate-600">
+          <p className="font-semibold text-slate-800">Cover image</p>
+          <input type="file" className="mt-2 block w-full text-xs" />
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end">
+        <button
+          type="button"
+          className="rounded-xl bg-[#65bbc5] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5]"
+        >
+          Save Customization
         </button>
       </div>
     </section>
@@ -174,33 +282,13 @@ export default function OwnerProfilePage() {
             <ProfileHero />
           </section>
 
-          <section className="mt-4 grid gap-3 lg:grid-cols-3">
-            <SocialLinkPill icon={<FacebookIcon />} title="Add Facebook Live Link" />
-            <SocialLinkPill icon={<InstagramIcon />} title="Add Instagram Live Link" />
-            <SocialLinkPill icon={<WhatsAppIcon />} title="Add WhatsApp Call Link" />
+          <section className="mt-4 grid gap-4 lg:grid-cols-2">
+            <ApplicationsCard />
+            <EarnReferralCard />
           </section>
 
-          <section className="mt-4 grid gap-4 lg:grid-cols-2">
-            <BottomCard title="Store Timing" subtitle="09:00 Am to 03:00 PM" buttonLabel="Change Timings" />
-
-            <section className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
-              <h3 className="text-center text-[1.55rem] font-bold text-slate-900 sm:text-[2rem]">Earn $100</h3>
-              <p className="mt-2 text-center text-[15px] text-slate-500">Register a new store owner</p>
-              <div className="mt-4 flex justify-center">
-                <button
-                  type="button"
-                  className="rounded-full border-2 border-slate-900 px-6 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-                >
-                  Fill Form
-                </button>
-              </div>
-              <div className="mx-auto mt-6 flex max-w-[210px] items-center justify-between gap-3 text-[11px] text-slate-500">
-                <span className="whitespace-nowrap">Accepting applications</span>
-                <div className="relative h-5 w-11 rounded-full bg-slate-300">
-                  <div className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-[#65bbc5]" />
-                </div>
-              </div>
-            </section>
+          <section className="mt-4">
+            <StoreCustomizationCard />
           </section>
         </main>
       </div>
