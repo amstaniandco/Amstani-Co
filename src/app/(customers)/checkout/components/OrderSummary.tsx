@@ -87,7 +87,7 @@ export default function OrderSummary() {
         <span className="text-3xl font-bold text-gray-900">{summary.totalDue}</span>
       </div>
 
-      <button className="mt-5 w-full py-4 rounded-xl bg-gradient-to-r from-teal-300 to-indigo-400 text-white text-sm font-semibold tracking-wide hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150">
+      <button className="mt-5 w-full py-4 rounded-[24px] bg-[#67B3BE] text-white text-sm font-semibold tracking-wide hover:bg-[#5fa7b2] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150">
         Select Payment Method
       </button>
 

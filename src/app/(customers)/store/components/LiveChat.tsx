@@ -33,9 +33,14 @@ function ChatMessage({
   );
 }
 
-export default function LiveChat() {
+type LiveChatProps = {
+  className?: string;
+  hideWrapper?: boolean;
+};
+
+export default function LiveChat({ className = "", hideWrapper = false }: LiveChatProps) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm">
+    <div className={`${hideWrapper ? "flex h-full flex-col" : "flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm"} ${className}`}>
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800">
           <span className="h-2 w-2 rounded-full bg-green-500" />

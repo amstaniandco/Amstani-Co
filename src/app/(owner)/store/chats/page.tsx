@@ -1,9 +1,13 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import Image from "next/image";
 import {
   Clock3,
   Mic,
   Plus,
   Search,
+  SendHorizontal,
   Store,
   Users,
 } from "lucide-react";
@@ -121,7 +125,33 @@ const inboxItems: InboxItem[] = [
   },
 ];
 
+type ChatMessage = {
+  text: string;
+  from: "owner" | "customer";
+};
+
+const initialMessages: ChatMessage[] = [
+  { text: "Hello! How are you?", from: "customer" },
+  { text: "Hi Im good gow are you?", from: "owner" },
+  { text: "I want to get a store", from: "customer" },
+  { text: "Sure! I would Like to ask you a few questions about that.", from: "owner" },
+];
+
 export default function OwnerChatsPage() {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [replyText, setReplyText] = useState("");
+
+  const handleSendReply = (event: FormEvent) => {
+    event.preventDefault();
+    const trimmed = replyText.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setMessages((prev) => [...prev, { text: trimmed, from: "owner" }]);
+    setReplyText("");
+  };
+
   return (
     <div className="min-h-screen bg-[#efefef] p-2 md:p-4">
       <div className="mx-auto flex min-h-[calc(100vh-1rem)] w-full max-w-[1400px] flex-col overflow-hidden rounded-sm border border-slate-300 bg-[#efefef] md:flex-row">
@@ -238,7 +268,7 @@ export default function OwnerChatsPage() {
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="flex flex-col p-4">
               <header className="mb-4 flex items-center gap-3 border-b border-[#9fb0c6] pb-3">
                 <Image
                   src={ownerCard}
@@ -253,23 +283,37 @@ export default function OwnerChatsPage() {
                 </div>
               </header>
 
-              <div className="space-y-6 py-2">
-                <div className="w-fit max-w-[85%] rounded-full bg-[#a8b4c6] px-5 py-3 text-sm text-white sm:max-w-[320px] sm:px-6">
-                  Hello! How are you?
-                </div>
-
-                <div className="ml-auto w-fit max-w-[85%] rounded-full bg-[#65bbc5] px-5 py-3 text-sm text-white sm:max-w-[320px] sm:px-6">
-                  Hi Im good gow are you?
-                </div>
-
-                <div className="w-fit max-w-[85%] rounded-full bg-[#a8b4c6] px-5 py-3 text-sm text-white sm:max-w-[320px] sm:px-6">
-                  I want to get a store
-                </div>
-
-                <div className="ml-auto w-fit max-w-[85%] rounded-[24px] bg-[#65bbc5] px-5 py-4 text-sm text-white sm:max-w-[360px] sm:px-6">
-                  Sure! I would Like to ask you a few questions about that.
-                </div>
+              <div className="max-h-[360px] flex-1 space-y-4 overflow-y-auto py-2 pr-1">
+                {messages.map((message, index) => (
+                  <div
+                    key={`${message.from}-${index}`}
+                    className={`w-fit max-w-[85%] px-5 py-3 text-sm text-white sm:max-w-[360px] sm:px-6 ${
+                      message.from === "owner"
+                        ? "ml-auto rounded-[24px] bg-[#65bbc5]"
+                        : "rounded-full bg-[#a8b4c6]"
+                    }`}
+                  >
+                    {message.text}
+                  </div>
+                ))}
               </div>
+
+              <form onSubmit={handleSendReply} className="mt-4 flex items-center gap-2 border-t border-slate-200 pt-4">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(event) => setReplyText(event.target.value)}
+                  placeholder="Write your reply..."
+                  className="h-11 w-full rounded-full border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#65bbc5]"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-[#65bbc5] px-4 text-sm font-semibold text-white transition hover:bg-[#53aab5]"
+                >
+                  <SendHorizontal className="h-4 w-4" />
+                  Send
+                </button>
+              </form>
             </div>
           </section>
         </main>

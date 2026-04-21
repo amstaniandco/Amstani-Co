@@ -135,13 +135,15 @@ export default function BroadcastingRoomSection() {
           </p>
 
           <div className="relative mt-5">
-            <div className="grid grid-cols-10 gap-1.5 sm:gap-2 xl:grid-cols-[repeat(14,minmax(0,1fr))] 2xl:grid-cols-[repeat(16,minmax(0,1fr))]">
+            <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 sm:gap-2 xl:grid-cols-[repeat(14,minmax(0,1fr))] 2xl:grid-cols-[repeat(16,minmax(0,1fr))]">
               {broadcastCards.map((card, index) => {
                 const visibilityClass =
                   index >= 14
                     ? "hidden 2xl:block"
                     : index >= 10
                       ? "hidden xl:block"
+                      : index >= 5
+                        ? "hidden sm:block"
                       : "block";
 
                 return (

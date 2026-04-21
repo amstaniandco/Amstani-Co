@@ -36,43 +36,43 @@ export type ActiveOrder = {
 export const LIVE_STORES: LiveStore[] = [
   {
     id: 1,
-    name: "Brand Name",
+    name: "Loom & Lane",
     img: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=80&h=80&fit=crop",
     live: true,
   },
   {
     id: 2,
-    name: "Brand Name",
+    name: "Velvet Harbor",
     img: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=80&h=80&fit=crop",
     live: true,
   },
   {
     id: 3,
-    name: "Brand Name",
+    name: "Thread Theory",
     img: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=80&h=80&fit=crop",
     live: true,
   },
   {
     id: 4,
-    name: "Brand Name",
+    name: "Maple Weave",
     img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=80&h=80&fit=crop",
     live: true,
   },
   {
     id: 5,
-    name: "Brand Name",
+    name: "Indigo Nest",
     img: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=80&h=80&fit=crop",
     live: true,
   },
   {
     id: 6,
-    name: "Brand Name",
+    name: "Casa Cotton",
     img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=80&h=80&fit=crop",
     live: true,
   },
   {
     id: 7,
-    name: "Brand Name",
+    name: "Urban Stitch",
     img: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=80&h=80&fit=crop",
     live: true,
   },
@@ -81,17 +81,17 @@ export const LIVE_STORES: LiveStore[] = [
 export const ON_SALE_STORES: OnSaleStore[] = [
   {
     id: 1,
-    name: "Name of store",
+    name: "Loom & Lane",
     img: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=60&h=60&fit=crop",
   },
   {
     id: 2,
-    name: "Name of store",
+    name: "Velvet Harbor",
     img: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=60&h=60&fit=crop",
   },
   {
     id: 3,
-    name: "Name of store",
+    name: "Indigo Nest",
     img: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=60&h=60&fit=crop",
   },
 ];
@@ -99,7 +99,7 @@ export const ON_SALE_STORES: OnSaleStore[] = [
 export const BROWSE_STORES: BrowseStore[] = [
   {
     id: 1,
-    name: "Name of the store",
+    name: "Loom & Lane",
     description: "Description of the store can be written here",
     state: "Name of State",
     badge: "On Sale",
@@ -109,7 +109,7 @@ export const BROWSE_STORES: BrowseStore[] = [
   },
   {
     id: 2,
-    name: "Name of the store",
+    name: "Velvet Harbor",
     description: "Description of the store can be written here",
     state: "Name of State",
     badge: "Ranked #1",
@@ -119,7 +119,7 @@ export const BROWSE_STORES: BrowseStore[] = [
   },
   {
     id: 3,
-    name: "Name of the store",
+    name: "Thread Theory",
     description: "Description of the store can be written here",
     state: "Name of State",
     badge: "Ranked #1",
@@ -129,7 +129,7 @@ export const BROWSE_STORES: BrowseStore[] = [
   },
   {
     id: 4,
-    name: "Name of the store",
+    name: "Maple Weave",
     description: "Description of the store can be written here",
     state: "Name of State",
     badge: "Ranked #5",
@@ -139,7 +139,7 @@ export const BROWSE_STORES: BrowseStore[] = [
   },
   {
     id: 5,
-    name: "Name of the store",
+    name: "Indigo Nest",
     description: "Description of the store can be written here",
     state: "Name of State",
     badge: "Ranked #6",
@@ -149,7 +149,7 @@ export const BROWSE_STORES: BrowseStore[] = [
   },
   {
     id: 6,
-    name: "Name of the store",
+    name: "Urban Stitch",
     description: "Description of the store can be written here",
     state: "Name of State",
     badge: "On Sale",

@@ -123,7 +123,7 @@ function StateLabel({
       y={y}
       textAnchor="middle"
       dominantBaseline="middle"
-      fontSize={6}
+      fontSize={8}
       fontWeight={700}
       fill="#0f172a"
       pointerEvents="none"
@@ -203,6 +203,59 @@ const US_STATES = [
   "Wyoming",
 ];
 
+const STATE_ABBREVIATIONS: Record<string, string> = {
+  Alabama: "AL",
+  Alaska: "AK",
+  Arizona: "AZ",
+  Arkansas: "AR",
+  California: "CA",
+  Colorado: "CO",
+  Connecticut: "CT",
+  Delaware: "DE",
+  Florida: "FL",
+  Georgia: "GA",
+  Hawaii: "HI",
+  Idaho: "ID",
+  Illinois: "IL",
+  Indiana: "IN",
+  Iowa: "IA",
+  Kansas: "KS",
+  Kentucky: "KY",
+  Louisiana: "LA",
+  Maine: "ME",
+  Maryland: "MD",
+  Massachusetts: "MA",
+  Michigan: "MI",
+  Minnesota: "MN",
+  Mississippi: "MS",
+  Missouri: "MO",
+  Montana: "MT",
+  Nebraska: "NE",
+  Nevada: "NV",
+  "New Hampshire": "NH",
+  "New Jersey": "NJ",
+  "New Mexico": "NM",
+  "New York": "NY",
+  "North Carolina": "NC",
+  "North Dakota": "ND",
+  Ohio: "OH",
+  Oklahoma: "OK",
+  Oregon: "OR",
+  Pennsylvania: "PA",
+  "Rhode Island": "RI",
+  "South Carolina": "SC",
+  "South Dakota": "SD",
+  Tennessee: "TN",
+  Texas: "TX",
+  Utah: "UT",
+  Vermont: "VT",
+  Virginia: "VA",
+  Washington: "WA",
+  "West Virginia": "WV",
+  Wisconsin: "WI",
+  Wyoming: "WY",
+};
+
 export default function AmericaMap() {
   const [hoveredState, setHoveredState] = useState<string | null>(null);
   const [selectedState, setSelectedState] = useState<string>("");
@@ -229,13 +282,13 @@ export default function AmericaMap() {
   }, []);
 
   return (
-    <section className="w-full rounded-3xl bg-[#1d1b14] px-6 py-8 text-slate-100 sm:px-8 sm:py-10">
+    <section className="mx-auto w-full max-w-[1500px] rounded-3xl bg-[#1d1b14] px-6 py-8 text-slate-100 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-center text-4xl font-extrabold uppercase tracking-wide text-white sm:text-5xl">
           Amstani & Co.
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-300 sm:text-base">
-          Explore exclusive textiles across every state. Navigate the map to discover our premium collections.
+          Explore exclusive textiles across your state. Navigate the map to discover our premium collections.
         </p>
 
         <div className="mt-7 grid items-center gap-6 lg:grid-cols-[1fr_220px]">
@@ -251,6 +304,7 @@ export default function AmericaMap() {
                   {({ geographies }: { geographies: StateFeature[] }) =>
                     geographies.map((geo) => {
                       const stateName = geo.properties?.NAME ?? "Unknown state";
+                      const stateLabel = STATE_ABBREVIATIONS[stateName] ?? stateName;
                       const labelPosition = getStateLabelPosition(geo);
 
                       return (
@@ -264,27 +318,27 @@ export default function AmericaMap() {
                               default: {
                                 fill: "#3fb5d0",
                                 outline: "none",
-                                stroke: "#3f93a8",
-                                strokeWidth: 0.4,
+                                stroke: "#2f7688",
+                                strokeWidth: 0.5,
                               },
                               hover: {
                                 fill: "#63c7de",
                                 outline: "none",
-                                stroke: "#559fb3",
-                                strokeWidth: 0.5,
+                                stroke: "#316f82",
+                                strokeWidth: 0.6,
                                 cursor: "pointer",
                               },
                               pressed: {
                                 fill: "#2c9fbc",
                                 outline: "none",
-                                stroke: "#559fb3",
-                                strokeWidth: 0.5,
+                                stroke: "#316f82",
+                                strokeWidth: 0.6,
                               },
                             }}
                           />
 
                           {labelPosition && (
-                            <StateLabel coordinates={labelPosition} name={stateName} />
+                            <StateLabel coordinates={labelPosition} name={stateLabel} />
                           )}
                         </Fragment>
                       );

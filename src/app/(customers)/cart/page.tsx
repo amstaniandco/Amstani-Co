@@ -53,12 +53,14 @@ export default function CartPage() {
   const subtotal = products.reduce((sum, product) => sum + product.price, 0);
 
   return (
-    <div className="mx-auto max-w-screen-xl flex flex-col xl:flex-row gap-8 items-start h-fit px-4 py-8">
-      <div className="xl:basis-[70%] flex-1 min-w-0">
-        <CartItems products={products} />
-      </div>
-      <div className="xl:basis-[30%] flex-1 min-w-0">
-        <CartSummary subtotal={subtotal} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="mx-auto w-full max-w-6xl flex flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 lg:flex-row lg:items-start lg:gap-8 lg:py-8">
+        <div className="w-full lg:basis-[65%]">
+          <CartItems products={products} />
+        </div>
+        <div className="w-full lg:basis-[35%]">
+          <CartSummary subtotal={subtotal} />
+        </div>
       </div>
     </div>
   );

@@ -11,7 +11,14 @@ type ClaimRow = {
   highlighted?: boolean;
 };
 
-const summaryCards = [
+const summaryCards: {
+  title: string;
+  value: string;
+  note: string;
+  noteColor: string;
+  tone: "teal" | "red" | "slate";
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   {
     title: "TOTAL ACTIVE CLAIMS",
     value: "124",

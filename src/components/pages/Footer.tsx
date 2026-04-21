@@ -67,7 +67,7 @@ export default function Footer() {
     <footer className="w-full bg-[#1f1d18] text-gray-300 px-6 md:px-20 py-14">
       <div className="max-w-7xl mx-auto">
         {/* Top Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Left */}
           <div>
             <div className="mb-4">
@@ -155,6 +155,33 @@ export default function Footer() {
               <li>
                 <Link href="#" className="hover:text-teal-400 transition">
                   Contact Support
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Our Policies */}
+          <div>
+            <h3 className="text-white font-semibold text-lg mb-5">Our Policies</h3>
+            <ul className="space-y-3 text-gray-400 text-sm">
+              <li>
+                <Link href="#" className="hover:text-teal-400 transition">
+                  Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-teal-400 transition">
+                  Shipping Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-teal-400 transition">
+                  Return & Exchange
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-teal-400 transition">
+                  Data Protection
                 </Link>
               </li>
             </ul>

@@ -67,8 +67,7 @@ const digitalMallCards: MallCard[] = [
 ];
 
 function getCardsPerView(width: number) {
-  if (width >= 1280) return 5;
-  if (width >= 1024) return 4;
+  if (width >= 1024) return 3;
   if (width >= 768) return 3;
   return 2;
 }
@@ -76,6 +75,8 @@ function getCardsPerView(width: number) {
 export default function DigitalMallSection() {
   const [cardsPerView, setCardsPerView] = useState<number>(2);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+
+  const visibleCards = useMemo(() => digitalMallCards.slice(0, 3), []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -88,8 +89,8 @@ export default function DigitalMallSection() {
   }, []);
 
   const maxIndex = useMemo(
-    () => Math.max(digitalMallCards.length - cardsPerView, 0),
-    [cardsPerView]
+    () => Math.max(visibleCards.length - cardsPerView, 0),
+    [cardsPerView, visibleCards]
   );
 
   useEffect(() => {
@@ -144,13 +145,13 @@ export default function DigitalMallSection() {
               transform: `translateX(-${(currentIndex * 100) / cardsPerView}%)`,
             }}
           >
-            {digitalMallCards.map((card, index) => (
+            {visibleCards.map((card, index) => (
               <div
                 key={card.id}
-                className="w-1/2 flex-none px-2 md:w-1/3 lg:w-1/4 xl:w-1/5"
+                className="w-1/2 flex-none px-2 md:w-1/3 lg:w-1/3 xl:w-1/3"
               >
                 <article
-                  className="group relative h-[260px] overflow-hidden rounded-2xl sm:h-[295px]"
+                  className="group relative h-[340px] overflow-hidden rounded-2xl sm:h-[390px]"
                   style={{
                     backgroundImage: `url(${card.image})`,
                     backgroundSize: "cover",
