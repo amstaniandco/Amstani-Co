@@ -32,7 +32,7 @@ export default function OfferingSection() {
 
         <Link
           href="/form"
-          className="h-11 rounded-xl border border-gray-200 bg-white px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 inline-flex items-center justify-center"
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-[#68B8C1] bg-white px-6 py-2 text-sm font-semibold text-[#68B8C1] transition hover:bg-[#eef9fa]"
         >
           Fill form
         </Link>

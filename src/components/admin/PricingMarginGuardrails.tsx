@@ -1,55 +1,130 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown, Shield } from "lucide-react";
 
 export default function PricingMarginGuardrails() {
-  const [minimumMargin, setMinimumMargin] = useState("20");
-  const [globalDiscountCap, setGlobalDiscountCap] = useState("20");
+  const [selectedState, setSelectedState] = useState("New York");
+  const [minimumMarkup, setMinimumMarkup] = useState("20");
+  const [discountCap, setDiscountCap] = useState("20");
+
+  const states = [
+    "Alabama",
+    "Alaska",
+    "Arizona",
+    "Arkansas",
+    "California",
+    "Colorado",
+    "Connecticut",
+    "Delaware",
+    "Florida",
+    "Georgia",
+    "Hawaii",
+    "Idaho",
+    "Illinois",
+    "Indiana",
+    "Iowa",
+    "Kansas",
+    "Kentucky",
+    "Louisiana",
+    "Maine",
+    "Maryland",
+    "Massachusetts",
+    "Michigan",
+    "Minnesota",
+    "Mississippi",
+    "Missouri",
+    "Montana",
+    "Nebraska",
+    "Nevada",
+    "New Hampshire",
+    "New Jersey",
+    "New Mexico",
+    "New York",
+    "North Carolina",
+    "North Dakota",
+    "Ohio",
+    "Oklahoma",
+    "Oregon",
+    "Pennsylvania",
+    "Rhode Island",
+    "South Carolina",
+    "South Dakota",
+    "Tennessee",
+    "Texas",
+    "Utah",
+    "Vermont",
+    "Virginia",
+    "Washington",
+    "West Virginia",
+    "Wisconsin",
+    "Wyoming",
+  ];
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm md:rounded-[26px] md:p-5">
-      <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Pricing & Margin Guardrails</h2>
+    <div className="rounded-xl border border-[#cfd8df] bg-white p-4 shadow-sm md:rounded-[16px] md:p-5">
+      <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 sm:text-xl">
+        <Shield className="h-4 w-4 text-[#69bbc4]" />
+        Pricing & Margin Guardrails
+      </h2>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="mt-5">
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
+          Select State
+        </label>
+        <div className="relative mt-2">
+          <select
+            value={selectedState}
+            onChange={(e) => setSelectedState(e.target.value)}
+            className="h-10 w-full appearance-none rounded-md border border-[#e0e6eb] bg-[#f3f6f8] px-3 pr-9 text-sm font-medium text-slate-700 outline-none"
+          >
+            {states.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 sm:text-sm">
-            Minimum Margin %
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
+            Minimum Markup %
           </label>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="relative mt-2">
             <input
               type="number"
-              value={minimumMargin}
-              onChange={(e) => setMinimumMargin(e.target.value)}
-              className="h-10 w-full rounded-lg border border-[#d8e0e6] bg-white px-3 text-sm font-semibold text-slate-800 focus:border-[#58b8c3] focus:outline-none sm:h-11"
+              value={minimumMarkup}
+              onChange={(e) => setMinimumMarkup(e.target.value)}
+              className="h-10 w-full rounded-md border border-[#e0e6eb] bg-[#f3f6f8] px-3 pr-7 text-sm font-medium text-slate-700 outline-none"
             />
-            <span className="text-sm font-medium text-slate-600">%</span>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500">%</span>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 sm:text-sm">
-            Global Discount Cap
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
+            Discount Cap
           </label>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="relative mt-2">
             <input
               type="number"
-              value={globalDiscountCap}
-              onChange={(e) => setGlobalDiscountCap(e.target.value)}
-              className="h-10 w-full rounded-lg border border-[#d8e0e6] bg-white px-3 text-sm font-semibold text-slate-800 focus:border-[#58b8c3] focus:outline-none sm:h-11"
+              value={discountCap}
+              onChange={(e) => setDiscountCap(e.target.value)}
+              className="h-10 w-full rounded-md border border-[#e0e6eb] bg-[#f3f6f8] px-3 pr-7 text-sm font-medium text-slate-700 outline-none"
             />
-            <span className="text-sm font-medium text-slate-600">%</span>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500">%</span>
           </div>
         </div>
       </div>
 
       <button
         type="button"
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#58b8c3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4fa3b0] sm:py-3"
+        className="mt-6 flex h-10 w-full items-center justify-center rounded-md bg-[#68B8C1] px-4 text-sm font-semibold text-white transition hover:bg-[#56a9b2]"
       >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-        </svg>
-        Save & Push to All Stores
+        Save
       </button>
     </div>
   );

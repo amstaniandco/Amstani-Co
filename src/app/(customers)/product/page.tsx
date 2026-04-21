@@ -155,7 +155,7 @@ export default function ProductPage() {
     <button
       onClick={() => setActiveImage(index)}
       className={`flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 transition-all flex items-center justify-center overflow-hidden ${
-        activeImage === index ? "border-teal-400" : "border-gray-100"
+        activeImage === index ? "border-[#68B8C1]" : "border-gray-100"
       }`}
     >
       <ShoeIllustration className="w-full p-1" />
@@ -190,7 +190,7 @@ export default function ProductPage() {
 
           {/* Info card */}
           <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h1 className="text-lg font-bold text-teal-600 mb-1">
+            <h1 className="mb-1 text-lg font-bold text-[#68B8C1]">
               {product.name}
             </h1>
             <div className="flex items-center gap-2 mb-1">
@@ -253,7 +253,7 @@ export default function ProductPage() {
             <button
               onClick={handleAddToCart}
               className={`w-full py-3 rounded-xl font-bold text-white text-sm transition-all ${
-                addedToCart ? "bg-green-500" : "bg-teal-500 active:scale-95"
+                addedToCart ? "bg-green-500" : "bg-[#68B8C1] active:scale-95"
               }`}
             >
               {addedToCart ? "✓ Added!" : "Add to cart"}
@@ -261,7 +261,7 @@ export default function ProductPage() {
 
             <div className="flex items-center justify-center gap-1.5 mt-3">
               <svg
-                className="w-3.5 h-3.5 text-teal-500"
+                className="h-3.5 w-3.5 text-[#68B8C1]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -365,7 +365,7 @@ export default function ProductPage() {
                     onClick={() => setActiveImage(i)}
                     className={`flex-1 aspect-square bg-white rounded-2xl border-2 transition-all flex items-center justify-center overflow-hidden shadow-sm ${
                       activeImage === i
-                        ? "border-teal-400"
+                        ? "border-[#68B8C1]"
                         : "border-transparent hover:border-gray-200"
                     }`}
                   >
@@ -377,7 +377,7 @@ export default function ProductPage() {
 
             {/* RIGHT: Product details — no card, raw on background */}
             <div className="pt-1">
-              <h1 className="text-4xl font-extrabold text-teal-500 uppercase tracking-tight mb-3">
+              <h1 className="mb-3 text-4xl font-extrabold uppercase tracking-tight text-[#68B8C1]">
                 {product.name}
               </h1>
               <div className="flex items-baseline gap-3 mb-2">
@@ -445,7 +445,7 @@ export default function ProductPage() {
                   className={`w-full py-3.5 rounded-2xl font-bold text-white transition-all text-base ${
                     addedToCart
                       ? "bg-green-500"
-                      : "bg-teal-500 hover:bg-teal-600 active:scale-[0.98]"
+                      : "bg-[#68B8C1] hover:bg-[#4f9ea7] active:scale-[0.98]"
                   }`}
                 >
                   {addedToCart ? "✓ Added to Cart!" : "Add to cart"}
@@ -456,7 +456,7 @@ export default function ProductPage() {
                 <div className="flex flex-col items-center gap-1 pt-1">
                   <div className="flex items-center gap-2">
                     <svg
-                      className="w-4 h-4 text-teal-500"
+                      className="h-4 w-4 text-[#68B8C1]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

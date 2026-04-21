@@ -1,20 +1,88 @@
-import { ChevronDown, Ellipsis, Plus, Store, Square } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, Plus, Store, Square } from "lucide-react";
 import OwnerChatSidebar from "../store/chats/components/OwnerChatSidebar";
 
 type ProductRow = {
   name: string;
-  price: string;
+  price: number;
   inStock: number;
   shippingCost: number;
+  taxRate: number;
+  discountRate: number;
+  maxAllowedIncreasePct: number;
+  currentIncreasePct: number;
+  minAllowedPrice: number;
 };
 
 const productRows: ProductRow[] = [
-  { name: "Name Of Product", price: "$51", inStock: 423, shippingCost: 123 },
-  { name: "Name Of Product", price: "$51", inStock: 423, shippingCost: 123 },
-  { name: "Name Of Product", price: "$51", inStock: 423, shippingCost: 123 },
-  { name: "Name Of Product", price: "$51", inStock: 423, shippingCost: 123 },
-  { name: "Name Of Product", price: "$51", inStock: 423, shippingCost: 123 },
-  { name: "Name Of Product", price: "$51", inStock: 423, shippingCost: 123 },
+  {
+    name: "Classic Linen Shirt",
+    price: 51,
+    inStock: 423,
+    shippingCost: 123,
+    taxRate: 12,
+    discountRate: 8,
+    maxAllowedIncreasePct: 15,
+    currentIncreasePct: 6,
+    minAllowedPrice: 44,
+  },
+  {
+    name: "Urban Fit Chino",
+    price: 74,
+    inStock: 251,
+    shippingCost: 98,
+    taxRate: 10,
+    discountRate: 5,
+    maxAllowedIncreasePct: 18,
+    currentIncreasePct: 11,
+    minAllowedPrice: 68,
+  },
+  {
+    name: "Silk Blend Kurta",
+    price: 89,
+    inStock: 149,
+    shippingCost: 135,
+    taxRate: 9,
+    discountRate: 12,
+    maxAllowedIncreasePct: 20,
+    currentIncreasePct: 9,
+    minAllowedPrice: 79,
+  },
+  {
+    name: "Heritage Denim Jacket",
+    price: 120,
+    inStock: 112,
+    shippingCost: 165,
+    taxRate: 14,
+    discountRate: 4,
+    maxAllowedIncreasePct: 12,
+    currentIncreasePct: 7,
+    minAllowedPrice: 109,
+  },
+  {
+    name: "Premium Cotton Polo",
+    price: 44,
+    inStock: 381,
+    shippingCost: 86,
+    taxRate: 8,
+    discountRate: 10,
+    maxAllowedIncreasePct: 16,
+    currentIncreasePct: 13,
+    minAllowedPrice: 39,
+  },
+  {
+    name: "Monogram Tee",
+    price: 38,
+    inStock: 602,
+    shippingCost: 79,
+    taxRate: 7,
+    discountRate: 6,
+    maxAllowedIncreasePct: 22,
+    currentIncreasePct: 10,
+    minAllowedPrice: 33,
+  },
 ];
 
 const discountOptions = ["Select Type", "Select Category"];
@@ -24,10 +92,12 @@ function ProductThumb() {
 }
 
 function ProductTable() {
+  const [expandedRowIndex, setExpandedRowIndex] = useState<number | null>(null);
+
   return (
     <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
       <div className="px-4 py-5 sm:px-7 sm:py-7">
-        <h3 className="text-[1.35rem] font-bold text-slate-900 sm:text-2xl">Product</h3>
+        <h3 className="text-[1.35rem] font-bold text-slate-900 sm:text-2xl">Products</h3>
       </div>
 
       <div className="overflow-x-auto">
@@ -43,22 +113,72 @@ function ProductTable() {
 
           <div className="divide-y divide-slate-100">
             {productRows.map((product, index) => (
-              <div
-                key={`${product.name}-${index}`}
-                className="grid grid-cols-[48px_1.7fr_0.7fr_0.85fr_0.95fr_0.45fr] items-center px-4 py-3.5 text-sm sm:grid-cols-[56px_1.7fr_0.7fr_0.9fr_1fr_0.45fr] sm:px-7 sm:py-4"
-              >
-                <div>
-                  <ProductThumb />
+              <div key={`${product.name}-${index}`}>
+                <div className="grid grid-cols-[48px_1.7fr_0.7fr_0.85fr_0.95fr_0.45fr] items-center px-4 py-3.5 text-sm sm:grid-cols-[56px_1.7fr_0.7fr_0.9fr_1fr_0.45fr] sm:px-7 sm:py-4">
+                  <div>
+                    <ProductThumb />
+                  </div>
+                  <div className="font-semibold text-slate-700">{product.name}</div>
+                  <div className="text-slate-500">${product.price.toFixed(2)}</div>
+                  <div className="text-slate-700">{product.inStock}</div>
+                  <div className="text-slate-700">${product.shippingCost}</div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedRowIndex((prev) => (prev === index ? null : index))}
+                      className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      {expandedRowIndex === index ? "Hide" : "Details"}
+                    </button>
+                  </div>
                 </div>
-                <div className="font-semibold text-slate-700">{product.name}</div>
-                <div className="text-slate-500">{product.price}</div>
-                <div className="text-slate-700">{product.inStock}</div>
-                <div className="text-slate-700">{product.shippingCost}</div>
-                <div className="flex justify-end">
-                  <button type="button" className="text-2xl leading-none text-slate-500 hover:text-slate-900">
-                    <Ellipsis className="h-5 w-5" />
-                  </button>
-                </div>
+
+                {expandedRowIndex === index && (
+                  <div className="mx-4 mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:mx-7 sm:p-4">
+                    <div className="grid gap-3 text-xs text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <p className="font-semibold text-slate-900">Tax</p>
+                        <p>{product.taxRate}%</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">Discount</p>
+                        <p>{product.discountRate}%</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">Max Price Increase Allowed</p>
+                        <p>{product.maxAllowedIncreasePct}%</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">Current Price Increase</p>
+                        <p>{product.currentIncreasePct}%</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 text-xs text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
+                      <div>
+                        <p className="font-semibold text-slate-900">Current Selling Price</p>
+                        <p>${product.price.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">Maximum Allowed Price Now</p>
+                        <p>${(product.price * (1 + (product.maxAllowedIncreasePct - product.currentIncreasePct) / 100)).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">Remaining Increase Headroom</p>
+                        <p className="font-semibold text-[#65bbc5]">
+                          {(product.maxAllowedIncreasePct - product.currentIncreasePct).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 border-t border-slate-200 pt-3 text-xs text-slate-600">
+                      <p>
+                        Allowed price range right now: ${product.minAllowedPrice.toFixed(2)} -
+                        {(product.price * (1 + (product.maxAllowedIncreasePct - product.currentIncreasePct) / 100)).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

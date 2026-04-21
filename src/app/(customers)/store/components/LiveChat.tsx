@@ -1,3 +1,5 @@
+import { Languages, Lock } from "lucide-react";
+
 type ChatMessageProps = {
   name: string;
   time: string;
@@ -52,6 +54,11 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
         </span>
       </div>
 
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#d6edf0] bg-[#f2fbfc] px-3 py-2 text-xs font-medium text-[#3f98a3]">
+        <Languages className="h-4 w-4" />
+        Store owner languages: English, Spanish, Arabic
+      </div>
+
       <div className="mt-4 space-y-4">
         <ChatMessage
           name="Sarah M."
@@ -65,7 +72,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
           time="10:43 AM"
           text="Hi Sarah! It has a very slight natural give, but it's a woven silk so no elastane. Beautiful drape though!"
           avatarLabel="CS"
-          avatarClass="bg-[#5fb9c3] text-white"
+          avatarClass="bg-[#68B8C1] text-white"
           bubbleClass="bg-blue-50 border border-blue-100 text-gray-700"
         />
 
@@ -82,12 +89,20 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
           placeholder="Say something..."
           className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
         />
-        <button className="text-[#5fb9c3] hover:text-[#3e9ca6]">➤</button>
+        <button className="text-[#68B8C1] hover:text-[#4f9ea7]">➤</button>
       </div>
 
-      <button className="mt-4 w-full rounded-xl bg-[#5fb9c3] py-3 text-sm font-semibold text-white hover:bg-[#4aaab4]">
-        Join WhatsApp Call
-      </button>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button className="rounded-xl border border-[#68B8C1] py-3 text-sm font-semibold text-[#68B8C1] transition hover:bg-[#eef9fa]">
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="h-4 w-4" />
+            Private Chat
+          </span>
+        </button>
+        <button className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white hover:bg-[#4f9ea7]">
+          Join WhatsApp Call
+        </button>
+      </div>
     </div>
   );
 }

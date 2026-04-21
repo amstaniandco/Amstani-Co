@@ -4,6 +4,7 @@ import {
   Mic,
   Plus,
   Search,
+  SendHorizontal,
   Store,
   Users,
 } from "lucide-react";
@@ -238,7 +239,7 @@ export default function OwnerChatsPage() {
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="flex h-full flex-col p-4">
               <header className="mb-4 flex items-center gap-3 border-b border-[#9fb0c6] pb-3">
                 <Image
                   src={ownerCard}
@@ -253,7 +254,7 @@ export default function OwnerChatsPage() {
                 </div>
               </header>
 
-              <div className="space-y-6 py-2">
+              <div className="flex-1 space-y-6 overflow-y-auto py-2 pr-1">
                 <div className="w-fit max-w-[85%] rounded-full bg-[#a8b4c6] px-5 py-3 text-sm text-white sm:max-w-[320px] sm:px-6">
                   Hello! How are you?
                 </div>
@@ -270,6 +271,21 @@ export default function OwnerChatsPage() {
                   Sure! I would Like to ask you a few questions about that.
                 </div>
               </div>
+
+              <form className="mt-4 flex items-center gap-2 rounded-2xl border border-[#9fb0c6] bg-white px-3 py-2">
+                <input
+                  type="text"
+                  placeholder="Type your message"
+                  className="w-full bg-transparent px-1 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                />
+                <button
+                  type="submit"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#65bbc5] text-white transition hover:bg-[#53aab5]"
+                  aria-label="Send message"
+                >
+                  <SendHorizontal className="h-4 w-4" />
+                </button>
+              </form>
             </div>
           </section>
         </main>
