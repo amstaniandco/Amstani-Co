@@ -1,8 +1,8 @@
 export default function ClaimStoreSection() {
   return (
-    <section className="bg-[#f3f4f6] py-6 sm:py-8">
+    <section className="bg-[#f3f4f6] py-6 sm:py-8 dark:bg-[#0b1220]">
       <div className="mx-auto w-full max-w-[1450px] px-4 sm:px-6">
-        <div className="relative min-h-[430px] overflow-hidden rounded-2xl border border-slate-300/30 bg-gradient-to-r from-[#201f19] via-[#25231c] to-[#2d3128] px-4 py-8 sm:min-h-[520px] sm:px-10 sm:py-12 lg:px-16 lg:py-14">
+        <div className="relative min-h-[430px] overflow-hidden rounded-2xl border border-slate-300/30 bg-gradient-to-r from-[#201f19] via-[#25231c] to-[#2d3128] px-4 py-8 shadow-sm sm:min-h-[520px] sm:px-10 sm:py-12 lg:px-16 lg:py-14 dark:border-slate-700/40">
           <div className="pointer-events-none absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_80%_20%,rgba(106,206,218,0.11),transparent_50%)]" />
           <div className="pointer-events-none absolute bottom-0 left-0 h-full w-1/2 bg-[radial-gradient(circle_at_20%_80%,rgba(106,206,218,0.11),transparent_50%)]" />
 
