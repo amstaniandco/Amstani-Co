@@ -25,7 +25,7 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
   return (
     <Link
       href="/store"
-      className="group relative block cursor-pointer overflow-hidden rounded-2xl border border-[#d7dde4] shadow-[0_1px_1px_rgba(0,0,0,0.03)] transition-shadow duration-300 hover:shadow-lg"
+      className="home-store-card group relative block cursor-pointer overflow-hidden rounded-2xl border border-[#d7dde4] shadow-[0_1px_1px_rgba(0,0,0,0.03)] transition-shadow duration-300 hover:shadow-lg dark:border-slate-700 dark:shadow-[0_8px_24px_rgba(2,6,23,0.45)]"
     >
       <div className="relative h-[280px] sm:h-[430px]">
         <Image

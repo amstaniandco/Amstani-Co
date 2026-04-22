@@ -32,22 +32,22 @@ export default function CheckoutForm({
   onFormChange,
 }: CheckoutFormProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-8">
+    <div className="ui-panel rounded-2xl bg-white p-8 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="flex justify-between items-start mb-1">
-        <h1 className="text-3xl font-bold text-black tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight text-black dark:text-slate-100">
           Secure Checkout
         </h1>
-        <span className="text-xs text-black/80 mt-2">Step 1 of 2</span>
+        <span className="mt-2 text-xs text-black/80 dark:text-slate-300">Step 1 of 2</span>
       </div>
-      <p className="text-sm text-black/80 mb-4">
+      <p className="mb-4 text-sm text-black/80 dark:text-slate-300">
         Your luxury selection is almost there.
       </p>
 
-      <div className="h-[3px] bg-gray-100 rounded-full mb-7 overflow-hidden">
+      <div className="ui-divider mb-7 h-[3px] overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
         <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-teal-300 to-indigo-400" />
       </div>
 
-      <p className="text-[11px] font-semibold tracking-widest uppercase text-black mb-4">
+      <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-black dark:text-slate-100">
         Shipping Details
       </p>
 
@@ -59,21 +59,21 @@ export default function CheckoutForm({
             onClick={() => onSelectAddress(addr.id)}
             className={`text-left border-2 rounded-xl p-4 transition-all duration-200 ${
               selectedAddress === addr.id
-                ? "border-teal-300 bg-teal-50 ring-2 ring-teal-100"
-                : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                ? "border-teal-300 bg-teal-50 ring-2 ring-teal-100 dark:border-teal-400 dark:bg-teal-900/20 dark:ring-teal-900/40"
+                : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:hover:border-slate-500"
             }`}
           >
-            <p className={`mb-1 ${selectedAddress === addr.id ? "text-base font-semibold" : "text-sm font-semibold"}`}>
+            <p className={`mb-1 dark:text-slate-100 ${selectedAddress === addr.id ? "text-base font-semibold" : "text-sm font-semibold"}`}>
               {addr.name}
             </p>
-            <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} text-black leading-relaxed`}>
+            <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} leading-relaxed text-black dark:text-slate-300`}>
               {addr.address}
             </p>
             <div className="flex justify-between items-center mt-1">
-              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} text-black`}>
+              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} text-black dark:text-slate-300`}>
                 {addr.city}
               </p>
-              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} font-semibold text-black`}>
+              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} font-semibold text-black dark:text-slate-100`}>
                 {addr.zip}
               </p>
             </div>
@@ -81,10 +81,10 @@ export default function CheckoutForm({
         ))}
       </div>
 
-      <div className="flex items-center gap-3 my-5 text-xs text-black/70">
-        <span className="flex-1 h-px bg-gray-200" />
+      <div className="my-5 flex items-center gap-3 text-xs text-black/70 dark:text-slate-400">
+        <span className="ui-divider h-px flex-1 bg-gray-200 dark:bg-slate-700" />
         or
-        <span className="flex-1 h-px bg-gray-200" />
+        <span className="ui-divider h-px flex-1 bg-gray-200 dark:bg-slate-700" />
       </div>
 
       <div className="space-y-4">
@@ -128,7 +128,7 @@ export default function CheckoutForm({
         </div>
       </div>
 
-      <div className="mt-5 rounded-xl overflow-hidden h-36 relative">
+      <div className="relative mt-5 h-36 overflow-hidden rounded-xl">
         <img
           src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=700&h=160&fit=crop"
           alt="Map"
@@ -158,7 +158,7 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="block text-sm font-semibold tracking-widest uppercase text-black mb-1.5">
+      <label className="mb-1.5 block text-sm font-semibold uppercase tracking-widest text-black dark:text-slate-100">
         {label}
       </label>
       <input
@@ -166,7 +166,7 @@ function FormField({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-800 bg-gray-50 placeholder-gray-400 outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-100 focus:bg-white transition-all"
+        className="ui-input w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-teal-300 focus:bg-white focus:ring-2 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-teal-400 dark:focus:bg-slate-800 dark:focus:ring-teal-900/50"
       />
     </div>
   );

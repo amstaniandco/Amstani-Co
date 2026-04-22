@@ -10,11 +10,11 @@ export default function OrderHistorySection() {
   ];
 
   return (
-    <section className="mt-6 rounded-2xl bg-white p-6 shadow-xl">
-      <h2 className="text-xl font-bold text-slate-900">Order History</h2>
+    <section className="ui-panel mt-6 rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800">
+      <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Order History</h2>
       <div className="mt-4 overflow-x-auto">
-        <table className="min-w-full text-left text-sm text-slate-700">
-          <thead className="border-b border-slate-200 text-slate-600">
+        <table className="min-w-full text-left text-sm text-slate-700 dark:text-slate-300">
+          <thead className="border-b border-slate-200 text-slate-600 dark:border-slate-600 dark:text-slate-400">
             <tr>
               <th className="py-3">Order ID</th>
               <th className="py-3">Date</th>
@@ -23,26 +23,26 @@ export default function OrderHistorySection() {
               <th className="py-3">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {orders.map((order) => (
               <tr key={order.id}>
-                <td className="py-3 font-semibold text-slate-800">{order.id}</td>
+                <td className="py-3 font-semibold text-slate-800 dark:text-slate-100">{order.id}</td>
                 <td className="py-3">{order.date}</td>
                 <td className="py-3">{order.total}</td>
                 <td className="py-3">
                   <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                    order.status === "Delivered" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                    order.status === "Delivered" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
                   }`}>
                     {order.status}
                   </span>
                 </td>
                 <td className="py-3">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-cyan-600">View Receipt</span>
+                    <span className="text-cyan-600 dark:text-cyan-300">View Receipt</span>
                     <Link
                       href="/claims"
                       aria-label="Open claims"
-                      className="inline-flex items-center justify-center text-slate-500 hover:text-slate-700"
+                      className="inline-flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

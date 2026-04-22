@@ -1,9 +1,23 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #f8fafc;
+  --surface-strong: #ffffff;
+  --border: #e2e8f0;
   --font-family: var(--font-montserrat), "Montserrat", sans-serif;
+}
+
+html.dark,
+body.dark,
+.dark {
+  --background: #0b1220;
+  --foreground: #e5e7eb;
+  --surface: #111827;
+  --surface-strong: #0f172a;
+  --border: #334155;
 }
 
 @theme inline {
@@ -22,8 +36,22 @@ html, body {
   font-weight: 400 !important;
   line-height: 1.6 !important;
   letter-spacing: 0.3px !important;
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 280ms ease, color 280ms ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark,
+body.dark {
+  color-scheme: dark;
+}
+
+* {
+  transition-property: background-color, color, border-color, fill, stroke;
+  transition-duration: 280ms;
+  transition-timing-function: ease;
 }
 
 /* Body text styles */
@@ -68,10 +96,90 @@ a, li, dd, dt, table, td, th {
   font-weight: 400 !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Home page dark-mode visual system. */
+.dark .home-shell {
+  background: #0b1120;
+}
+
+.dark .home-section {
+  color: #dbe3ef;
+}
+
+.dark .home-heading {
+  color: #f1f5f9 !important;
+}
+
+.dark .home-input {
+  background: #111827 !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+  box-shadow: none;
+}
+
+.dark .home-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.dark .home-store-card {
+  border-color: #334155 !important;
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.35) !important;
+}
+
+.dark .home-side-card {
+  background: #111827 !important;
+  border-color: #334155 !important;
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.28);
+}
+
+/* Shared dark-mode UI primitives for cross-page visual consistency. */
+.dark .ui-panel {
+  background: #111827 !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.32) !important;
+}
+
+.dark .ui-subpanel {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+.dark .ui-input {
+  background: #0b1220 !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .ui-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.dark .ui-divider {
+  background-color: #334155 !important;
+}
+
+.dark .ui-text-muted {
+  color: #94a3b8 !important;
+}
+
+/* AmericaMap state hover animation */
+.am-map-state {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 200ms ease;
+}
+
+.am-map-state:hover,
+.am-map-state--hovered {
+  transform: scale(1.4);
+}
+
+.am-map-label {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 200ms ease;
+}
+
+.am-map-label--hovered {
+  transform: scale(1.4);
 }
 

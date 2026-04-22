@@ -53,7 +53,7 @@ export default function CartPage() {
   const subtotal = products.reduce((sum, product) => sum + product.price, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <div className="mx-auto w-full max-w-6xl flex flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 lg:flex-row lg:items-start lg:gap-8 lg:py-8">
         <div className="w-full lg:basis-[65%]">
           <CartItems products={products} />

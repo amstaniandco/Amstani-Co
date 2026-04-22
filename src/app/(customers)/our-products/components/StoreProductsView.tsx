@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useMemo } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ShoppingCart, Star, Box } from "lucide-react";
 
 const products = [
@@ -92,13 +92,9 @@ const products = [
 
 export default function StoreProductsView() {
   const pathname = usePathname();
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const query = (searchParams.get("q") ?? "").trim().toLowerCase();
   const activeFilter = pathname === "/new-arrivals" ? "new-arrivals" : "sale";
-
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    setQuery((url.searchParams.get("q") ?? "").trim().toLowerCase());
-  }, [pathname]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
@@ -118,13 +114,13 @@ export default function StoreProductsView() {
     : "New Arrivals";
 
   return (
-    <div className="min-h-screen flex justify-center items-start p-4 pt-10">
-      <div className="w-full rounded-3xl bg-gray-50 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)]">
+    <div className="flex min-h-screen items-start justify-center p-4 pt-10 dark:bg-slate-950">
+      <div className="ui-panel w-full rounded-3xl bg-gray-50 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] dark:border dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_20px_50px_rgba(2,6,23,0.45)]">
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-8 h-8 rounded-xl bg-cyan-100 flex items-center justify-center">
-            <Box className="h-5 w-5 text-cyan-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-100 dark:bg-slate-800">
+            <Box className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
           </div>
-          <h2 className="font-semibold text-black text-xl sm:text-2xl">
+          <h2 className="text-xl font-semibold text-black dark:text-slate-100 sm:text-2xl">
             {pageTitle}
           </h2>
         </div>
@@ -134,7 +130,7 @@ export default function StoreProductsView() {
             filteredProducts.map((item, index) => (
               <div
                 key={index}
-                className="bg-white rounded-3xl p-4 shadow-sm"
+                className="ui-subpanel rounded-3xl bg-white p-4 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800"
               >
                 <Link href="/product" className="block w-full h-56 relative rounded-2xl overflow-hidden mb-4">
                   <Image
@@ -145,22 +141,22 @@ export default function StoreProductsView() {
                   />
                 </Link>
                 <div className="flex justify-between items-center mb-1">
-                  <Link href="/product" className="font-medium text-black hover:text-cyan-600">
+                  <Link href="/product" className="font-medium text-black hover:text-cyan-600 dark:text-slate-100 dark:hover:text-cyan-300">
                     {item.name}
                   </Link>
-                  <div className="flex items-center gap-1 text-cyan-600 text-sm">
+                  <div className="flex items-center gap-1 text-cyan-600 text-sm dark:text-cyan-300">
                     <Star size={14} />
                     {item.rating}
                   </div>
                 </div>
-                <p className="text-sm text-black mb-3">{item.store}</p>
+                <p className="mb-3 text-sm text-black dark:text-slate-300">{item.store}</p>
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className="font-semibold text-lg text-black">
+                    <span className="text-lg font-semibold text-black dark:text-slate-100">
                       ${item.price}
                     </span>
                     {item.oldPrice > 0 && (
-                      <span className="text-black line-through ml-2 text-sm">
+                      <span className="ml-2 text-sm text-black line-through dark:text-slate-400">
                         ${item.oldPrice}
                       </span>
                     )}
@@ -172,7 +168,7 @@ export default function StoreProductsView() {
               </div>
             ))
           ) : (
-            <div className="col-span-full rounded-3xl bg-white p-8 text-center text-black/70 shadow-sm">
+            <div className="ui-subpanel col-span-full rounded-3xl bg-white p-8 text-center text-black/70 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
               No products found for your search.
             </div>
           )}

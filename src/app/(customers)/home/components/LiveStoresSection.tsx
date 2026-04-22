@@ -4,12 +4,12 @@ import type { LiveStore } from "../mockData";
 
 export default function LiveStoresSection({ liveStores }: { liveStores: LiveStore[] }) {
   return (
-    <section className="mb-5">
+    <section className="home-section mb-5">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[24px] font-extrabold leading-none text-[#0f172a] sm:text-[28px]">
-          Live Stores <span className="text-gray-400 font-normal">(11)</span>
+        <h2 className="home-heading text-[24px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[28px]">
+          Live Stores <span className="font-normal text-gray-400 dark:text-slate-400">(11)</span>
         </h2>
-        <Link href="/store" className="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline sm:text-sm">
+        <Link href="/store" className="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline dark:text-slate-300 dark:hover:text-white sm:text-sm">
           View All
         </Link>
       </div>
@@ -18,7 +18,7 @@ export default function LiveStoresSection({ liveStores }: { liveStores: LiveStor
         {liveStores.map((store, index) => (
           <Link key={store.id} href="/store" className="flex min-w-[96px] flex-col items-center gap-2 cursor-pointer group sm:min-w-[104px]">
             <div
-              className={`relative h-[100px] w-[82px] overflow-hidden rounded-md ${store.live ? "border border-[#ff6f6f]" : "border border-gray-300"} sm:h-[112px] sm:w-[94px]`}
+              className={`relative h-[100px] w-[82px] overflow-hidden rounded-md ${store.live ? "border border-[#ff6f6f]" : "border border-gray-300 dark:border-slate-600"} sm:h-[112px] sm:w-[94px]`}
             >
               <div className="relative h-full w-full rounded-sm">
                 <Image
@@ -36,7 +36,7 @@ export default function LiveStoresSection({ liveStores }: { liveStores: LiveStor
                 </span>
               )}
             </div>
-            <span className="w-full truncate text-center text-[11px] font-semibold text-slate-800 sm:text-sm">
+            <span className="w-full truncate text-center text-[11px] font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">
               {store.name}
             </span>
           </Link>

@@ -36,8 +36,8 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen px-2 py-4">
-      <div className="max-w-screen-xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-7 items-start">
+    <div className="min-h-screen px-2 py-4 dark:bg-slate-950">
+      <div className="mx-auto grid max-w-screen-xl grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_380px]">
         <CheckoutForm
           savedAddresses={savedAddresses}
           selectedAddress={selectedAddress}

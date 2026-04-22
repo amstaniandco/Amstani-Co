@@ -14,13 +14,13 @@ export default function StorePage() {
   const [isMusicMuted, setIsMusicMuted] = useState(false);
 
   return (
-    <div className="w-full py-6">
+    <div className="w-full py-6 dark:bg-slate-950">
       <div className="mx-auto w-full px-2 sm:px-6 lg:px-8">
         <div className="mb-4 flex justify-end">
           <button
             type="button"
             onClick={() => setIsMusicMuted((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#68B8C1] bg-[#eaf8fa] px-4 py-2.5 text-sm font-semibold text-[#68B8C1] shadow-sm transition hover:bg-[#ddf3f6]"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#68B8C1] bg-[#eaf8fa] px-4 py-2.5 text-sm font-semibold text-[#68B8C1] shadow-sm transition hover:bg-[#ddf3f6] dark:border-[#4f9ea7] dark:bg-slate-800 dark:text-[#7dc8d1] dark:hover:bg-slate-700"
           >
             {isMusicMuted ? <VolumeX className="h-5 w-5" /> : <Music2 className="h-5 w-5" />}
             {isMusicMuted ? "Music Muted" : "Mute Store Music"}

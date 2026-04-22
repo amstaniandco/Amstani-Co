@@ -8,8 +8,8 @@ export default function StoreHero() {
   const [showLanguages, setShowLanguages] = useState(false);
 
   return (
-    <div className="flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm">
-      <div className="relative h-[260px] w-full overflow-hidden rounded-2xl bg-slate-200">
+    <div className="ui-panel flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+      <div className="relative h-[260px] w-full overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-700">
         <Image
           src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1400&q=80"
           alt="Store banner"
@@ -20,13 +20,13 @@ export default function StoreHero() {
 
       <div className="mt-4 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 sm:min-w-0 sm:flex-1">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-600">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
             S
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Name of the store</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Name of the store</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
               Description of the store can be written here
             </p>
 
@@ -36,7 +36,7 @@ export default function StoreHero() {
                   type="button"
                   onClick={() => setShowLanguages((prev) => !prev)}
                   aria-label="View languages spoken"
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
                 >
                   <Eye className="h-3.5 w-3.5" />
                 </button>
@@ -49,7 +49,7 @@ export default function StoreHero() {
               </div>
 
               {showLanguages ? (
-                <div className="absolute left-0 top-9 z-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-md">
+                  <div className="ui-subpanel absolute left-0 top-9 z-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-md dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
                   Languages: English, Spanish, Arabic
                 </div>
               ) : null}
@@ -59,12 +59,12 @@ export default function StoreHero() {
 
         <div className="flex flex-wrap items-center gap-4 sm:shrink-0 sm:pl-3">
           <div className="text-center">
-            <p className="text-2xl font-bold text-slate-900">8</p>
-            <p className="text-xs uppercase tracking-[.12em] text-slate-500">Products</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">8</p>
+            <p className="text-xs uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">Products</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-slate-900">12K</p>
-            <p className="text-xs uppercase tracking-[.12em] text-slate-500">Followers</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">12K</p>
+            <p className="text-xs uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">Followers</p>
           </div>
 
           <button className="rounded-full bg-[#68B8C1] px-7 py-2 text-sm font-semibold text-white transition hover:bg-[#4f9ea7] sm:ml-2">

@@ -124,13 +124,13 @@ const broadcastCards: BroadcastCard[] = [
 
 export default function BroadcastingRoomSection() {
   return (
-    <section className="bg-[#f2f3f6] py-8 sm:py-10">
+    <section className="bg-[#f2f3f6] py-8 dark:bg-slate-900 sm:py-10">
       <div className="w-full px-6">
-        <div className="rounded-xl border border-slate-200 bg-[#f5f6f8] px-4 py-5 sm:px-6 sm:py-6">
-          <h2 className="text-[28px] font-semibold leading-none text-slate-900 sm:text-[40px]">
+        <div className="rounded-xl border border-slate-200 bg-[#f5f6f8] px-4 py-5 dark:border-slate-700 dark:bg-slate-800 sm:px-6 sm:py-6">
+          <h2 className="text-[28px] font-semibold leading-none text-slate-900 dark:text-slate-100 sm:text-[40px]">
             Broadcasting Room
           </h2>
-          <p className="mt-1.5 text-xs font-normal text-slate-500 sm:text-[18px]">
+          <p className="mt-1.5 text-xs font-normal text-slate-500 dark:text-slate-400 sm:text-[18px]">
             Live updates from textile artisans across the country
           </p>
 
@@ -152,13 +152,13 @@ export default function BroadcastingRoomSection() {
                     className="relative h-[52px] w-full overflow-hidden rounded-lg border border-rose-300 bg-cover bg-center grayscale-[35%] brightness-110 sm:h-[74px]"
                     style={{ backgroundImage: `url(${card.image})` }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-t from-white/35 to-white/15" />
-                    <div className="absolute right-1.5 top-1.5 h-4 w-4 rounded-full bg-white/40" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/35 to-white/15 dark:from-slate-900/40 dark:to-slate-900/20" />
+                    <div className="absolute right-1.5 top-1.5 h-4 w-4 rounded-full bg-white/40 dark:bg-slate-300/25" />
                     <span className="absolute left-1.5 top-1.5 rounded-full bg-white/85 px-1 py-[1px] text-[8px] font-semibold leading-none text-slate-700">
                       {card.tag}
                     </span>
                   </div>
-                  <p className="mt-1 truncate text-center text-[10px] text-slate-500 sm:text-xs">{card.brand}</p>
+                  <p className="mt-1 truncate text-center text-[10px] text-slate-500 dark:text-slate-300 sm:text-xs">{card.brand}</p>
                 </div>
                 );
               })}

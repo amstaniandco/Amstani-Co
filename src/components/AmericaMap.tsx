@@ -104,9 +104,11 @@ function getStateLabelPosition(feature: StateFeature): Position | null {
 function StateLabel({
   coordinates,
   name,
+  isHovered,
 }: {
   coordinates: Position;
   name: string;
+  isHovered: boolean;
 }) {
   const { projection } = useMapContext();
   const projected = projection(coordinates);
@@ -119,11 +121,12 @@ function StateLabel({
 
   return (
     <text
+      className={`am-map-label ${isHovered ? "am-map-label--hovered" : ""}`}
       x={x}
       y={y}
       textAnchor="middle"
       dominantBaseline="middle"
-      fontSize={8}
+      fontSize={10}
       fontWeight={700}
       fill="#0f172a"
       pointerEvents="none"
@@ -304,6 +307,7 @@ export default function AmericaMap() {
                   {({ geographies }: { geographies: StateFeature[] }) =>
                     geographies.map((geo) => {
                       const stateName = geo.properties?.NAME ?? "Unknown state";
+                      const isHovered = hoveredState === stateName;
                       const stateLabel = STATE_ABBREVIATIONS[stateName] ?? stateName;
                       const labelPosition = getStateLabelPosition(geo);
 
@@ -311,6 +315,7 @@ export default function AmericaMap() {
                         <Fragment key={geo.rsmKey}>
                           <Geography
                             geography={geo}
+                            className={`am-map-state ${isHovered ? "am-map-state--hovered" : ""}`}
                             onMouseEnter={() => setHoveredState(stateName)}
                             onMouseLeave={() => setHoveredState(null)}
                             onClick={() => setSelectedState(stateName)}
@@ -338,7 +343,7 @@ export default function AmericaMap() {
                           />
 
                           {labelPosition && (
-                            <StateLabel coordinates={labelPosition} name={stateLabel} />
+                            <StateLabel coordinates={labelPosition} name={stateLabel} isHovered={isHovered} />
                           )}
                         </Fragment>
                       );
