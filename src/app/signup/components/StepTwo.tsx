@@ -7,49 +7,49 @@ type StepProps = {
 
 export default function StepTwo({ onNext, onBack }: StepProps) {
   return (
-    <div className="text-black">
+    <div className="text-black dark:text-slate-100">
       <button
         type="button"
         onClick={onBack}
-        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-black transition-colors duration-150"
+        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-black transition-colors duration-150 dark:text-slate-200"
       >
         <ArrowLeft size={16} />
         <span>Back</span>
       </button>
 
-      <h2 className="text-xl font-bold text-center mb-6 text-black">Create Account</h2>
+      <h2 className="mb-6 text-center text-xl font-bold text-black dark:text-slate-100">Create Account</h2>
 
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-black">Name</label>
+          <label className="text-sm text-black dark:text-slate-200">Name</label>
           <input
-            className="w-full mt-1 p-3 rounded-md border border-black bg-white text-black placeholder:text-black focus:outline-none"
+            className="ui-input mt-1 w-full rounded-md border border-black bg-white p-3 text-black placeholder:text-black focus:outline-none"
             placeholder="Name"
           />
         </div>
 
         <div>
-          <label className="text-sm text-black">Email</label>
+          <label className="text-sm text-black dark:text-slate-200">Email</label>
           <input
-            className="w-full mt-1 p-3 rounded-md border border-black bg-white text-black placeholder:text-black focus:outline-none"
+            className="ui-input mt-1 w-full rounded-md border border-black bg-white p-3 text-black placeholder:text-black focus:outline-none"
             placeholder="Email"
           />
         </div>
 
         <div>
-          <label className="text-sm text-black">Password</label>
+          <label className="text-sm text-black dark:text-slate-200">Password</label>
           <input
             type="password"
-            className="w-full mt-1 p-3 rounded-md border border-black bg-white text-black placeholder:text-black focus:outline-none"
+            className="ui-input mt-1 w-full rounded-md border border-black bg-white p-3 text-black placeholder:text-black focus:outline-none"
             placeholder="Password"
           />
         </div>
 
         <div>
-          <label className="text-sm text-black">Confirm Password</label>
+          <label className="text-sm text-black dark:text-slate-200">Confirm Password</label>
           <input
             type="password"
-            className="w-full mt-1 p-3 rounded-md border border-black bg-white text-black placeholder:text-black focus:outline-none"
+            className="ui-input mt-1 w-full rounded-md border border-black bg-white p-3 text-black placeholder:text-black focus:outline-none"
             placeholder="Confirm Password"
           />
         </div>
@@ -62,9 +62,9 @@ export default function StepTwo({ onNext, onBack }: StepProps) {
         </button>
       </div>
 
-      <p className="text-sm text-center mt-5 text-black">
+      <p className="mt-5 text-center text-sm text-black dark:text-slate-300">
         Already have an account?{" "}
-        <span className="text-black font-medium cursor-pointer">Log in</span>
+        <span className="cursor-pointer font-medium text-black dark:text-slate-100">Log in</span>
       </p>
     </div>
   );

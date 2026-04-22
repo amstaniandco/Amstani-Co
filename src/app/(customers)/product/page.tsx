@@ -67,14 +67,14 @@ function StarRating({ rating, interactive = false, onRate }: { rating: number; i
 function RatingBar({ label, percent }: { label: string; percent: number }) {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="w-3 text-gray-500 font-medium">{label}</span>
-      <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+      <span className="w-3 text-gray-500 font-medium dark:text-slate-400">{label}</span>
+      <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden dark:bg-slate-700">
         <div
           className="h-full bg-amber-400 rounded-full"
           style={{ width: `${percent}%` }}
         />
       </div>
-      <span className="w-8 text-right text-gray-400 text-xs">{percent}%</span>
+      <span className="w-8 text-right text-gray-400 text-xs dark:text-slate-500">{percent}%</span>
     </div>
   );
 }
@@ -154,8 +154,8 @@ export default function ProductPage() {
   const ThumbBox = ({ index }: { index: number }) => (
     <button
       onClick={() => setActiveImage(index)}
-      className={`flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 transition-all flex items-center justify-center overflow-hidden ${
-        activeImage === index ? "border-[#68B8C1]" : "border-gray-100"
+      className={`flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 transition-all flex items-center justify-center overflow-hidden dark:from-slate-800 dark:to-slate-900 ${
+        activeImage === index ? "border-[#68B8C1]" : "border-gray-100 dark:border-slate-700"
       }`}
     >
       <ShoeIllustration className="w-full p-1" />
@@ -163,12 +163,12 @@ export default function ProductPage() {
   );
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-2 py-2 md:py-10">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b1220]">
+      <div className="mx-auto max-w-[1480px] px-4 py-4 md:px-6 md:py-10 lg:px-10">
         {/* ═══ MOBILE LAYOUT ═══ */}
         <div className="md:hidden space-y-4">
           {/* Main image */}
-          <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm">
+          <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm dark:bg-slate-900">
             <span className="absolute top-3 left-3 z-10 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
               ● On Sale
             </span>
@@ -189,7 +189,7 @@ export default function ProductPage() {
           <style>{`.flex.gap-2.overflow-x-auto button { width: 56px; height: 56px; }`}</style>
 
           {/* Info card */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="bg-white rounded-2xl p-4 shadow-sm dark:bg-slate-900">
             <h1 className="mb-1 text-lg font-bold text-[#68B8C1]">
               {product.name}
             </h1>
@@ -197,14 +197,14 @@ export default function ProductPage() {
               <span className="text-gray-400 line-through text-sm">
                 ${product.originalPrice}
               </span>
-              <span className="text-2xl font-extrabold text-gray-900">
+              <span className="text-2xl font-extrabold text-gray-900 dark:text-slate-100">
                 ${product.price}
               </span>
             </div>
-            <p className="text-sm font-semibold text-gray-800 mb-1">
+            <p className="text-sm font-semibold text-gray-800 mb-1 dark:text-slate-200">
               Material: {product.material}
             </p>
-            <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 mb-4">
+            <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 mb-4 dark:text-slate-400">
               {product.description}
             </p>
 
@@ -273,7 +273,7 @@ export default function ProductPage() {
                   d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                 />
               </svg>
-              <span className="text-xs text-gray-500 font-medium">
+              <span className="text-xs text-gray-500 font-medium dark:text-slate-400">
                 Secure Checkout
               </span>
             </div>
@@ -284,13 +284,13 @@ export default function ProductPage() {
           </div>
 
           {/* Mobile Ratings */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+          <div className="bg-white rounded-2xl p-4 shadow-sm dark:bg-slate-900">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 dark:text-slate-400">
               ⊞ Store Rating
             </p>
             <div className="flex gap-4 items-start mb-4">
               <div>
-                <div className="text-4xl font-extrabold text-gray-900">
+                <div className="text-4xl font-extrabold text-gray-900 dark:text-slate-100">
                   {product.rating.toFixed(1)}
                 </div>
                 <StarRating rating={Math.round(product.rating)} />
@@ -318,19 +318,19 @@ export default function ProductPage() {
           {reviews.map((r) => (
             <div
               key={r.id}
-              className="bg-white rounded-2xl p-4 shadow-sm flex gap-3 items-center"
+              className="bg-white rounded-2xl p-4 shadow-sm flex gap-3 items-center dark:bg-slate-900"
             >
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-gray-500 font-bold text-sm">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-gray-500 font-bold text-sm dark:bg-slate-700 dark:text-slate-300">
                 {r.name[0]}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-800 truncate">
+                  <span className="text-sm font-semibold text-gray-800 truncate dark:text-slate-200">
                     {r.name.split(" ")[0] + "…"}
                   </span>
                   <StarRating rating={r.rating} />
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">
+                <p className="text-xs text-gray-500 mt-0.5 truncate dark:text-slate-400">
                   {r.text}
                 </p>
               </div>
@@ -341,19 +341,19 @@ export default function ProductPage() {
         {/* ═══ DESKTOP LAYOUT ═══ */}
         <div className="hidden md:block space-y-6">
           {/* Top: Left gallery col + Right details col — no shared card */}
-          <div className="grid grid-cols-2 gap-8 items-start">
+          <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] gap-10 items-start">
             {/* LEFT: Main image card + thumbnails below */}
             <div>
               {/* Main image — its own white card */}
-              <div className="relative bg-white rounded-3xl shadow-sm overflow-hidden">
+              <div className="relative bg-white rounded-3xl shadow-sm overflow-hidden dark:bg-slate-900">
                 <span className="absolute top-4 left-4 z-10 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                   ● On Sale
                 </span>
-                <span className="absolute top-4 right-4 z-10 bg-white border border-gray-200 text-gray-700 text-xs font-bold px-3 py-1 rounded-full">
+                <span className="absolute top-4 right-4 z-10 bg-white border border-gray-200 text-gray-700 text-xs font-bold px-3 py-1 rounded-full dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200">
                   {product.discount}% Off
                 </span>
-                <div className="aspect-square flex items-center justify-center p-10 bg-white">
-                  <ShoeIllustration className="w-full drop-shadow-2xl" />
+                <div className="aspect-[6/5] flex items-center justify-center p-12 bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+                  <ShoeIllustration className="w-[92%] max-w-none drop-shadow-[0_28px_55px_rgba(2,6,23,0.18)] dark:drop-shadow-[0_30px_60px_rgba(0,0,0,0.55)]" />
                 </div>
               </div>
 
@@ -363,7 +363,7 @@ export default function ProductPage() {
                   <button
                     key={i}
                     onClick={() => setActiveImage(i)}
-                    className={`flex-1 aspect-square bg-white rounded-2xl border-2 transition-all flex items-center justify-center overflow-hidden shadow-sm ${
+                    className={`flex-1 aspect-square bg-white rounded-2xl border-2 transition-all flex items-center justify-center overflow-hidden shadow-sm dark:bg-slate-900 ${
                       activeImage === i
                         ? "border-[#68B8C1]"
                         : "border-transparent hover:border-gray-200"
@@ -381,17 +381,17 @@ export default function ProductPage() {
                 {product.name}
               </h1>
               <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-3xl font-extrabold text-gray-900">
+                <span className="text-3xl font-extrabold text-gray-900 dark:text-slate-100">
                   ${product.price}
                 </span>
                 <span className="text-lg text-gray-400 line-through">
                   ${product.originalPrice}
                 </span>
               </div>
-              <p className="text-base font-bold text-gray-800 mb-3">
+              <p className="text-base font-bold text-gray-800 mb-3 dark:text-slate-200">
                 Material: {product.material}
               </p>
-              <p className="text-sm text-gray-500 leading-relaxed mb-6">
+              <p className="text-[13px] text-gray-500 leading-relaxed mb-5 dark:text-slate-400">
                 {product.description}
               </p>
 
@@ -409,7 +409,7 @@ export default function ProductPage() {
                         className={`w-11 h-11 rounded-full text-sm font-semibold border-2 transition-all ${
                           selectedSize === size
                             ? "border-gray-800 bg-gray-800 text-white"
-                            : "border-gray-300 text-gray-700 bg-white hover:border-gray-500"
+                            : "border-gray-300 text-gray-700 bg-white hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-400"
                         }`}
                       >
                         {size}
@@ -450,7 +450,7 @@ export default function ProductPage() {
                 >
                   {addedToCart ? "✓ Added to Cart!" : "Add to cart"}
                 </button>
-                <button className="w-full py-3.5 rounded-2xl font-bold text-gray-800 border-2 border-gray-300 bg-white hover:border-gray-500 transition-all text-base">
+                <button className="w-full py-3.5 rounded-2xl font-bold text-gray-800 border-2 border-gray-300 bg-white hover:border-gray-500 transition-all text-base dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-400">
                   Custom Order
                 </button>
                 <div className="flex flex-col items-center gap-1 pt-1">
@@ -468,7 +468,7 @@ export default function ProductPage() {
                         d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                       />
                     </svg>
-                    <span className="text-sm text-gray-500 font-medium">
+                    <span className="text-sm text-gray-500 font-medium dark:text-slate-400">
                       Secure Checkout
                     </span>
                   </div>
@@ -482,13 +482,13 @@ export default function ProductPage() {
           </div>
 
           {/* Ratings + Reviews — white card */}
-          <div className="bg-white rounded-3xl shadow-sm p-8">
-            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6">
+          <div className="bg-white rounded-3xl shadow-sm p-8 dark:bg-slate-900">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-6 dark:text-slate-400">
               ⊞ Store Rating
             </p>
             <div className="flex gap-12 items-start mb-8">
               <div>
-                <div className="text-5xl font-extrabold text-gray-900 mb-1">
+                <div className="text-5xl font-extrabold text-gray-900 mb-1 dark:text-slate-100">
                   {product.rating.toFixed(1)}
                 </div>
                 <StarRating rating={Math.round(product.rating)} />
@@ -517,14 +517,14 @@ export default function ProductPage() {
             {reviews.map((r) => (
               <div
                 key={r.id}
-                className="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4"
+                className="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4 dark:bg-slate-900"
               >
-                <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-gray-500 font-bold text-lg">
+                <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-gray-500 font-bold text-lg dark:bg-slate-700 dark:text-slate-300">
                   {r.name[0]}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-800">{r.name}</p>
-                  <p className="text-sm text-gray-500">{r.text}</p>
+                  <p className="font-semibold text-gray-800 dark:text-slate-200">{r.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">{r.text}</p>
                 </div>
                 <StarRating rating={r.rating} />
               </div>

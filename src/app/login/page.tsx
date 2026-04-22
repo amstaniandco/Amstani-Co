@@ -176,7 +176,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex bg-[#f7f7f7]">
+    <main className="min-h-screen flex bg-[#f7f7f7] dark:bg-[#0b1220]">
       <div className="hidden md:block w-1/2 relative">
         <Image
           src="/assets/AmstaniCover.png"
@@ -190,9 +190,9 @@ export default function LoginPage() {
 
       <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-[380px] relative">
-          <div className="rounded-2xl bg-transparent p-2">
+          <div className="ui-panel rounded-2xl border border-[#d9e3e8] bg-white/80 p-6">
             <div className="mb-8 text-center">
-              <h1 className="text-[36px] leading-tight font-extrabold tracking-tight text-black">
+              <h1 className="text-[36px] leading-tight font-extrabold tracking-tight text-black dark:text-slate-100">
                 Welcome Back
               </h1>
             </div>
@@ -200,7 +200,7 @@ export default function LoginPage() {
             <div className="space-y-3">
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-black bg-white text-black text-[14px] font-medium hover:bg-gray-50 transition-colors duration-150"
+                className="w-full flex items-center justify-center gap-3 rounded-xl border border-black bg-white px-5 py-3 text-[14px] font-medium text-black transition-colors duration-150 hover:bg-gray-50 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
               >
                 <GoogleIcon />
                 <span>Continue with Google</span>
@@ -208,7 +208,7 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-black bg-white text-black text-[14px] font-medium hover:bg-gray-50 transition-colors duration-150"
+                className="w-full flex items-center justify-center gap-3 rounded-xl border border-black bg-white px-5 py-3 text-[14px] font-medium text-black transition-colors duration-150 hover:bg-gray-50 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
               >
                 <AppleIcon />
                 <span>Continue with Apple</span>
@@ -216,41 +216,41 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-black bg-white text-black text-[14px] font-medium hover:bg-gray-50 transition-colors duration-150"
+                className="w-full flex items-center justify-center gap-3 rounded-xl border border-black bg-white px-5 py-3 text-[14px] font-medium text-black transition-colors duration-150 hover:bg-gray-50 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
               >
                 <DuckDuckGoIcon />
                 <span>Continue with DuckDuckGo</span>
               </button>
             </div>
 
-            <div className="my-5 flex items-center gap-3 text-[#7a7a7a]">
-              <div className="h-px flex-1 bg-[#9f9f9f]" />
+            <div className="my-5 flex items-center gap-3 text-[#7a7a7a] dark:text-slate-400">
+              <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
               <span className="text-xs">or</span>
-              <div className="h-px flex-1 bg-[#9f9f9f]" />
+              <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <label className="block">
-                <span className="text-sm text-black">Email</span>
+                <span className="text-sm text-black dark:text-slate-200">Email</span>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="Email"
-                  className="mt-1 w-full rounded-md border border-black bg-white px-3 py-2.5 text-sm text-black placeholder:text-black outline-none"
+                  className="ui-input mt-1 w-full rounded-md border border-black bg-white px-3 py-2.5 text-sm text-black placeholder:text-black outline-none"
                 />
               </label>
 
               <label className="block">
-                <span className="text-sm text-black">Password</span>
+                <span className="text-sm text-black dark:text-slate-200">Password</span>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Password"
-                  className="mt-1 w-full rounded-md border border-black bg-white px-3 py-2.5 text-sm text-black placeholder:text-black outline-none"
+                  className="ui-input mt-1 w-full rounded-md border border-black bg-white px-3 py-2.5 text-sm text-black placeholder:text-black outline-none"
                 />
               </label>
 
@@ -268,14 +268,14 @@ export default function LoginPage() {
               </p>
             ) : null}
 
-            <div className="mt-4 rounded-xl border border-[#d9e3e8] bg-white/70 p-3 text-xs text-black/70">
-              <p className="font-semibold text-black">Demo logins</p>
+            <div className="ui-subpanel mt-4 rounded-xl border border-[#d9e3e8] bg-white/70 p-3 text-xs text-black/70 dark:text-slate-300">
+              <p className="font-semibold text-black dark:text-slate-100">Demo logins</p>
               <p className="mt-1">Admin: {DEMO_CREDENTIALS.admin.email} / {DEMO_CREDENTIALS.admin.password}</p>
               <p>Customer: {DEMO_CREDENTIALS.customer.email} / {DEMO_CREDENTIALS.customer.password}</p>
               <p>Store owner: {DEMO_CREDENTIALS.owner.email} / {DEMO_CREDENTIALS.owner.password}</p>
             </div>
 
-            <p className="mt-5 text-center text-sm text-black/80">
+            <p className="mt-5 text-center text-sm text-black/80 dark:text-slate-300">
               Dont have an account?{" "}
               <Link href="/signup" className="font-medium text-[#6FAFB3] hover:text-[#5b9ca1]">
                 Sign up

@@ -8,7 +8,7 @@ type SignupLayoutProps = {
 
 export default function SignupLayout({ children, step }: SignupLayoutProps) {
   return (
-    <div className="min-h-screen flex bg-[#f7f7f7]">
+    <div className="min-h-screen flex bg-[#f7f7f7] dark:bg-[#0b1220]">
       {/* LEFT IMAGE */}
       <div className="hidden md:block w-1/2 relative">
         <Image
@@ -27,9 +27,9 @@ export default function SignupLayout({ children, step }: SignupLayoutProps) {
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="w-full md:w-1/2 flex items-center justify-center">
-        <div className="w-[380px]">
-          <p className="text-center text-sm text-gray-500 mb-2">
+      <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-8">
+        <div className="ui-panel w-full max-w-[380px] rounded-2xl border border-[#d9e3e8] bg-white/80 p-6">
+          <p className="mb-2 text-center text-sm text-gray-500 dark:text-slate-400">
             Step {step}/3
           </p>
 
@@ -39,7 +39,7 @@ export default function SignupLayout({ children, step }: SignupLayoutProps) {
               <div
                 key={i}
                 className={`h-1.5 w-8 rounded-full ${
-                  i <= step ? "bg-[#6FAFB3]" : "bg-gray-300"
+                  i <= step ? "bg-[#6FAFB3]" : "bg-gray-300 dark:bg-slate-700"
                 }`}
               />
             ))}

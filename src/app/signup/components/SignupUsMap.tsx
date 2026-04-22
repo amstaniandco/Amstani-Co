@@ -233,7 +233,7 @@ export default function SignupUsMap({
           </Geographies>
         </ComposableMap>
       ) : (
-        <div className="h-[210px] w-full animate-pulse rounded-lg bg-[#d9edf2] sm:h-[250px]" />
+        <div className="h-[210px] w-full animate-pulse rounded-lg bg-[#d9edf2] dark:bg-slate-800 sm:h-[250px]" />
       )}
     </div>
   );

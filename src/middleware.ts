@@ -57,18 +57,6 @@ function getRequiredRole(pathname: string): DemoRole | null {
   return null;
 }
 
-function routeForRole(role: DemoRole): string {
-  if (role === "admin") {
-    return "/admin/dashboard";
-  }
-
-  if (role === "owner") {
-    return "/store/chats";
-  }
-
-  return "/home";
-}
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -86,10 +74,6 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("amstani_demo_token")?.value;
 
   if (PUBLIC_PATHS.has(pathname)) {
-    if (pathname === "/login" && role && token) {
-      return NextResponse.redirect(new URL(routeForRole(role), request.url));
-    }
-
     return NextResponse.next();
   }
 

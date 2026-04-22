@@ -223,6 +223,9 @@ export default function Header() {
     setIsLoggedIn(hasActiveDemoSession());
   }, []);
 
+  const forcePublicNavbar = pathname === "/" || pathname === "/landing";
+  const showAuthenticatedNavbar = isLoggedIn && !forcePublicNavbar;
+
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (searchTimeoutRef.current) {
@@ -299,14 +302,14 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-[#151C1DCC] border-b border-white/10 sticky top-0 z-50 overflow-x-hidden">
+    <header className="sticky top-0 z-50 w-full overflow-x-hidden border-b border-white/10 bg-[#151C1DCC] dark:bg-[#0b1220]">
       <div className="px-3 sm:px-4 md:px-8 py-4 md:py-5">
         <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
           <Logo />
 
           {/* Desktop Navigation - Hidden on mobile */}
-          {isLoggedIn && (
+          {showAuthenticatedNavbar && (
             <>
               {/* Desktop Nav Links */}
               <nav className="hidden md:flex items-center gap-5 ml-4">
@@ -350,7 +353,7 @@ export default function Header() {
 
           {/* Desktop Auth Section - Hidden on mobile */}
           <div className="hidden md:flex items-center gap-4">
-            {isLoggedIn ? (
+            {showAuthenticatedNavbar ? (
               <>
                 {/* Location Selector */}
                 <div className="flex items-center border border-white/35 rounded-full overflow-hidden text-sm shrink-0">
@@ -440,7 +443,7 @@ export default function Header() {
         {/* Mobile Menu - Visible when mobileMenuOpen is true */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-3 pt-3 border-t border-white/10 max-w-full overflow-x-hidden">
-            {isLoggedIn ? (
+            {showAuthenticatedNavbar ? (
               <div className="space-y-3">
                 {/* Mobile Search Bar */}
                 <form onSubmit={handleSearch}>

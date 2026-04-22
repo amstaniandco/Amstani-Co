@@ -13,15 +13,6 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const THEME_STORAGE_KEY = "amstanico-theme";
 
-function getInitialTheme(): Theme {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-
-  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-  return storedTheme === "dark" || storedTheme === "light" ? storedTheme : "light";
-}
-
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   const body = document.body;
@@ -38,7 +29,16 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  // Important: keep the very first render deterministic (matches server HTML)
+  // to avoid hydration mismatches when a stored theme exists in localStorage.
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === "dark" || storedTheme === "light") {
+      setTheme(storedTheme);
+    }
+  }, []);
 
   useEffect(() => {
     applyTheme(theme);
@@ -46,12 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((currentTheme) => {
-      const nextTheme: Theme = currentTheme === "dark" ? "light" : "dark";
-      window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-      applyTheme(nextTheme);
-      return nextTheme;
-    });
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
   }, []);
 
   const contextValue = useMemo(

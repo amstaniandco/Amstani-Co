@@ -14,7 +14,7 @@ export default function NotificationsPage() {
       <div className="mb-4">
         <Link
           href="/home"
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
         >
           <svg
             className="h-4 w-4"
@@ -32,28 +32,28 @@ export default function NotificationsPage() {
           Back
         </Link>
       </div>
-      <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur">
+      <div className="ui-panel rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-[#111827]">
         <div className="mb-5">
-          <h1 className="text-3xl font-bold text-slate-900">Notifications</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Notifications</h1>
         </div>
 
         <div className="space-y-3">
           {notifications.map((item) => (
             <div
               key={item.id}
-              className="flex items-start justify-between rounded-2xl border border-slate-200 p-4"
+              className="ui-subpanel flex items-start justify-between rounded-2xl border border-slate-200 p-4 dark:border-slate-700 dark:bg-[#0f172a]"
             >
               <div className="flex items-start gap-3">
-                <div className="h-11 w-11 rounded-full bg-slate-200" />
+                <div className="h-11 w-11 rounded-full bg-slate-200 dark:bg-slate-700" />
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">
+                  <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                     {item.title}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-600">{item.message}</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{item.message}</p>
                 </div>
               </div>
 
-              <span className="text-sm font-medium text-slate-400">
+              <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
                 {item.time}
               </span>
             </div>

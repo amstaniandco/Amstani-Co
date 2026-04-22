@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import StoreProductsView from "./components/StoreProductsView";
 
 export default function OurProductsPage() {
-  return <StoreProductsView />;
+  return (
+    <Suspense>
+      <StoreProductsView />
+    </Suspense>
+  );
 }

@@ -7,7 +7,7 @@
   --surface: #f8fafc;
   --surface-strong: #ffffff;
   --border: #e2e8f0;
-  --font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  --font-family: var(--font-montserrat), "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html.dark,

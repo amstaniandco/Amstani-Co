@@ -58,20 +58,20 @@ export default function StepThree({ onBack }: StepProps) {
       <button
         type="button"
         onClick={onBack}
-        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-150"
+        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors duration-150 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
       >
         <ArrowLeft size={16} />
         <span>Back</span>
       </button>
 
-      <h2 className="text-xl font-semibold text-center mb-6">Create Account</h2>
+      <h2 className="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-slate-100">Create Account</h2>
 
       <div className="mb-4">
-        <label className="text-sm text-gray-600">State</label>
+        <label className="text-sm text-gray-600 dark:text-slate-300">State</label>
         <select
           value={selectedState}
           onChange={(event) => setSelectedState(event.target.value)}
-          className="w-full mt-1 p-3 rounded-md bg-gray-100"
+          className="ui-input mt-1 w-full rounded-md border border-transparent bg-gray-100 p-3"
         >
           <option value="">Select Your State</option>
           {states.map((state) => (
@@ -93,7 +93,7 @@ export default function StepThree({ onBack }: StepProps) {
         Create Account
       </button>
 
-      <p className="text-sm text-center mt-5 text-gray-500">
+      <p className="mt-5 text-center text-sm text-gray-500 dark:text-slate-400">
         Already have an account?{" "}
         <span className="text-[#6FAFB3] cursor-pointer">Log in</span>
       </p>
