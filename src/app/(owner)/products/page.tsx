@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, Plus, Store, Square } from "lucide-react";
+import { Plus, Store } from "lucide-react";
 
 type ProductRow = {
   name: string;
@@ -95,8 +96,18 @@ function ProductTable() {
 
   return (
     <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
-      <div className="px-4 py-5 sm:px-7 sm:py-7">
-        <h3 className="text-[1.35rem] font-bold text-slate-900 sm:text-2xl">Products</h3>
+      <div className="flex flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-7">
+        <h3 className="text-[1.35rem] font-bold text-slate-900 sm:text-2xl">
+          Products
+        </h3>
+
+        <Link
+          href="/products/add"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5]"
+        >
+          <Plus className="h-4 w-4" />
+          Add Products
+        </Link>
       </div>
 
       <div className="overflow-x-auto">
@@ -117,14 +128,22 @@ function ProductTable() {
                   <div>
                     <ProductThumb />
                   </div>
-                  <div className="font-semibold text-slate-700">{product.name}</div>
-                  <div className="text-slate-500">${product.price.toFixed(2)}</div>
+                  <div className="font-semibold text-slate-700">
+                    {product.name}
+                  </div>
+                  <div className="text-slate-500">
+                    ${product.price.toFixed(2)}
+                  </div>
                   <div className="text-slate-700">{product.inStock}</div>
                   <div className="text-slate-700">${product.shippingCost}</div>
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={() => setExpandedRowIndex((prev) => (prev === index ? null : index))}
+                      onClick={() =>
+                        setExpandedRowIndex((prev) =>
+                          prev === index ? null : index,
+                        )
+                      }
                       className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                     >
                       {expandedRowIndex === index ? "Hide" : "Details"}
@@ -144,36 +163,66 @@ function ProductTable() {
                         <p>{product.discountRate}%</p>
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">Max Price Increase Allowed</p>
+                        <p className="font-semibold text-slate-900">
+                          Max Price Increase Allowed
+                        </p>
                         <p>{product.maxAllowedIncreasePct}%</p>
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">Current Price Increase</p>
+                        <p className="font-semibold text-slate-900">
+                          Current Price Increase
+                        </p>
                         <p>{product.currentIncreasePct}%</p>
                       </div>
                     </div>
 
                     <div className="mt-3 grid gap-3 text-xs text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
                       <div>
-                        <p className="font-semibold text-slate-900">Current Selling Price</p>
+                        <p className="font-semibold text-slate-900">
+                          Current Selling Price
+                        </p>
                         <p>${product.price.toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">Maximum Allowed Price Now</p>
-                        <p>${(product.price * (1 + (product.maxAllowedIncreasePct - product.currentIncreasePct) / 100)).toFixed(2)}</p>
+                        <p className="font-semibold text-slate-900">
+                          Maximum Allowed Price Now
+                        </p>
+                        <p>
+                          $
+                          {(
+                            product.price *
+                            (1 +
+                              (product.maxAllowedIncreasePct -
+                                product.currentIncreasePct) /
+                                100)
+                          ).toFixed(2)}
+                        </p>
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">Remaining Increase Headroom</p>
+                        <p className="font-semibold text-slate-900">
+                          Remaining Increase Headroom
+                        </p>
                         <p className="font-semibold text-[#65bbc5]">
-                          {(product.maxAllowedIncreasePct - product.currentIncreasePct).toFixed(1)}%
+                          {(
+                            product.maxAllowedIncreasePct -
+                            product.currentIncreasePct
+                          ).toFixed(1)}
+                          %
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-3 border-t border-slate-200 pt-3 text-xs text-slate-600">
                       <p>
-                        Allowed price range right now: ${product.minAllowedPrice.toFixed(2)} -
-                        {(product.price * (1 + (product.maxAllowedIncreasePct - product.currentIncreasePct) / 100)).toFixed(2)}
+                        Allowed price range right now: $
+                        {product.minAllowedPrice.toFixed(2)} -
+                        {(
+                          product.price *
+                          (1 +
+                            (product.maxAllowedIncreasePct -
+                              product.currentIncreasePct) /
+                              100)
+                        ).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -190,68 +239,62 @@ function ProductTable() {
 export default function OwnerProductsPage() {
   return (
     <>
-          <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-slate-900">
-              <Store className="h-5 w-5 text-[#65bbc5]" />
-              <h1 className="text-xl font-semibold sm:text-2xl">Name of the store here</h1>
-            </div>
+      <section className="flex items-center gap-2 text-slate-900">
+        <Store className="h-5 w-5 text-[#65bbc5]" />
+        <h1 className="text-xl font-semibold sm:text-2xl">
+          Name of the store here
+        </h1>
+      </section>
 
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 self-start rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5] sm:self-auto sm:px-6"
-            >
-              <Square className="h-4 w-4" />
-              Go Live
-            </button>
-          </section>
+      <section className="mt-4 rounded-[32px] bg-white px-4 py-4 shadow-[0_14px_35px_rgba(15,23,42,0.05)] sm:px-6 sm:py-5">
+        <h2 className="text-[1.35rem] font-bold tracking-tight text-slate-900 sm:text-2xl">
+          Manage Discounts
+        </h2>
 
-          <section className="mt-4 rounded-[32px] bg-white px-4 py-4 shadow-[0_14px_35px_rgba(15,23,42,0.05)] sm:px-6 sm:py-5">
-            <h2 className="text-[1.35rem] font-bold tracking-tight text-slate-900 sm:text-2xl">Manage Discounts</h2>
+        <div className="mt-4 grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3">
+          <select
+            defaultValue={discountOptions[0]}
+            className="h-7 w-full min-w-0 rounded-sm border border-slate-400 bg-white px-2 text-[11px] text-slate-700 outline-none sm:text-sm"
+          >
+            <option>{discountOptions[0]}</option>
+            <option>Option One</option>
+            <option>Option Two</option>
+          </select>
 
-            <div className="mt-4 grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3">
-              <select
-                defaultValue={discountOptions[0]}
-                className="h-7 w-full min-w-0 rounded-sm border border-slate-400 bg-white px-2 text-[11px] text-slate-700 outline-none sm:text-sm"
-              >
-                <option>{discountOptions[0]}</option>
-                <option>Option One</option>
-                <option>Option Two</option>
-              </select>
+          <select
+            defaultValue={discountOptions[1]}
+            className="h-7 w-full min-w-0 rounded-sm border border-slate-400 bg-white px-2 text-[11px] text-slate-700 outline-none sm:text-sm"
+          >
+            <option>{discountOptions[1]}</option>
+            <option>Option One</option>
+            <option>Option Two</option>
+          </select>
 
-              <select
-                defaultValue={discountOptions[1]}
-                className="h-7 w-full min-w-0 rounded-sm border border-slate-400 bg-white px-2 text-[11px] text-slate-700 outline-none sm:text-sm"
-              >
-                <option>{discountOptions[1]}</option>
-                <option>Option One</option>
-                <option>Option Two</option>
-              </select>
+          <input
+            type="text"
+            placeholder="Enter Percentage %"
+            className="h-7 w-full min-w-0 rounded-sm border border-slate-400 bg-white px-2 text-[11px] text-slate-700 outline-none placeholder:text-slate-500 sm:text-sm"
+          />
 
-              <input
-                type="text"
-                placeholder="Enter Percentage %"
-                className="h-7 w-full min-w-0 rounded-sm border border-slate-400 bg-white px-2 text-[11px] text-slate-700 outline-none placeholder:text-slate-500 sm:text-sm"
-              />
+          <button
+            type="button"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#65bbc5] text-white transition hover:bg-[#53aab5]"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
 
-              <button
-                type="button"
-                className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#65bbc5] text-white transition hover:bg-[#53aab5]"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
+        <button
+          type="button"
+          className="mx-auto mt-3 block text-[13px] text-[#65bbc5] underline decoration-[#65bbc5]/50 underline-offset-4"
+        >
+          View Previous
+        </button>
+      </section>
 
-            <button
-              type="button"
-              className="mx-auto mt-3 block text-[13px] text-[#65bbc5] underline decoration-[#65bbc5]/50 underline-offset-4"
-            >
-              View Previous
-            </button>
-          </section>
-
-          <section className="mt-4">
-            <ProductTable />
-          </section>
+      <section className="mt-4">
+        <ProductTable />
+      </section>
     </>
   );
 }
