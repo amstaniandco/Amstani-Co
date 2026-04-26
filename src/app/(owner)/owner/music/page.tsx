@@ -1,5 +1,4 @@
 import { Pause, Play, Store, Trash2 } from "lucide-react";
-import OwnerChatSidebar from "../../store/chats/components/OwnerChatSidebar";
 
 const tracks = [
   { id: 1, name: "name_of_the_file_08357892.mp3" },
@@ -12,11 +11,7 @@ const tracks = [
 
 export default function OwnerMusicPage() {
   return (
-    <div className="min-h-screen bg-[#efefef] p-2 md:p-4">
-      <div className="mx-auto flex min-h-[calc(100vh-1rem)] w-full max-w-[1400px] flex-col overflow-hidden rounded-sm border border-slate-300 bg-[#efefef] md:flex-row">
-        <OwnerChatSidebar activeLabel="Music" />
-
-        <main className="flex-1 p-3 sm:p-4 md:p-6">
+    <>
           <section className="flex items-center gap-2 text-slate-900">
             <Store className="h-5 w-5 text-[#65bbc5]" />
             <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Name of the store here</h1>
@@ -58,8 +53,6 @@ export default function OwnerMusicPage() {
               ))}
             </div>
           </section>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }

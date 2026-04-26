@@ -1,15 +1,10 @@
 import Link from "next/link";
 import { ArrowLeft, Download, Search, Store } from "lucide-react";
-import OwnerChatSidebar from "../../store/chats/components/OwnerChatSidebar";
 import { orders, statusStyles } from "../data";
 
 export default function OwnerAllOrdersPage() {
   return (
-    <div className="min-h-screen bg-[#efefef] p-2 md:p-4">
-      <div className="mx-auto flex min-h-[calc(100vh-1rem)] w-full max-w-[1400px] flex-col overflow-hidden rounded-sm border border-slate-300 bg-[#efefef] md:flex-row">
-        <OwnerChatSidebar activeLabel="Orders" />
-
-        <main className="flex-1 p-3 sm:p-4 md:p-6">
+    <>
           <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-slate-900">
               <Store className="h-5 w-5 text-[#65bbc5]" />
