@@ -1,16 +1,20 @@
 "use client";
 
-import { Store } from "lucide-react";
+import { Minus, Plus, Store } from "lucide-react";
 import { useState } from "react";
 
 type Status = "Pending" | "Approved" | "Denied";
+
+type ProductEntry = {
+  productId: string;
+  quantity: string;
+};
 
 type Request = {
   orderId: string;
   orderDate: string;
   noOfProducts: number;
-  productId: string;
-  quantity: number;
+  items: ProductEntry[];
   status: Status;
 };
 
@@ -19,40 +23,50 @@ const initialRequests: Request[] = [
     orderId: "12345",
     orderDate: "02/10/2020",
     noOfProducts: 2,
-    productId: "12345",
-    quantity: 7,
+    items: [
+      { productId: "12345", quantity: "7" },
+      { productId: "12346", quantity: "3" },
+    ],
     status: "Pending",
   },
   {
     orderId: "12345",
     orderDate: "02/10/2020",
     noOfProducts: 2,
-    productId: "12345",
-    quantity: 7,
+    items: [
+      { productId: "12345", quantity: "7" },
+      { productId: "12346", quantity: "3" },
+    ],
     status: "Approved",
   },
   {
     orderId: "12345",
     orderDate: "02/10/2020",
     noOfProducts: 2,
-    productId: "12345",
-    quantity: 7,
+    items: [
+      { productId: "12345", quantity: "7" },
+      { productId: "12346", quantity: "3" },
+    ],
     status: "Denied",
   },
   {
     orderId: "12345",
     orderDate: "02/10/2020",
     noOfProducts: 2,
-    productId: "12345",
-    quantity: 7,
+    items: [
+      { productId: "12345", quantity: "7" },
+      { productId: "12346", quantity: "3" },
+    ],
     status: "Pending",
   },
   {
     orderId: "12345",
     orderDate: "02/10/2020",
     noOfProducts: 2,
-    productId: "12345",
-    quantity: 7,
+    items: [
+      { productId: "12345", quantity: "7" },
+      { productId: "12346", quantity: "3" },
+    ],
     status: "Pending",
   },
 ];
@@ -67,26 +81,64 @@ export default function AddNewProductsPage() {
   const [form, setForm] = useState({
     orderId: "",
     orderDate: "",
-    numberOfProducts: "1",
-    productId: "",
-    quantity: "",
+    numberOfProducts: 1,
+    items: [{ productId: "", quantity: "" }],
   });
+
+  const productCount = form.numberOfProducts;
+  const totalQuantity = form.items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  function incrementProductCount() {
+    setForm((prev) => ({
+      ...prev,
+      numberOfProducts: prev.numberOfProducts + 1,
+      items: [...prev.items, { productId: "", quantity: "" }],
+    }));
+  }
+
+  function decrementProductCount() {
+    setForm((prev) => {
+      if (prev.numberOfProducts <= 1) return prev;
+      return {
+        ...prev,
+        numberOfProducts: prev.numberOfProducts - 1,
+        items: prev.items.slice(0, -1),
+      };
+    });
+  }
+
   const [requests, setRequests] = useState<Request[]>(initialRequests);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  function handleItemChange(
+    index: number,
+    field: keyof ProductEntry,
+    value: string
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  }
+ 
   function handleSubmit() {
-    if (!form.orderId || !form.orderDate || !form.productId || !form.quantity)
-      return;
+    if (!form.orderId || !form.orderDate) return;
+    if (form.items.some((item) => !item.productId || !item.quantity)) return;
     setRequests((prev) => [
       {
         orderId: form.orderId,
         orderDate: form.orderDate,
-        noOfProducts: Number(form.numberOfProducts),
-        productId: form.productId,
-        quantity: Number(form.quantity),
+        noOfProducts: form.numberOfProducts,
+        items: form.items,
         status: "Pending",
       },
       ...prev,
@@ -94,9 +146,8 @@ export default function AddNewProductsPage() {
     setForm({
       orderId: "",
       orderDate: "",
-      numberOfProducts: "1",
-      productId: "",
-      quantity: "",
+      numberOfProducts: 1,
+      items: [{ productId: "", quantity: "" }],
     });
   }
 
@@ -148,43 +199,71 @@ export default function AddNewProductsPage() {
               <label className="block text-base font-semibold text-gray-800 mb-2">
                 Number of products
               </label>
-              <input
-                name="numberOfProducts"
-                value={form.numberOfProducts}
-                onChange={handleChange}
-                placeholder="1"
-                type="number"
-                className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-base text-gray-600 placeholder-gray-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-              />
+              <div className="flex items-center rounded-md border border-gray-300 bg-white px-2 py-2.5">
+                <button
+                  type="button"
+                  onClick={decrementProductCount}
+                  className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <div className="mx-3 min-w-[48px] text-center text-base font-semibold text-slate-900">
+                  {productCount}
+                </div>
+                <button
+                  type="button"
+                  onClick={incrementProductCount}
+                  className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-500">
+                <span className="rounded-full bg-slate-100 px-3 py-1">
+                  Products: {productCount}
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1">
+                  Total quantity: {totalQuantity}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Row 2 */}
-          <div className="grid grid-cols-2 gap-5 mb-7">
-            <div>
-              <label className="block text-base font-semibold text-gray-800 mb-2">
-                Product ID
-              </label>
-              <input
-                name="productId"
-                value={form.productId}
-                onChange={handleChange}
-                placeholder="Enter Product ID"
-                className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-base text-gray-600 placeholder-gray-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-              />
-            </div>
-            <div>
-              <label className="block text-base font-semibold text-gray-800 mb-2">
-                Quantity
-              </label>
-              <input
-                name="quantity"
-                value={form.quantity}
-                onChange={handleChange}
-                placeholder="Quantity or items ordered"
-                className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-base text-gray-600 placeholder-gray-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-              />
-            </div>
+          <div className="grid gap-5 mb-7">
+            {form.items.map((item, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-2 gap-5 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              >
+                <div>
+                  <label className="block text-base font-semibold text-gray-800 mb-2">
+                    Product ID {index + 1}
+                  </label>
+                  <input
+                    value={item.productId}
+                    onChange={(e) =>
+                      handleItemChange(index, "productId", e.target.value)
+                    }
+                    placeholder="Enter Product ID"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-base text-gray-600 placeholder-gray-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-base font-semibold text-gray-800 mb-2">
+                    Quantity {index + 1}
+                  </label>
+                  <input
+                    value={item.quantity}
+                    onChange={(e) =>
+                      handleItemChange(index, "quantity", e.target.value)
+                    }
+                    placeholder="Quantity or items ordered"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-base text-gray-600 placeholder-gray-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Submit Button */}
@@ -246,10 +325,10 @@ export default function AddNewProductsPage() {
                     {req.noOfProducts}
                   </td>
                   <td className="py-3.5 text-sm text-gray-700">
-                    {req.productId}
+                    {req.items.map((item) => item.productId).join(", ")}
                   </td>
                   <td className="py-3.5 text-sm text-gray-700">
-                    {req.quantity}
+                    {req.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}
                   </td>
                   <td
                     className={`py-3.5 text-sm font-medium text-right ${statusClass[req.status]}`}
