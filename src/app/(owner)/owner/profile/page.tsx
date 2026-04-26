@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PenLine, Square, Store } from "lucide-react";
 import OwnerChatSidebar from "../../store/chats/components/OwnerChatSidebar";
 
@@ -50,14 +51,22 @@ function ApplicationsCard() {
     <section className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-[1.2rem] font-bold text-slate-900 sm:text-[1.45rem]">Applications</h3>
-        <span className="rounded-full bg-[#65bbc5]/15 px-3 py-1 text-xs font-semibold text-[#4caeb8]">
-          {storeApplications.length} New
-        </span>
+        <Link
+          href="/owner/profile/applications"
+          className="text-sm font-semibold text-[#4caeb8] transition hover:text-[#3b97a6]"
+        >
+          View all
+        </Link>
       </div>
 
       <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
         {storeApplications.map((application) => (
-          <div key={application.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+          <Link
+            key={application.id}
+            href="/owner/profile/applications"
+            className="block rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 transition hover:bg-slate-100"
+            aria-label={`View application list for ${application.fullName}`}
+          >
             <p className="text-sm font-semibold text-slate-900">{application.fullName}</p>
             <p className="text-xs text-slate-600">{application.email}</p>
             <p className="text-xs text-slate-600">{application.phone}</p>
@@ -65,7 +74,7 @@ function ApplicationsCard() {
               <span>{application.requestedAt}</span>
               <span className="font-semibold text-slate-700">{application.category}</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>
