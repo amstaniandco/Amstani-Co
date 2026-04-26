@@ -58,7 +58,7 @@ export default function OwnerSidebar() {
   };
 
   return (
-    <aside className="w-full border-b border-slate-200 bg-[#f7f7f7] p-4 md:h-screen md:w-[220px] md:sticky md:top-0 md:flex md:flex-col md:border-b-0 md:border-r">
+    <aside className="w-full border-b border-slate-200 bg-[#f7f7f7] p-4 md:h-full md:w-[220px] md:sticky md:top-0 md:flex md:flex-col md:border-b-0 md:border-r">
       <div className="mb-4 flex items-center gap-2 px-2 pt-1 md:mb-8 md:pt-2">
         <Store className="h-6 w-6 shrink-0 text-[#61bbc5]" />
         <p className="whitespace-nowrap text-base font-bold tracking-tight text-slate-900">
