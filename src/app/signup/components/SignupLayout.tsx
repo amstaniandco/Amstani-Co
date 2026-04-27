@@ -27,14 +27,14 @@ export default function SignupLayout({ children, step }: SignupLayoutProps) {
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-8">
-        <div className="ui-panel w-full max-w-[380px] rounded-2xl border border-[#d9e3e8] bg-white/80 p-6">
+      <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-6 py-8">
+        <div className="w-full max-w-[500px]">
           <p className="mb-2 text-center text-sm text-gray-500 dark:text-slate-400">
             Step {step}/3
           </p>
 
           {/* Progress */}
-          <div className="flex justify-center gap-2 mb-8">
+          <div className="flex justify-center gap-2 mb-12">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}

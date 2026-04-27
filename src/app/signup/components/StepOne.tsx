@@ -78,29 +78,28 @@ const AppleIcon = () => (
 
 export default function StepOne({ onNext }: StepProps) {
   return (
-    <div className="mx-auto flex w-full max-w-[390px] flex-col items-center justify-center p-4">
-      {/* Step indicator */}
+    <div className="mx-auto flex w-full flex-col items-center justify-center">
       {/* Heading */}
-      <h1 className="mb-8 text-[32px] font-extrabold tracking-tight text-gray-900 dark:text-slate-100">
+      <h1 className="mb-12 text-[40px] font-extrabold tracking-tight text-gray-900 dark:text-slate-100">
         Create Account
       </h1>
 
       {/* Auth buttons */}
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full flex-col gap-5">
         {/* Google */}
-        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-[17px] text-[15.5px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
+        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
           <GoogleIcon />
           <span>Continue with Google</span>
         </button>
 
         {/* Apple */}
-        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-[17px] text-[15.5px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
+        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
           <AppleIcon />
           <span>Continue with Apple</span>
         </button>
 
         {/* DuckDuckGo */}
-        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-[17px] text-[15.5px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
+        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
           <DuckDuckGoIcon />
           <span>Continue with DuckDuckGo</span>
         </button>
@@ -108,7 +107,7 @@ export default function StepOne({ onNext }: StepProps) {
         {/* Email */}
         <button
           onClick={onNext}
-          className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-[17px] text-[15.5px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
+          className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
         >
           <Mail size={20} className="text-gray-400 dark:text-slate-300" />
           <span>Continue with Email</span>
@@ -116,7 +115,7 @@ export default function StepOne({ onNext }: StepProps) {
       </div>
 
       {/* Login link */}
-      <p className="mt-8 text-[14px] text-gray-500 dark:text-slate-400">
+      <p className="mt-12 text-[15px] text-gray-500 dark:text-slate-400">
         Already have an account?{" "}
         <button
           type="button"
