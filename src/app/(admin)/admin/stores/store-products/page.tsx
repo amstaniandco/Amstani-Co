@@ -77,6 +77,14 @@ export default function AdminStoreProductsPage() {
               </div>
               <button
                 type="button"
+                onClick={() => {
+                  if (actionButtonLabel === "Promote") {
+                    const path = storeId
+                      ? `/admin/stores/promote?storeId=${encodeURIComponent(storeId)}`
+                      : "/admin/stores/promote";
+                    router.push(path);
+                  }
+                }}
                 className="inline-flex items-center justify-center rounded-full border border-[#d8e3e8] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 {actionButtonLabel}
