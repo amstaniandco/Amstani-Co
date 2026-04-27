@@ -48,6 +48,12 @@ export default function AdminStoreApplicationsPage() {
               >
                 Store Applications
               </Link>
+              <Link
+                href="/admin/stores/signup-requests"
+                className="border-b-2 border-transparent pb-2 text-slate-500 transition hover:text-slate-700 sm:pb-3"
+              >
+                Signup Requests
+              </Link>
             </div>
           </section>
 
