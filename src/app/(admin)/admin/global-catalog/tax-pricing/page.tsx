@@ -1,57 +1,166 @@
-import AdminNavbar from "../../../../../components/admin/AdminNavbar";
-import AdminSidebar from "../../../../../components/admin/AdminSidebar";
-import GlobalTaxEngine from "../../../../../components/admin/GlobalTaxEngine";
-import PricingMarginGuardrails from "../../../../../components/admin/PricingMarginGuardrails";
-import Link from "next/link";
+"use client";
 
-export default function AdminGlobalCatalogTaxPricingPage() {
+import { useState } from "react";
+import { Building2, Shield } from "lucide-react";
+
+interface TaxRate {
+  state: string;
+  rate: number;
+}
+
+interface PricingRule {
+  state: string;
+  minimumMarkup: number;
+  discountCap: number;
+}
+
+export default function TaxPricingPage() {
+  const [taxRates, setTaxRates] = useState<TaxRate[]>([
+    { state: "California (CA)", rate: 8.25 },
+    { state: "New York (NY)", rate: 8.875 },
+    { state: "Texas (TX)", rate: 6.25 },
+  ]);
+
+  const [selectedState, setSelectedState] = useState("New York");
+  const [minimumMarkup, setMinimumMarkup] = useState("20");
+  const [discountCap, setDiscountCap] = useState("20");
+
+  const handleTaxRateChange = (index: number, newRate: number) => {
+    const updatedRates = [...taxRates];
+    updatedRates[index].rate = newRate;
+    setTaxRates(updatedRates);
+  };
+
+  const handleSave = () => {
+    console.log("Saved tax rates:", taxRates);
+    console.log("Saved pricing rules:", {
+      state: selectedState,
+      minimumMarkup,
+      discountCap,
+    });
+  };
+
+  const allStates = [
+    "New York",
+    "California",
+    "Texas",
+    "Florida",
+    "Illinois",
+    "Pennsylvania",
+  ];
+
   return (
-    <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
-      <div className="mx-auto grid min-h-screen max-w-[1500px] grid-cols-1 gap-3 md:gap-4 lg:grid-cols-[280px_1fr]">
-        <AdminSidebar activePath="/admin/global-catalog" />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Global Tax Engine */}
+      <div className="rounded-xl md:rounded-[26px] border border-slate-200 bg-white px-4 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:px-5 sm:py-6">
+        <div className="mb-5 flex items-center gap-3">
+          <Building2 size={24} className="text-slate-700" />
+          <h2 className="text-lg font-bold text-slate-900">Global Tax Engine</h2>
+        </div>
 
-        <main className="rounded-xl md:rounded-[28px] border border-[#d8e0e6] bg-[#f7fafc] p-2 shadow-[0_10px_30px_rgba(15,23,42,0.04)] sm:p-3 md:p-4">
-          <AdminNavbar />
-
-          <section className="mt-3 rounded-xl md:rounded-[26px] bg-white px-3 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:px-4 sm:py-4 md:px-5 md:py-5">
-            <div className="flex flex-col gap-3 border-b border-[#e7edf1] pb-3 sm:gap-4 sm:pb-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-[26px]">Global Catalog & System Admin</h1>
-                <p className="mt-1 text-xs text-slate-600 sm:text-sm">Manage master data, tax rules, and pricing constraints for all customers.</p>
+        <div className="space-y-3">
+          {taxRates.map((tax, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between rounded-lg bg-slate-100 px-4 py-3"
+            >
+              <span className="text-sm font-medium text-slate-700">
+                {tax.state}
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={tax.rate}
+                  onChange={(e) => handleTaxRateChange(index, parseFloat(e.target.value) || 0)}
+                  className="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6FAFB3]"
+                />
+                <span className="text-xs text-slate-600">%</span>
               </div>
+            </div>
+          ))}
+        </div>
 
-              <button
-                type="button"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6ec0c9] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#5db1bb] sm:px-4 sm:py-2.5 sm:text-sm md:rounded-xl"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Global Product
-              </button>
+        <button 
+          onClick={handleSave}
+          className="mt-4 w-full rounded-lg bg-[#6FAFB3] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5da0a5]"
+        >
+          Save Tax Rates
+        </button>
+        
+        <button className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+          View All States
+        </button>
+      </div>
+
+      {/* Pricing & Margin Guardrails */}
+      <div className="rounded-xl md:rounded-[26px] border border-slate-200 bg-white px-4 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:px-5 sm:py-6">
+        <div className="mb-5 flex items-center gap-3">
+          <Shield size={24} className="text-slate-700" />
+          <h2 className="text-lg font-bold text-slate-900">
+            Pricing & Margin Guardrails
+          </h2>
+        </div>
+
+        <div className="space-y-4">
+          {/* State Selector */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700 mb-2">
+              Select State
+            </label>
+            <select
+              value={selectedState}
+              onChange={(e) => setSelectedState(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6FAFB3]"
+            >
+              {allStates.map((state) => (
+                <option key={state} value={state}>
+                  {state}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Minimum Markup & Discount Cap */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700 mb-2">
+                Minimum Markup %
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={minimumMarkup}
+                  onChange={(e) => setMinimumMarkup(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6FAFB3]"
+                />
+                <span className="ml-2 text-sm font-medium text-slate-600">%</span>
+              </div>
             </div>
 
-            <div className="mt-3 flex gap-4 border-b border-[#e7edf1] text-xs font-semibold text-slate-700 sm:gap-6 sm:text-sm">
-              <Link
-                href="/admin/global-catalog"
-                className="border-b-2 border-transparent pb-2 text-slate-500 transition hover:text-slate-700 sm:pb-3"
-              >
-                Products
-              </Link>
-              <Link
-                href="/admin/global-catalog/tax-pricing"
-                className="border-b-2 border-[#58b8c3] pb-2 text-[#2f7f8d] sm:pb-3"
-              >
-                Tax & Pricing
-              </Link>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700 mb-2">
+                Discount Cap
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={discountCap}
+                  onChange={(e) => setDiscountCap(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6FAFB3]"
+                />
+                <span className="ml-2 text-sm font-medium text-slate-600">%</span>
+              </div>
             </div>
-          </section>
+          </div>
+        </div>
 
-          <section className="mt-3 grid gap-4 md:mt-4 md:gap-5 lg:grid-cols-2">
-            <GlobalTaxEngine />
-            <PricingMarginGuardrails />
-          </section>
-        </main>
+        <button
+          onClick={handleSave}
+          className="mt-6 w-full rounded-2xl bg-[#6FAFB3] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5da0a5]"
+        >
+          Save
+        </button>
       </div>
     </div>
   );
