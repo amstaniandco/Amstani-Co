@@ -6,10 +6,11 @@ import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import GlobalCatalogTable from "../../../../components/admin/GlobalCatalogTable";
 import BrandsTab from "../../../../components/admin/BrandsTab";
 import CategoryTab from "../../../../components/admin/CategoryTab";
+import AddGlobalProductForm from "../../../../components/admin/AddGlobalProductForm";
 import TaxPricingPage from "./tax-pricing/page";
 
 export default function AdminGlobalCatalogPage() {
-  const [activeTab, setActiveTab] = useState("products");
+  const [activeTab, setActiveTab] = useState<"products" | "tax-pricing" | "brands" | "category" | "add-product">("products");
 
   return (
     <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
@@ -34,6 +35,7 @@ export default function AdminGlobalCatalogPage() {
               {activeTab === "products" && (
                 <button
                   type="button"
+                  onClick={() => setActiveTab("add-product")}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6ec0c9] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#5db1bb] sm:px-4 sm:py-2.5 sm:text-sm md:rounded-xl"
                 >
                   <svg
@@ -103,6 +105,9 @@ export default function AdminGlobalCatalogPage() {
             {activeTab === "tax-pricing" && <TaxPricingPage />}
             {activeTab === "brands" && <BrandsTab />}
             {activeTab === "category" && <CategoryTab />}
+            {activeTab === "add-product" && (
+              <AddGlobalProductForm onBack={() => setActiveTab("products")} />
+            )}
           </section>
         </main>
       </div>
