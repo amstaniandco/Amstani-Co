@@ -1,6 +1,7 @@
 "use client";
 
 import { Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type StepProps = {
   onNext: () => void;
@@ -77,6 +78,8 @@ const AppleIcon = () => (
 );
 
 export default function StepOne({ onNext }: StepProps) {
+  const router = useRouter();
+
   return (
     <div className="mx-auto flex w-full flex-col items-center justify-center">
       {/* Heading */}
@@ -119,6 +122,7 @@ export default function StepOne({ onNext }: StepProps) {
         Already have an account?{" "}
         <button
           type="button"
+          onClick={() => router.push("/login")}
           className="text-teal-500 font-medium hover:text-teal-600 transition-colors duration-150"
         >
           Log in

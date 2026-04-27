@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type StepProps = {
   onNext: () => void;
@@ -6,6 +7,8 @@ type StepProps = {
 };
 
 export default function StepTwo({ onNext, onBack }: StepProps) {
+  const router = useRouter();
+
   return (
     <div className="text-black dark:text-slate-100">
       <button
@@ -62,9 +65,15 @@ export default function StepTwo({ onNext, onBack }: StepProps) {
         </button>
       </div>
 
-      <p className="mt-5 text-center text-sm text-black dark:text-slate-300">
+      <p className="mt-12 text-center text-[15px] text-gray-500 dark:text-slate-400">
         Already have an account?{" "}
-        <span className="cursor-pointer font-medium text-black dark:text-slate-100">Log in</span>
+        <button
+          type="button"
+          onClick={() => router.push("/login")}
+          className="text-teal-500 font-medium hover:text-teal-600 transition-colors duration-150"
+        >
+          Log in
+        </button>
       </p>
     </div>
   );

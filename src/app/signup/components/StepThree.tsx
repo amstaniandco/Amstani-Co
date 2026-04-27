@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import SignupUsMap from "./SignupUsMap";
 
@@ -17,6 +18,7 @@ type UsStatesGeoJson = {
 };
 
 export default function StepThree({ onBack }: StepProps) {
+  const router = useRouter();
   const [selectedState, setSelectedState] = useState("");
   const [states, setStates] = useState<string[]>([]);
 
@@ -93,9 +95,15 @@ export default function StepThree({ onBack }: StepProps) {
         Create Account
       </button>
 
-      <p className="mt-5 text-center text-sm text-gray-500 dark:text-slate-400">
+      <p className="mt-12 text-center text-[15px] text-gray-500 dark:text-slate-400">
         Already have an account?{" "}
-        <span className="text-[#6FAFB3] cursor-pointer">Log in</span>
+        <button
+          type="button"
+          onClick={() => router.push("/login")}
+          className="text-teal-500 font-medium hover:text-teal-600 transition-colors duration-150"
+        >
+          Log in
+        </button>
       </p>
     </div>
   );

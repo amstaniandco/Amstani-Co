@@ -188,100 +188,98 @@ export default function LoginPage() {
 
       </div>
 
-      <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-[380px] relative">
-          <div className="ui-panel rounded-2xl border border-[#d9e3e8] bg-white/80 p-6">
-            <div className="mb-8 text-center">
-              <h1 className="text-[36px] leading-tight font-extrabold tracking-tight text-black dark:text-slate-100">
-                Welcome Back
-              </h1>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-3 rounded-xl border border-black bg-white px-5 py-3 text-[14px] font-medium text-black transition-colors duration-150 hover:bg-gray-50 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
-              >
-                <GoogleIcon />
-                <span>Continue with Google</span>
-              </button>
-
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-3 rounded-xl border border-black bg-white px-5 py-3 text-[14px] font-medium text-black transition-colors duration-150 hover:bg-gray-50 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
-              >
-                <AppleIcon />
-                <span>Continue with Apple</span>
-              </button>
-
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-3 rounded-xl border border-black bg-white px-5 py-3 text-[14px] font-medium text-black transition-colors duration-150 hover:bg-gray-50 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
-              >
-                <DuckDuckGoIcon />
-                <span>Continue with DuckDuckGo</span>
-              </button>
-            </div>
-
-            <div className="my-5 flex items-center gap-3 text-[#7a7a7a] dark:text-slate-400">
-              <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
-              <span className="text-xs">or</span>
-              <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <label className="block">
-                <span className="text-sm text-black dark:text-slate-200">Email</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="Email"
-                  className="ui-input mt-1 w-full rounded-md border border-black bg-white px-3 py-2.5 text-sm text-black placeholder:text-black outline-none"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm text-black dark:text-slate-200">Password</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Password"
-                  className="ui-input mt-1 w-full rounded-md border border-black bg-white px-3 py-2.5 text-sm text-black placeholder:text-black outline-none"
-                />
-              </label>
-
-              <button
-                type="submit"
-                className="mt-2 w-full rounded-xl bg-[#6FAFB3] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#619da1]"
-              >
-                Log in
-              </button>
-            </form>
-
-            {error ? (
-              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
-                {error}
-              </p>
-            ) : null}
-
-            <div className="ui-subpanel mt-4 rounded-xl border border-[#d9e3e8] bg-white/70 p-3 text-xs text-black/70 dark:text-slate-300">
-              <p className="font-semibold text-black dark:text-slate-100">Demo logins</p>
-              <p className="mt-1">Admin: {DEMO_CREDENTIALS.admin.email} / {DEMO_CREDENTIALS.admin.password}</p>
-              <p>Customer: {DEMO_CREDENTIALS.customer.email} / {DEMO_CREDENTIALS.customer.password}</p>
-              <p>Store owner: {DEMO_CREDENTIALS.owner.email} / {DEMO_CREDENTIALS.owner.password}</p>
-            </div>
-
-            <p className="mt-5 text-center text-sm text-black/80 dark:text-slate-300">
-              Dont have an account?{" "}
-              <Link href="/signup" className="font-medium text-[#6FAFB3] hover:text-[#5b9ca1]">
-                Sign up
-              </Link>
-            </p>
+      <div className="w-full md:w-1/2 flex items-center justify-center px-6 py-8">
+        <div className="w-full max-w-[500px]">
+          <div className="mb-10 text-center">
+            <h1 className="text-[40px] leading-tight font-extrabold tracking-tight text-black dark:text-slate-100">
+              Welcome Back
+            </h1>
           </div>
+
+          <div className="space-y-5">
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
+            >
+              <GoogleIcon />
+              <span>Continue with Google</span>
+            </button>
+
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
+            >
+              <AppleIcon />
+              <span>Continue with Apple</span>
+            </button>
+
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
+            >
+              <DuckDuckGoIcon />
+              <span>Continue with DuckDuckGo</span>
+            </button>
+          </div>
+
+          <div className="my-7 flex items-center gap-3 text-[#7a7a7a] dark:text-slate-400">
+            <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
+            <span className="text-xs">or</span>
+            <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block">
+              <span className="text-sm text-black dark:text-slate-200">Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="Email"
+                className="ui-input mt-1 w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-black placeholder:text-gray-400 outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm text-black dark:text-slate-200">Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Password"
+                className="ui-input mt-1 w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-black placeholder:text-gray-400 outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="mt-6 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1]"
+            >
+              Log in
+            </button>
+          </form>
+
+          {error ? (
+            <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="ui-subpanel mt-6 rounded-xl border border-[#d9e3e8] bg-white/70 p-3 text-xs text-black/70 dark:bg-slate-800 dark:text-slate-300">
+            <p className="font-semibold text-black dark:text-slate-100">Demo logins</p>
+            <p className="mt-1">Admin: {DEMO_CREDENTIALS.admin.email} / {DEMO_CREDENTIALS.admin.password}</p>
+            <p>Customer: {DEMO_CREDENTIALS.customer.email} / {DEMO_CREDENTIALS.customer.password}</p>
+            <p>Store owner: {DEMO_CREDENTIALS.owner.email} / {DEMO_CREDENTIALS.owner.password}</p>
+          </div>
+
+          <p className="mt-8 text-center text-[15px] text-black/80 dark:text-slate-300">
+            Dont have an account?{" "}
+            <Link href="/signup" className="font-medium text-[#6FAFB3] hover:text-[#5b9ca1]">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </main>
