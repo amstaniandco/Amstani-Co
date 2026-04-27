@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
@@ -18,7 +19,13 @@ const tabs = [
 ];
 
 export default function AdminStoresPage() {
+  const router = useRouter();
   const [selectedStore, setSelectedStore] = useState<StoreRow>(defaultRows[0]);
+
+  const handleStoreClick = (store: StoreRow) => {
+    setSelectedStore(store);
+    router.push(`/admin/stores/store-products?storeId=${encodeURIComponent(store.id)}`);
+  };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
@@ -75,7 +82,7 @@ export default function AdminStoresPage() {
             <StoreManagementTable
               rows={defaultRows}
               selectedStoreId={selectedStore.id}
-              onSelectStore={setSelectedStore}
+              onSelectStore={handleStoreClick}
             />
           </section>
 
