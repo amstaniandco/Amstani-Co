@@ -1,8 +1,13 @@
+export type UserRole = "admin" | "owner" | "user";
+
 export type User = {
-  id: string;
+  _id?: string;
+  id?: string;
   name: string;
   email: string;
-  role: "admin" | "store" | "user";
+  password?: string;
+  role: UserRole;
+  state?: string;
   createdAt?: string;
   updatedAt?: string;
 };

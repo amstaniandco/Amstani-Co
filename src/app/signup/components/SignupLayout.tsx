@@ -15,7 +15,10 @@ export default function SignupLayout({ children, step }: SignupLayoutProps) {
           src="/assets/AmstaniCover.png"
           alt="Amstani & Co cover"
           fill
+          loading="eager"
+          sizes="50vw"
           className="object-cover"
+          priority
         />
 
         {/* Overlay Logo */}

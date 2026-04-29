@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut } from "lucide-react";
+import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users } from "lucide-react";
 import { clearDemoSession } from "@/src/lib/auth/demoAuth";
 
 export type AdminSidebarItem = {
@@ -20,6 +20,7 @@ type AdminSidebarProps = {
 
 const defaultItems: AdminSidebarItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
+  { label: "User Management", href: "/admin/users", icon: Users },
   { label: "Stores", href: "/admin/stores", icon: Store },
   { label: "Global Catalog", href: "/admin/global-catalog", icon: Store },
   { label: "Finance & Stock", href: "/admin/finance-stock", icon: WalletCards },
@@ -35,9 +36,15 @@ export default function AdminSidebar({
   const router = useRouter();
   const isLight = variant === "light";
 
-  const handleLogout = () => {
-    clearDemoSession();
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      clearDemoSession();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      router.push("/login");
+    }
   };
 
   return (

@@ -27,7 +27,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <link rel="preload" href="/us-states.json" as="fetch" crossOrigin="anonymous" />
       </head>
       <body className={`${montserrat.className} min-h-full bg-[var(--background)] text-[var(--foreground)]`}>
         <ThemeProvider>{children}</ThemeProvider>

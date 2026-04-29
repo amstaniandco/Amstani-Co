@@ -7,6 +7,9 @@ import SignupUsMap from "./SignupUsMap";
 
 type StepProps = {
   onBack: () => void;
+  onSubmit: (state: string) => void;
+  loading: boolean;
+  error: string;
 };
 
 type UsStatesGeoJson = {
@@ -17,7 +20,7 @@ type UsStatesGeoJson = {
   }>;
 };
 
-export default function StepThree({ onBack }: StepProps) {
+export default function StepThree({ onBack, onSubmit, loading, error }: StepProps) {
   const router = useRouter();
   const [selectedState, setSelectedState] = useState("");
   const [states, setStates] = useState<string[]>([]);
@@ -55,6 +58,14 @@ export default function StepThree({ onBack }: StepProps) {
     };
   }, []);
 
+  const handleSubmit = () => {
+    if (!selectedState) {
+      alert("Please select a state");
+      return;
+    }
+    onSubmit(selectedState);
+  };
+
   return (
     <div>
       <button
@@ -67,6 +78,12 @@ export default function StepThree({ onBack }: StepProps) {
       </button>
 
       <h2 className="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-slate-100">Create Account</h2>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       <div className="mb-4">
         <label className="text-sm text-gray-600 dark:text-slate-300">State</label>
@@ -91,8 +108,12 @@ export default function StepThree({ onBack }: StepProps) {
         />
       </div>
 
-      <button className="w-full py-3 rounded-full bg-[#6FAFB3] text-white font-medium">
-        Create Account
+      <button 
+        onClick={handleSubmit}
+        disabled={loading}
+        className="w-full py-3 rounded-full bg-[#6FAFB3] text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? "Creating Account..." : "Create Account"}
       </button>
 
       <p className="mt-12 text-center text-[15px] text-gray-500 dark:text-slate-400">
