@@ -4,12 +4,6 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  DEMO_COOKIE_ROLE,
-  DEMO_COOKIE_TOKEN,
-  DEMO_TOKEN_KEY,
-  clearDemoSession,
-} from "@/src/lib/auth/demoAuth";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -179,11 +173,6 @@ const NAV_LINKS = [
 
 // ── Helper function ────────────────────────────────────────────────────────
 
-function getDemoToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(DEMO_TOKEN_KEY);
-}
-
 function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
 
@@ -197,13 +186,8 @@ function getCookieValue(name: string): string | null {
   return decodeURIComponent(entry.slice(encodedName.length));
 }
 
-function hasActiveDemoSession(): boolean {
-  const localToken = getDemoToken();
-  const cookieToken = getCookieValue(DEMO_COOKIE_TOKEN);
-  const cookieRole = getCookieValue(DEMO_COOKIE_ROLE);
-
-  // Session is valid only when auth cookies exist and token is consistent.
-  return Boolean(localToken && cookieToken && cookieRole && localToken === cookieToken);
+function hasActiveSession(): boolean {
+  return Boolean(getCookieValue("token"));
 }
 
 // ── Header ───────────────────────────────────────────────────────────────────
@@ -220,7 +204,7 @@ export default function Header() {
 
   // Check authentication status on mount only
   useEffect(() => {
-    setIsLoggedIn(hasActiveDemoSession());
+    setIsLoggedIn(hasActiveSession());
   }, []);
 
   const forcePublicNavbar = pathname === "/" || pathname === "/landing";
@@ -273,11 +257,19 @@ export default function Header() {
     window.history.replaceState({}, "", url);
   };
 
-  const handleLogout = () => {
-    clearDemoSession();
-    setIsLoggedIn(false);
-    setMobileMenuOpen(false);
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoggedIn(false);
+      setMobileMenuOpen(false);
+      router.push("/login");
+    }
   };
 
   useEffect(() => {
@@ -329,7 +321,10 @@ export default function Header() {
               </nav>
 
               {/* Desktop Search Bar */}
-              <form onSubmit={handleSearch} className="hidden md:flex flex-1 mx-4">
+              <form
+                onSubmit={handleSearch}
+                className="hidden md:flex flex-1 mx-4"
+              >
                 <div className="relative max-w-xs w-full">
                   <input
                     ref={searchRef}
@@ -486,7 +481,9 @@ export default function Header() {
 
                 {/* Mobile Location Selector */}
                 <div className="flex items-center border border-white/30 rounded-lg overflow-hidden text-sm">
-                  <span className="px-3 py-2 text-gray-100 text-sm flex-1">{city}</span>
+                  <span className="px-3 py-2 text-gray-100 text-sm flex-1">
+                    {city}
+                  </span>
                   <button
                     onClick={() =>
                       setCity((prev) =>
