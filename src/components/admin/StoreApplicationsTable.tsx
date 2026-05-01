@@ -60,13 +60,24 @@ function Toolbar() {
       </div>
 
       <div className="flex items-center gap-2">
-        <button type="button" className="rounded-xl border border-[#d8e2e8] bg-white px-4 py-2 text-sm text-slate-700 transition hover:bg-slate-50">
+        <button
+          type="button"
+          className="rounded-xl border border-[#d8e2e8] bg-white px-4 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+        >
           All Status
         </button>
-        <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50" aria-label="Filter applications">
+        <button
+          type="button"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50"
+          aria-label="Filter applications"
+        >
           <Filter className="h-4 w-4" />
         </button>
-        <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50" aria-label="Download applications">
+        <button
+          type="button"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50"
+          aria-label="Download applications"
+        >
           <Download className="h-4 w-4" />
         </button>
       </div>
@@ -100,14 +111,24 @@ function ApplicationsTable() {
                 <div className="font-medium text-slate-700">{row.name}</div>
                 <div className="text-slate-600">{row.email}</div>
                 <div className="text-slate-600">{row.number}</div>
-                <div className="max-w-[180px] text-sm leading-5 text-slate-600">{row.address}</div>
+                <div className="max-w-[180px] text-sm leading-5 text-slate-600">
+                  {row.address}
+                </div>
                 <div className="text-slate-600">{row.state}</div>
                 <div className="text-slate-700">{row.vacancy}</div>
                 <div className="flex justify-end gap-2 text-slate-500">
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:bg-slate-50" aria-label="Accept application">
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:bg-slate-50"
+                    aria-label="Accept application"
+                  >
                     ✓
                   </button>
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:bg-slate-50" aria-label="Reject application">
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:bg-slate-50"
+                    aria-label="Reject application"
+                  >
                     ⦸
                   </button>
                 </div>
@@ -130,13 +151,24 @@ function StateAvailabilityTable() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button type="button" className="rounded-xl border border-[#d8e2e8] bg-white px-4 py-2 text-sm text-slate-700 transition hover:bg-slate-50">
-            All Status
+          <button
+            type="button"
+            className="rounded-xl border border-[#d8e2e8] bg-white px-4 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+          >
+            All States
           </button>
-          <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50" aria-label="Filter states">
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50"
+            aria-label="Filter states"
+          >
             <Filter className="h-4 w-4" />
           </button>
-          <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50" aria-label="Download states">
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e2e8] bg-white text-slate-600 transition hover:bg-slate-50"
+            aria-label="Download states"
+          >
             <Download className="h-4 w-4" />
           </button>
         </div>
@@ -161,7 +193,11 @@ function StateAvailabilityTable() {
                 <div className="text-slate-600">{row.max}</div>
                 <div className="text-slate-600">{row.occupied}</div>
                 <div className="flex justify-end">
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" aria-label="Edit state">
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                    aria-label="Edit state"
+                  >
                     ✎
                   </button>
                 </div>
