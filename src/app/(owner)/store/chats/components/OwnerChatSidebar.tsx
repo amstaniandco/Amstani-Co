@@ -15,7 +15,6 @@ import {
 	Timer,
 	UserRound,
 } from "lucide-react";
-import { clearDemoSession } from "@/src/lib/auth/demoAuth";
 
 type SidebarItem = {
 	label: string;
@@ -43,9 +42,14 @@ type OwnerChatSidebarProps = {
 export default function OwnerChatSidebar({ activeLabel = "Chats" }: OwnerChatSidebarProps) {
 	const router = useRouter();
 
-	const handleLogout = () => {
-		clearDemoSession();
-		router.push("/login");
+	const handleLogout = async () => {
+		try {
+			await fetch("/api/auth/logout", { method: "POST" });
+		} finally {
+			document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+			router.push("/login");
+			router.refresh();
+		}
 	};
 
 	return (

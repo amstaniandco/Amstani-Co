@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users } from "lucide-react";
-import { clearDemoSession } from "@/src/lib/auth/demoAuth";
 
 export type AdminSidebarItem = {
   label: string;
@@ -39,11 +38,12 @@ export default function AdminSidebar({
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      clearDemoSession();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       router.push("/login");
+      router.refresh();
     }
   };
 

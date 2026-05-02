@@ -1,86 +1,83 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserByEmail } from "@/src/lib/db";
-import { comparePasswords, createToken } from "@/src/lib/auth/authUtils";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import clientPromise from "../../../../lib/db";
+import { User } from "../../../../models/user";
 
-export async function POST(request: NextRequest) {
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development";
+
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    const { email, password } = await req.json();
 
-    // Validation
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Missing email or password" },
         { status: 400 }
       );
     }
 
-    console.log("Login attempt for email:", email);
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DBNAME || "amstani");
+    const usersCollection = db.collection<User>("users");
 
-    // Find user by email
-    const user = await getUserByEmail(email);
+    // Find user
+    const user = await usersCollection.findOne({ email });
     if (!user) {
-      console.log("User not found:", email);
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    console.log("User found:", user.email, "has password field:", !!user.password);
-
-    // Check password
-    const storedPassword = user.password || "";
-    console.log("Comparing passwords - stored hash exists:", storedPassword.length > 0);
-    
-    const isPasswordValid = await comparePasswords(password, storedPassword);
-    console.log("Password comparison result:", isPasswordValid);
-
-    if (!isPasswordValid) {
-      console.log("Invalid password for user:", email);
+    // Verify password
+    // @ts-ignore
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    // Create JWT token
-    const token = createToken({
-      id: user._id?.toString() || user.id || "",
-      email: user.email,
-      name: user.name,
-      role: user.role,
+    // Generate token
+    const token = jwt.sign(
+      { id: user._id?.toString() || user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Set cookie for 7 days
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: "token",
+      value: token,
+      httpOnly: false, // Accessible to JS for the Header component
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
     });
 
-    const response = NextResponse.json(
+    return NextResponse.json(
       {
         message: "Login successful",
+        token,
         user: {
           id: user._id?.toString() || user.id,
           name: user.name,
           email: user.email,
           role: user.role,
+          state: user.state,
         },
-        token,
       },
       { status: 200 }
     );
-
-    // Set token as httpOnly cookie
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
-
-    return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    console.error("Error details:", errorMessage);
     return NextResponse.json(
-      { error: errorMessage || "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

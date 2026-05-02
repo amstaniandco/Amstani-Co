@@ -18,7 +18,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { clearDemoSession } from "@/src/lib/auth/demoAuth";
 
 type SidebarItem = {
   label: string;
@@ -57,9 +56,14 @@ export default function OwnerSidebar() {
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = () => {
-    clearDemoSession();
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      router.push("/login");
+      router.refresh();
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ type FormData = {
   password: string;
   confirmPassword: string;
   state: string;
+  role: "user" | "owner" | "admin";
 };
 
 type StepProps = {
@@ -87,6 +88,45 @@ export default function StepTwo({ onNext, onBack, error, formData, setFormData }
             className="ui-input mt-1 w-full rounded-md border border-black bg-white p-3 text-black placeholder:text-black focus:outline-none"
             placeholder="Confirm Password"
           />
+        </div>
+
+        <div>
+          <label className="text-sm text-black dark:text-slate-200 mb-2 block">I am a...</label>
+          <div className="flex gap-4 mt-1">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                value="user"
+                checked={formData.role === "user"}
+                onChange={(e) => setFormData({ ...formData, role: "user" })}
+                className="w-4 h-4 text-[#6FAFB3] focus:ring-[#6FAFB3] cursor-pointer"
+              />
+              <span className="text-black dark:text-slate-200">Shopper</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                value="owner"
+                checked={formData.role === "owner"}
+                onChange={(e) => setFormData({ ...formData, role: "owner" })}
+                className="w-4 h-4 text-[#6FAFB3] focus:ring-[#6FAFB3] cursor-pointer"
+              />
+              <span className="text-black dark:text-slate-200">Store Owner</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                value="admin"
+                checked={formData.role === "admin"}
+                onChange={(e) => setFormData({ ...formData, role: "admin" })}
+                className="w-4 h-4 text-[#6FAFB3] focus:ring-[#6FAFB3] cursor-pointer"
+              />
+              <span className="text-black dark:text-slate-200">Admin</span>
+            </label>
+          </div>
         </div>
 
         <button

@@ -1,85 +1,65 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserByEmail, createUser } from "@/src/lib/db";
-import { createToken } from "@/src/lib/auth/authUtils";
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import clientPromise from "../../../../lib/db";
+import { User } from "../../../../models/user";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { email, name, password, confirmPassword, state } = body;
+    const { name, email, password, state, role } = await req.json();
 
-    // Validation
-    if (!email || !name || !password) {
+    if (!name || !email || !password || !state || !role) {
       return NextResponse.json(
-        { error: "Email, name, and password are required" },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Only check confirmPassword if it's provided (from 2-step flow)
-    if (confirmPassword && password !== confirmPassword) {
-      return NextResponse.json(
-        { error: "Passwords do not match" },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
-      );
-    }
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DBNAME || "amstani");
+    const usersCollection = db.collection<User>("users");
 
     // Check if user already exists
-    const existingUser = await getUserByEmail(email);
+    const existingUser = await usersCollection.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
-        { error: "Email already registered" },
+        { error: "User already exists with this email" },
         { status: 409 }
       );
     }
 
-    // Create new user with "user" role by default
-    const newUser = await createUser(email, name, password, "user", state);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create JWT token
-    const token = createToken({
-      id: newUser._id || newUser.id || "",
-      email: newUser.email,
-      name: newUser.name,
-      role: newUser.role,
-    });
+    // Create user
+    const newUser = {
+      name,
+      email,
+      password: hashedPassword,
+      state,
+      role,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-    const response = NextResponse.json(
+    const result = await usersCollection.insertOne(newUser as any);
+
+    return NextResponse.json(
       {
-        message: "Signup successful",
+        message: "User created successfully",
         user: {
-          id: newUser._id || newUser.id,
+          id: result.insertedId.toString(),
           name: newUser.name,
           email: newUser.email,
           role: newUser.role,
           state: newUser.state,
         },
-        token,
       },
       { status: 201 }
     );
-
-    // Set token as httpOnly cookie
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
-
-    return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Signup error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    console.error("Error details:", errorMessage);
     return NextResponse.json(
-      { error: errorMessage || "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

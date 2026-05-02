@@ -202,13 +202,12 @@ export default function Header() {
   const searchTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
 
-  // Check authentication status on mount only
+  // Check authentication status on route change
   useEffect(() => {
     setIsLoggedIn(hasActiveSession());
-  }, []);
+  }, [pathname]);
 
-  const forcePublicNavbar = pathname === "/" || pathname === "/landing";
-  const showAuthenticatedNavbar = isLoggedIn && !forcePublicNavbar;
+  const showAuthenticatedNavbar = isLoggedIn;
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -266,9 +265,11 @@ export default function Header() {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       setIsLoggedIn(false);
       setMobileMenuOpen(false);
       router.push("/login");
+      router.refresh();
     }
   };
 
