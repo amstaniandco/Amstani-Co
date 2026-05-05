@@ -1,303 +1,519 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Trash2, Edit2, ChevronUp, ChevronDown } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  Search, Filter, Download, ChevronUp, ChevronDown,
+  Trash2, ShieldCheck, UserRound, Store, Users,
+  UserPlus, Check, X, AlertTriangle,
+} from "lucide-react";
 
-interface User {
+type Role = "user" | "owner" | "admin";
+
+interface UserRow {
   id: string;
   name: string;
   email: string;
-  role: "user" | "owner" | "admin";
-  createdAt?: string;
-  updatedAt?: string;
+  role: Role;
+  state: string;
+  phone: string;
+  avatarUrl: string;
+  createdAt: string | null;
 }
 
-interface ApiResponse {
-  users: User[];
-  error?: string;
+interface Stats {
+  total: number;
+  users: number;
+  owners: number;
+  admins: number;
+  newThisMonth: number;
+}
+
+type SortField = "name" | "email" | "role" | "date";
+
+const roleBadge: Record<Role, string> = {
+  user:  "bg-slate-100 text-slate-600 border-slate-200",
+  owner: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  admin: "bg-rose-50 text-rose-600 border-rose-200",
+};
+
+const roleIcon: Record<Role, typeof UserRound> = {
+  user:  UserRound,
+  owner: Store,
+  admin: ShieldCheck,
+};
+
+function StatCard({ label, value, sub }: { label: string; value: number; sub?: string }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl border border-[#dbe5eb] bg-white px-5 py-4 shadow-[0_4px_16px_rgba(15,23,42,0.04)]">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">{label}</p>
+      <p className="text-3xl font-bold text-slate-900">{value.toLocaleString()}</p>
+      {sub && <p className="text-xs text-slate-400">{sub}</p>}
+    </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <div className="grid grid-cols-[1fr_1.6fr_0.9fr_0.8fr_0.9fr_0.7fr] items-center gap-4 px-5 py-4 animate-pulse">
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 rounded-full bg-slate-100" />
+        <div className="h-4 w-28 rounded bg-slate-100" />
+      </div>
+      <div className="h-4 w-40 rounded bg-slate-100" />
+      <div className="h-6 w-16 rounded-full bg-slate-100" />
+      <div className="h-4 w-20 rounded bg-slate-100" />
+      <div className="h-4 w-24 rounded bg-slate-100" />
+      <div className="flex justify-end gap-2">
+        <div className="h-8 w-8 rounded-full bg-slate-100" />
+        <div className="h-8 w-8 rounded-full bg-slate-100" />
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDialog({
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-rose-50">
+            <AlertTriangle className="h-5 w-5 text-rose-500" />
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900">Are you sure?</p>
+            <p className="mt-1 text-sm text-slate-500">{message}</p>
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function UserManagementTable() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [stats, setStats] = useState<Stats>({ total: 0, users: 0, owners: 0, admins: 0, newThisMonth: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [newRole, setNewRole] = useState<"user" | "owner" | "admin">("user");
-  const [sortBy, setSortBy] = useState<"name" | "email" | "role" | "date">("date");
+
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
+
+  const [sortBy, setSortBy] = useState<SortField>("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingRole, setPendingRole] = useState<Role>("user");
+  const [savingId, setSavingId] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
+  const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-      const response = await fetch("/api/admin/users");
-      const data: ApiResponse = await response.json();
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (roleFilter !== "all") params.set("role", roleFilter);
 
-      if (!response.ok) {
-        setError(data.error || "Failed to load users");
-        setLoading(false);
-        return;
-      }
-
+      const res = await fetch(`/api/admin/users?${params}`);
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Failed to load users"); return; }
       setUsers(data.users);
-      setError("");
-    } catch (err) {
-      console.error("Error fetching users:", err);
+      setStats(data.stats);
+    } catch {
       setError("Failed to load users");
     } finally {
       setLoading(false);
     }
+  }, [search, roleFilter]);
+
+  useEffect(() => {
+    const t = setTimeout(fetchUsers, search ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [fetchUsers, search]);
+
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+    else { setSortBy(field); setSortOrder("asc"); }
   };
 
-  const handleUpdateRole = async (userId: string, role: "user" | "owner" | "admin") => {
+  const sorted = [...users].sort((a, b) => {
+    let v = 0;
+    if (sortBy === "name") v = a.name.localeCompare(b.name);
+    else if (sortBy === "email") v = a.email.localeCompare(b.email);
+    else if (sortBy === "role") v = a.role.localeCompare(b.role);
+    else if (sortBy === "date") v = new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime();
+    return sortOrder === "asc" ? v : -v;
+  });
+
+  const handleSaveRole = async (userId: string) => {
+    setSavingId(userId);
     try {
-      const response = await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, newRole: role }),
+        body: JSON.stringify({ userId, newRole: pendingRole }),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || "Failed to update role");
-        return;
-      }
-
-      const data = await response.json();
-      setUsers(
-        users.map((u) =>
-          u.id === userId ? { ...u, role: data.user.role } : u
-        )
-      );
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Failed to update role"); return; }
+      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role: pendingRole } : u));
       setEditingId(null);
-      setError("");
-    } catch (err) {
-      console.error("Error updating role:", err);
+    } catch {
       setError("Failed to update role");
+    } finally {
+      setSavingId(null);
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeletingId(deleteTarget.id);
+    setDeleteTarget(null);
     try {
-      const response = await fetch(`/api/admin/users?userId=${userId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || "Failed to delete user");
-        return;
-      }
-
-      setUsers(users.filter((u) => u.id !== userId));
-      setError("");
-    } catch (err) {
-      console.error("Error deleting user:", err);
+      const res = await fetch(`/api/admin/users?userId=${deleteTarget.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Failed to delete user"); return; }
+      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      setStats((s) => ({ ...s, total: s.total - 1, [deleteTarget.role + "s"]: Math.max(0, (s as any)[deleteTarget.role + "s"] - 1) }));
+    } catch {
       setError("Failed to delete user");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const getSortedUsers = () => {
-    const sorted = [...users].sort((a, b) => {
-      let compareValue = 0;
-
-      if (sortBy === "name") {
-        compareValue = a.name.localeCompare(b.name);
-      } else if (sortBy === "email") {
-        compareValue = a.email.localeCompare(b.email);
-      } else if (sortBy === "role") {
-        compareValue = a.role.localeCompare(b.role);
-      } else if (sortBy === "date") {
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        compareValue = dateA - dateB;
-      }
-
-      return sortOrder === "asc" ? compareValue : -compareValue;
-    });
-
-    return sorted;
-  };
-
-  const handleSort = (field: "name" | "email" | "role" | "date") => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
-  };
-
-  const SortIcon = ({ field }: { field: string }) => {
+  const SortIcon = ({ field }: { field: SortField }) => {
     if (sortBy !== field) return null;
-    return sortOrder === "asc" ? (
-      <ChevronUp className="w-4 h-4" />
-    ) : (
-      <ChevronDown className="w-4 h-4" />
-    );
+    return sortOrder === "asc"
+      ? <ChevronUp className="h-3 w-3" />
+      : <ChevronDown className="h-3 w-3" />;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-gray-500">Loading users...</div>
-      </div>
-    );
-  }
+  const initials = (name: string) =>
+    name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+  const avatarColors = ["bg-cyan-100 text-cyan-700", "bg-violet-100 text-violet-700", "bg-amber-100 text-amber-700", "bg-emerald-100 text-emerald-700", "bg-rose-100 text-rose-600"];
+  const avatarColor = (id: string) => avatarColors[id.charCodeAt(id.length - 1) % avatarColors.length];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {deleteTarget && (
+        <ConfirmDialog
+          message={`Delete "${deleteTarget.name}"? This cannot be undone.`}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Total Users" value={stats.total} />
+        <StatCard label="Regular Users" value={stats.users} />
+        <StatCard label="Store Owners" value={stats.owners} />
+        <StatCard label="New This Month" value={stats.newThisMonth} sub={`${stats.admins} admin${stats.admins !== 1 ? "s" : ""}`} />
+      </div>
+
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left">
+      {/* Table card */}
+      <div className="overflow-hidden rounded-[22px] border border-[#dbe5eb] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
+        {/* Toolbar */}
+        <div className="flex flex-col gap-3 border-b border-[#e5edf1] bg-[#f8fbfc] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="flex w-full items-center gap-2 rounded-2xl border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-600 shadow-sm sm:w-72 sm:rounded-full sm:px-4">
+            <Search className="h-4 w-4 shrink-0 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-transparent outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value as "all" | Role)}
+              className="rounded-xl border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:bg-slate-50"
+            >
+              <option value="all">All Roles</option>
+              <option value="user">Users</option>
+              <option value="owner">Owners</option>
+              <option value="admin">Admins</option>
+            </select>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e3e8] bg-white text-slate-500 transition hover:bg-slate-50"
+              aria-label="Filter"
+            >
+              <Filter className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e3e8] bg-white text-slate-500 transition hover:bg-slate-50"
+              aria-label="Download"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
+          <div className="min-w-[860px]">
+            {/* Column headers */}
+            <div className="grid grid-cols-[1fr_1.6fr_0.9fr_0.8fr_0.9fr_0.7fr] gap-4 border-b border-[#e7eef2] bg-[#fbfcfd] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {(["name", "email", "role", "state", "date"] as const).map((f) => (
                 <button
-                  onClick={() => handleSort("name")}
-                  className="flex items-center gap-2 font-semibold text-gray-900 hover:bg-gray-100 px-2 py-1 rounded"
+                  key={f}
+                  type="button"
+                  onClick={() => handleSort(f === "date" ? "date" : f as SortField)}
+                  className="flex items-center gap-1 text-left transition hover:text-slate-700"
                 >
-                  Name
-                  <SortIcon field="name" />
+                  {f === "date" ? "Joined" : f.charAt(0).toUpperCase() + f.slice(1)}
+                  <SortIcon field={f === "date" ? "date" : f as SortField} />
                 </button>
-              </th>
-              <th className="px-6 py-3 text-left">
-                <button
-                  onClick={() => handleSort("email")}
-                  className="flex items-center gap-2 font-semibold text-gray-900 hover:bg-gray-100 px-2 py-1 rounded"
-                >
-                  Email
-                  <SortIcon field="email" />
-                </button>
-              </th>
-              <th className="px-6 py-3 text-left">
-                <button
-                  onClick={() => handleSort("role")}
-                  className="flex items-center gap-2 font-semibold text-gray-900 hover:bg-gray-100 px-2 py-1 rounded"
-                >
-                  Role
-                  <SortIcon field="role" />
-                </button>
-              </th>
-              <th className="px-6 py-3 text-left">
-                <button
-                  onClick={() => handleSort("date")}
-                  className="flex items-center gap-2 font-semibold text-gray-900 hover:bg-gray-100 px-2 py-1 rounded"
-                >
-                  Created
-                  <SortIcon field="date" />
-                </button>
-              </th>
-              <th className="px-6 py-3 text-right font-semibold text-gray-900">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {getSortedUsers().length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              getSortedUsers().map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{user.name}</div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{user.email}</td>
-                  <td className="px-6 py-4">
-                    {editingId === user.id ? (
+              ))}
+              <div className="text-right">Actions</div>
+            </div>
+
+            {/* Rows */}
+            <div className="divide-y divide-[#edf2f5]">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+              ) : sorted.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 py-16 text-slate-400">
+                  <Users className="h-10 w-10" />
+                  <p className="text-sm font-medium">No users found</p>
+                </div>
+              ) : (
+                sorted.map((user) => {
+                  const RoleIcon = roleIcon[user.role];
+                  const isEditing = editingId === user.id;
+                  const isDeleting = deletingId === user.id;
+
+                  return (
+                    <div
+                      key={user.id}
+                      className={`grid grid-cols-[1fr_1.6fr_0.9fr_0.8fr_0.9fr_0.7fr] items-center gap-4 px-5 py-3.5 text-sm transition ${isDeleting ? "opacity-40 pointer-events-none" : "hover:bg-slate-50/60"}`}
+                    >
+                      {/* Name + avatar */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${avatarColor(user.id)}`}>
+                          {user.avatarUrl
+                            ? <img src={user.avatarUrl} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
+                            : initials(user.name)}
+                        </div>
+                        <span className="truncate font-medium text-slate-900">{user.name}</span>
+                      </div>
+
+                      {/* Email */}
+                      <span className="truncate text-slate-600">{user.email}</span>
+
+                      {/* Role */}
+                      <div>
+                        {isEditing ? (
+                          <select
+                            value={pendingRole}
+                            onChange={(e) => setPendingRole(e.target.value as Role)}
+                            className="rounded-lg border border-[#d8e3e8] bg-white px-2 py-1 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-cyan-400"
+                          >
+                            <option value="user">User</option>
+                            <option value="owner">Owner</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${roleBadge[user.role]}`}>
+                            <RoleIcon className="h-3 w-3" />
+                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* State */}
+                      <span className="truncate text-slate-500 text-xs">{user.state || "—"}</span>
+
+                      {/* Joined */}
+                      <span className="text-slate-500 text-xs">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                      </span>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isEditing ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={savingId === user.id}
+                              onClick={() => handleSaveRole(user.id)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50"
+                              title="Save"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingId(null)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50"
+                              title="Cancel"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => { setEditingId(user.id); setPendingRole(user.role); }}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d8e3e8] text-slate-500 transition hover:bg-slate-50"
+                              title="Change role"
+                            >
+                              <ShieldCheck className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(user)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-100 text-rose-400 transition hover:bg-rose-50"
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="divide-y divide-[#edf2f5] md:hidden">
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="animate-pulse px-4 py-4 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-slate-100" />
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-32 rounded bg-slate-100" />
+                    <div className="h-3 w-40 rounded bg-slate-100" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : sorted.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-slate-400">
+              <Users className="h-8 w-8" />
+              <p className="text-sm">No users found</p>
+            </div>
+          ) : (
+            sorted.map((user) => {
+              const RoleIcon = roleIcon[user.role];
+              const isEditing = editingId === user.id;
+              return (
+                <div key={user.id} className="px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${avatarColor(user.id)}`}>
+                        {user.avatarUrl
+                          ? <img src={user.avatarUrl} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
+                          : initials(user.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">{user.name}</p>
+                        <p className="truncate text-xs text-slate-500">{user.email}</p>
+                      </div>
+                    </div>
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${roleBadge[user.role]}`}>
+                      <RoleIcon className="h-3 w-3" />
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                    <span>{user.state || "No state"}</span>
+                    <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</span>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="mt-3 flex items-center gap-2">
                       <select
-                        value={newRole}
-                        onChange={(e) =>
-                          setNewRole(e.target.value as "user" | "owner" | "admin")
-                        }
-                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        value={pendingRole}
+                        onChange={(e) => setPendingRole(e.target.value as Role)}
+                        className="flex-1 rounded-lg border border-[#d8e3e8] px-2 py-1.5 text-sm outline-none"
                       >
                         <option value="user">User</option>
                         <option value="owner">Owner</option>
                         <option value="admin">Admin</option>
                       </select>
-                    ) : (
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          user.role === "admin"
-                            ? "bg-red-100 text-red-800"
-                            : user.role === "owner"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">
-                    {user.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString()
-                      : "N/A"}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      {editingId === user.id ? (
-                        <>
-                          <button
-                            onClick={() => handleUpdateRole(user.id, newRole)}
-                            className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="px-3 py-1 bg-gray-300 text-gray-800 rounded text-sm hover:bg-gray-400"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => {
-                              setEditingId(user.id);
-                              setNewRole(user.role);
-                            }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                            title="Edit user role"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded"
-                            title="Delete user"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
+                      <button onClick={() => handleSaveRole(user.id)} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Save</button>
+                      <button onClick={() => setEditingId(null)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50">Cancel</button>
                     </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  ) : (
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        onClick={() => { setEditingId(user.id); setPendingRole(user.role); }}
+                        className="flex-1 rounded-xl border border-[#d8e3e8] py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Change Role
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(user)}
+                        className="rounded-xl border border-rose-100 px-3 py-1.5 text-xs font-medium text-rose-500 transition hover:bg-rose-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
 
-      <div className="text-sm text-gray-600">
-        Total users: {users.length}
+        {/* Footer */}
+        {!loading && sorted.length > 0 && (
+          <div className="flex items-center justify-between border-t border-[#e7eef2] bg-[#fbfcfd] px-5 py-3 text-xs text-slate-500">
+            <span>
+              Showing <span className="font-semibold text-slate-700">{sorted.length}</span> of{" "}
+              <span className="font-semibold text-slate-700">{stats.total}</span> users
+            </span>
+            <span className="flex items-center gap-1">
+              <UserPlus className="h-3.5 w-3.5 text-cyan-500" />
+              {stats.newThisMonth} new this month
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
