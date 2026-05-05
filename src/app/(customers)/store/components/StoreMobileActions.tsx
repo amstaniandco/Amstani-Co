@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { useStore } from "../../../../context/StoreContext";
 
 export default function StoreMobileActions() {
+  const store = useStore();
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Link
-          href="/store/offer"
+          href={store?._id ? `/store/offer?storeId=${store._id}` : "/store/offer"}
           className="rounded-3xl border border-gray-200 bg-white p-4 transition hover:shadow-md"
         >
           <div className="flex items-center gap-3 text-slate-900">

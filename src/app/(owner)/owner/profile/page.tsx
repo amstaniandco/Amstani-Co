@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PenLine, Square, Store, Loader2 } from "lucide-react";
 
@@ -12,25 +13,6 @@ type StoreApplication = {
   requestedAt: string;
   category: string;
 };
-
-const storeApplications: StoreApplication[] = [
-  {
-    id: "APP-2401",
-    fullName: "Avery James",
-    email: "avery.james@mail.com",
-    phone: "+1 444 912 7812",
-    requestedAt: "Apr 22, 2026",
-    category: "Fashion",
-  },
-  {
-    id: "APP-2402",
-    fullName: "Mia Cooper",
-    email: "mia.cooper@mail.com",
-    phone: "+1 444 221 3378",
-    requestedAt: "Apr 21, 2026",
-    category: "Accessories",
-  },
-];
 
 function EditBadge({ onClick, loading }: { onClick?: () => void; loading?: boolean }) {
   return (
@@ -45,7 +27,7 @@ function EditBadge({ onClick, loading }: { onClick?: () => void; loading?: boole
   );
 }
 
-function ApplicationsCard() {
+function ApplicationsCard({ applications }: { applications: StoreApplication[] }) {
   return (
     <section className="rounded-[26px] bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
       <div className="mb-4 flex items-center justify-between">
@@ -59,7 +41,12 @@ function ApplicationsCard() {
       </div>
 
       <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
-        {storeApplications.map((application) => (
+        {applications.length === 0 && (
+          <div className="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-3 text-sm text-slate-600 dark:text-slate-300">
+            No applications received yet.
+          </div>
+        )}
+        {applications.map((application) => (
           <Link
             key={application.id}
             href="/owner/profile/applications"
@@ -216,27 +203,100 @@ function ProfileHero({ store, onRefresh }: { store: any; onRefresh: () => void }
   );
 }
 
-function EarnReferralCard() {
+function EarnReferralCard({
+  storeId,
+  onSubmitted,
+  prefillName,
+  prefillEmail,
+  forwardApplicationId,
+}: {
+  storeId?: string;
+  onSubmitted?: () => void;
+  prefillName?: string;
+  prefillEmail?: string;
+  forwardApplicationId?: string;
+}) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (prefillName) setFullName(prefillName);
+    if (prefillEmail) setEmail(prefillEmail);
+  }, [prefillName, prefillEmail]);
+
+  const handleSubmit = async () => {
+    setNotice(null);
+    if (!forwardApplicationId) {
+      setNotice({ type: "error", message: "Open an application and click Forward To Admin first." });
+      return;
+    }
+    if (!fullName.trim() || !email.trim()) {
+      setNotice({ type: "error", message: "Please enter name and email." });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/owner/applications/${forwardApplicationId}/forward`, {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed to submit application");
+      }
+
+      setNotice({ type: "success", message: "Application forwarded to admin successfully." });
+      setFullName("");
+      setEmail("");
+      onSubmitted?.();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to submit application";
+      setNotice({ type: "error", message: msg });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <section className="rounded-[26px] bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
       <h3 className="text-center text-[1.55rem] font-bold text-slate-900 dark:text-slate-100 sm:text-[2rem]">Earn $100</h3>
       <p className="mt-2 text-center text-[15px] text-slate-500 dark:text-slate-400">Register applicant details directly</p>
+      {notice && (
+        <div
+          className={`mt-3 rounded-lg px-3 py-2 text-sm ${
+            notice.type === "success"
+              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+          }`}
+        >
+          {notice.message}
+        </div>
+      )}
       <div className="mt-4 space-y-3">
         <input 
           type="text" 
           placeholder="Customer full name" 
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
           className="h-10 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 text-sm text-slate-700 dark:bg-slate-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400" 
         />
         <input 
           type="email" 
           placeholder="Customer email" 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="h-10 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 text-sm text-slate-700 dark:bg-slate-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400" 
         />
         <button 
           type="button" 
+          onClick={handleSubmit}
+          disabled={submitting || !forwardApplicationId}
           className="mt-4 w-full rounded-full border-2 border-slate-900 dark:border-slate-400 px-6 py-2.5 text-sm font-semibold text-slate-900 dark:text-slate-100 transition hover:bg-slate-50 dark:hover:bg-slate-700"
         >
-          Submit Application
+          {submitting ? "Submitting..." : "Submit Application"}
         </button>
       </div>
     </section>
@@ -449,8 +509,11 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
 }
 
 export default function OwnerProfilePage() {
+  const searchParams = useSearchParams();
+  const forwardAppId = searchParams.get("forwardAppId") || "";
   const [user, setUser] = useState<any>(null);
   const [store, setStore] = useState<any>(null);
+  const [applications, setApplications] = useState<StoreApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -461,6 +524,20 @@ export default function OwnerProfilePage() {
         const data = await res.json();
         setUser(data.user);
         setStore(data.store);
+
+        const appsRes = await fetch("/api/owner/applications");
+        if (appsRes.ok) {
+          const appsData = await appsRes.json();
+          const mapped: StoreApplication[] = (appsData.applications || []).map((app: any) => ({
+            id: String(app._id),
+            fullName: app.applicant?.name || "Unknown",
+            email: app.applicant?.email || "",
+            phone: app.applicant?.phone || "",
+            requestedAt: app.createdAt ? new Date(app.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : "",
+            category: app.storeName || "Store",
+          }));
+          setApplications(mapped);
+        }
       } else {
         showToast("error", "Failed to fetch profile");
       }
@@ -490,6 +567,8 @@ export default function OwnerProfilePage() {
       showToast("error", "Error saving store profile");
     }
   };
+
+  const selectedForwardApplication = applications.find((app) => app.id === forwardAppId);
 
   if (loading) {
     return (
@@ -534,8 +613,14 @@ export default function OwnerProfilePage() {
       </section>
 
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
-        <ApplicationsCard />
-        <EarnReferralCard />
+        <ApplicationsCard applications={applications} />
+        <EarnReferralCard
+          storeId={store?._id ? String(store._id) : undefined}
+          onSubmitted={fetchProfile}
+          prefillName={selectedForwardApplication?.fullName}
+          prefillEmail={selectedForwardApplication?.email}
+          forwardApplicationId={selectedForwardApplication?.id}
+        />
       </section>
 
       <section className="mt-4">

@@ -1,55 +1,84 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { Store } from "lucide-react";
 
-const applicationRows = [
-  {
-    id: "APP-2401",
-    name: "John Doe",
-    address: "H#1 St#2, XYZ",
-    email: "name@gmail.com",
-    phone: "1234567890",
-    state: "LA",
-  },
-  {
-    id: "APP-2402",
-    name: "Jane Smith",
-    address: "H#1 St#2, XYZ",
-    email: "jane.smith@gmail.com",
-    phone: "1234567890",
-    state: "LA",
-  },
-  {
-    id: "APP-2403",
-    name: "Michael Brown",
-    address: "H#1 St#2, XYZ",
-    email: "michael.brown@gmail.com",
-    phone: "1234567890",
-    state: "LA",
-  },
-  {
-    id: "APP-2404",
-    name: "Emily Johnson",
-    address: "H#1 St#2, XYZ",
-    email: "emily.johnson@gmail.com",
-    phone: "1234567890",
-    state: "LA",
-  },
-  {
-    id: "APP-2405",
-    name: "Samuel Lee",
-    address: "H#1 St#2, XYZ",
-    email: "samuel.lee@gmail.com",
-    phone: "1234567890",
-    state: "LA",
-  },
-];
+type ApplicationRow = {
+  id: string;
+  name: string;
+  address: string;
+  email: string;
+  phone: string;
+  state: string;
+};
+
+function extractFromMessage(message: string | undefined) {
+  if (!message) return { state: "", address: "" };
+  const stateMatch = message.match(/State:\s*([^|]+)/i);
+  const addressMatch = message.match(/Address:\s*(.*)$/i);
+  return {
+    state: stateMatch?.[1]?.trim() || "",
+    address: addressMatch?.[1]?.trim() || "",
+  };
+}
 
 export default function OwnerProfileApplicationsPage() {
+  const [storeName, setStoreName] = useState("Name of the store here");
+  const [rows, setRows] = useState<ApplicationRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const [storeRes, appsRes] = await Promise.all([
+          fetch("/api/owner/store"),
+          fetch("/api/owner/applications"),
+        ]);
+
+        if (!mounted) return;
+
+        if (storeRes.ok) {
+          const storeData = await storeRes.json();
+          setStoreName(storeData?.store?.name || "Name of the store here");
+        }
+
+        if (appsRes.ok) {
+          const appsData = await appsRes.json();
+          const mapped: ApplicationRow[] = (appsData?.applications || []).map((app: any) => {
+            const parsed = extractFromMessage(app?.applicant?.message);
+            return {
+              id: String(app?._id),
+              name: app?.applicant?.name || "",
+              address: parsed.address,
+              email: app?.applicant?.email || "",
+              phone: app?.applicant?.phone || "",
+              state: parsed.state,
+            };
+          });
+          setRows(mapped);
+        }
+      } catch (error) {
+        console.error("Failed loading owner applications page:", error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const hasRows = useMemo(() => rows.length > 0, [rows]);
+
   return (
     <>
           <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-slate-900">
               <Store className="h-5 w-5 text-[#65bbc5]" />
-              <h1 className="text-xl font-semibold sm:text-2xl">Name of the store here</h1>
+              <h1 className="text-xl font-semibold sm:text-2xl">{storeName}</h1>
             </div>
           </section>
 
@@ -71,7 +100,17 @@ export default function OwnerProfileApplicationsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {applicationRows.map((row) => (
+                  {!loading && !hasRows && (
+                    <tr className="border-b border-slate-200 text-sm text-slate-900 last:border-b-0">
+                      <td className="px-4 py-4" colSpan={6}>No applications received yet.</td>
+                    </tr>
+                  )}
+                  {loading && (
+                    <tr className="border-b border-slate-200 text-sm text-slate-900 last:border-b-0">
+                      <td className="px-4 py-4" colSpan={6}>Loading applications...</td>
+                    </tr>
+                  )}
+                  {rows.map((row) => (
                     <tr key={row.id} className="border-b border-slate-200 text-sm text-slate-900 last:border-b-0">
                       <td className="px-4 py-4">{row.name}</td>
                       <td className="px-4 py-4">{row.address}</td>
@@ -79,13 +118,13 @@ export default function OwnerProfileApplicationsPage() {
                       <td className="px-4 py-4">{row.phone}</td>
                       <td className="px-4 py-4">{row.state}</td>
                       <td className="px-4 py-4">
-                        <button
-                          type="button"
+                        <a
+                          href={`/owner/profile?forwardAppId=${row.id}`}
                           className="font-bold transition"
                           style={{ color: "#15803D" }}
                         >
                           Forward To Admin
-                        </button>
+                        </a>
                       </td>
                     </tr>
                   ))}

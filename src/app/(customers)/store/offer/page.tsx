@@ -1,6 +1,12 @@
 import Link from "next/link";
 
-export default function StoreOfferPage() {
+export default async function StoreOfferPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ storeId?: string }>;
+}) {
+  const params = await searchParams;
+  const storeId = params?.storeId;
   return (
     <div className="w-full bg-[#f7f7f7] py-6">
       <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 lg:px-8">
@@ -30,7 +36,7 @@ export default function StoreOfferPage() {
               Chat With Store Owner
             </Link>
             <Link
-              href="/form"
+              href={storeId ? `/form?storeId=${storeId}` : "/form"}
               className="flex h-14 items-center justify-center rounded-2xl bg-[#5fb9c3] text-sm font-semibold text-white transition hover:bg-[#4aaab4]"
             >
               Fill form

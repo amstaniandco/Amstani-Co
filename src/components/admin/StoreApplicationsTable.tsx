@@ -1,4 +1,7 @@
-import { Download, Filter, Search, Shield } from "lucide-react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Download, Filter, Search } from "lucide-react";
 
 export type ApplicationRow = {
   name: string;
@@ -9,40 +12,15 @@ export type ApplicationRow = {
   vacancy: string;
 };
 
-const applicationRows: ApplicationRow[] = [
-  {
-    name: "Applicant name",
-    email: "email@example.com",
-    number: "96576738461",
-    address: "House 1, Street 2, Colony 3, City 4",
-    state: "State Name",
-    vacancy: "27",
-  },
-  {
-    name: "Applicant name",
-    email: "email@example.com",
-    number: "96576738461",
-    address: "House 1, Street 2, Colony 3, City 4",
-    state: "State Name",
-    vacancy: "2",
-  },
-  {
-    name: "Applicant name",
-    email: "email@example.com",
-    number: "96576738461",
-    address: "House 1, Street 2, Colony 3, City 4",
-    state: "State Name",
-    vacancy: "33",
-  },
-  {
-    name: "Applicant name",
-    email: "email@example.com",
-    number: "96576738461",
-    address: "House 1, Street 2, Colony 3, City 4",
-    state: "State Name",
-    vacancy: "71",
-  },
-];
+function parseMessage(message: string | undefined) {
+  if (!message) return { address: "", state: "" };
+  const stateMatch = message.match(/State:\s*([^|]+)/i);
+  const addressMatch = message.match(/Address:\s*(.*)$/i);
+  return {
+    state: stateMatch?.[1]?.trim() || "",
+    address: addressMatch?.[1]?.trim() || "",
+  };
+}
 
 const stateRows = [
   { name: "STATE", max: "100", occupied: "12" },
@@ -86,6 +64,46 @@ function Toolbar() {
 }
 
 function ApplicationsTable() {
+  const [rows, setRows] = useState<ApplicationRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/stores/applications");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!mounted) return;
+
+        const mapped: ApplicationRow[] = (data.applications || []).map((app: any) => {
+          const parsed = parseMessage(app?.applicant?.message);
+          return {
+            name: app?.applicant?.name || "",
+            email: app?.applicant?.email || "",
+            number: app?.applicant?.phone || "-",
+            address: parsed.address || "-",
+            state: parsed.state || "-",
+            vacancy: app?.vacancy ?? "-",
+          };
+        });
+
+        setRows(mapped);
+      } catch (error) {
+        console.error("Failed to fetch admin store applications:", error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const dataRows = useMemo(() => rows, [rows]);
+
   return (
     <div className="overflow-hidden rounded-[22px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
       <Toolbar />
@@ -103,7 +121,13 @@ function ApplicationsTable() {
           </div>
 
           <div className="divide-y divide-[#edf2f5]">
-            {applicationRows.map((row, index) => (
+            {loading && (
+              <div className="px-5 py-4 text-sm text-slate-600">Loading applications...</div>
+            )}
+            {!loading && dataRows.length === 0 && (
+              <div className="px-5 py-4 text-sm text-slate-600">No applications found.</div>
+            )}
+            {dataRows.map((row, index) => (
               <div
                 key={`${row.email}-${index}`}
                 className={`grid grid-cols-[1.2fr_1.2fr_1fr_1.6fr_1fr_0.7fr_0.9fr] items-center px-5 py-4 text-sm text-slate-800 ${index % 2 === 1 ? "bg-[#fff8f8]" : "bg-white"}`}

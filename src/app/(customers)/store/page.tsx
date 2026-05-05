@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Music2, VolumeX } from "lucide-react";
 import StoreHero from "./components/StoreHero";
 import LiveChat from "./components/LiveChat";
@@ -12,6 +13,8 @@ import StoreRatingSection from "./components/StoreRatingSection";
 import { StoreProvider } from "../../../context/StoreContext";
 
 export default function StorePage() {
+  const searchParams = useSearchParams();
+  const storeId = searchParams.get("storeId");
   const [isMusicMuted, setIsMusicMuted] = useState(false);
   const [store, setStore] = useState<any | null>(null);
 
@@ -19,7 +22,8 @@ export default function StorePage() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch('/api/stores');
+        const endpoint = storeId ? `/api/stores?storeId=${storeId}` : '/api/stores';
+        const res = await fetch(endpoint);
         if (!res.ok) return;
         const data = await res.json();
         if (!mounted) return;
@@ -31,7 +35,7 @@ export default function StorePage() {
     })();
 
     return () => { mounted = false };
-  }, []);
+  }, [storeId]);
 
   return (
     <div className="w-full py-6 dark:bg-slate-950">
