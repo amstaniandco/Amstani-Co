@@ -1,4 +1,5 @@
-import { CircleCheck, CircleSlash, Download, Ellipsis, Filter, PhoneCall, Search, ShieldAlert } from "lucide-react";
+import { CircleCheck, CircleSlash, Download, Ellipsis, Filter, PhoneCall, Search, ShieldAlert, Package, Trash2, Eye, Mail } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 export type StoreStatus = "Active" | "Suspended" | "Dormant";
 
@@ -24,6 +25,21 @@ type StoreManagementTableProps = {
   rows?: StoreRow[];
   selectedStoreId?: string;
   onSelectStore?: (store: StoreRow) => void;
+  onSuspend?: (storeId: string) => void;
+  onActivate?: (storeId: string) => void;
+  onContact?: (storeId: string) => void;
+  onMoreActions?: (storeId: string) => void;
+  onManageProducts?: (storeId: string) => void;
+  onDeleteStore?: (storeId: string) => void;
+  onViewAnalytics?: (storeId: string) => void;
+  onViewStore?: (storeId: string) => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  statusFilter?: "all" | "Active" | "Suspended" | "Dormant";
+  onStatusFilterChange?: (status: "all" | "Active" | "Suspended" | "Dormant") => void;
+  stateFilter?: string;
+  onStateFilterChange?: (state: string) => void;
+  availableStates?: string[];
 };
 
 export const defaultRows: StoreRow[] = [
@@ -106,9 +122,11 @@ const statusStyles: Record<StoreStatus, string> = {
 function ActionPill({
   icon: Icon,
   tone,
+  onClick,
 }: {
   icon: typeof CircleCheck;
   tone: "green" | "slate" | "rose";
+  onClick?: () => void;
 }) {
   const toneStyles: Record<typeof tone, string> = {
     green: "border-emerald-200 text-emerald-500 hover:bg-emerald-50",
@@ -119,6 +137,7 @@ function ActionPill({
   return (
     <button
       type="button"
+      onClick={onClick}
       className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${toneStyles[tone]}`}
       aria-label="Store action"
     >
@@ -131,25 +150,99 @@ export default function StoreManagementTable({
   rows = defaultRows,
   selectedStoreId,
   onSelectStore,
+  onSuspend,
+  onActivate,
+  onContact,
+  onMoreActions,
+  onManageProducts,
+  onDeleteStore,
+  onViewAnalytics,
+  onViewStore,
+  searchQuery = "",
+  onSearchChange,
+  statusFilter = "all",
+  onStatusFilterChange,
+  stateFilter = "all",
+  onStateFilterChange,
+  availableStates = [],
 }: StoreManagementTableProps) {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   return (
     <div className="overflow-hidden rounded-[22px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
-      <div className="flex flex-col gap-3 border-b border-[#e5edf1] bg-[#f8fbfc] px-3 py-3 sm:px-5 md:flex-row md:items-center md:justify-between">
-        <div className="flex w-full items-center gap-2 rounded-2xl border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-600 shadow-sm md:w-auto md:rounded-full md:px-4">
-          <Search className="h-4 w-4" />
-          <span className="truncate">Search by Store Name, ID, or Owner...</span>
-        </div>
+      <div className="flex flex-col gap-3 border-b border-[#e5edf1] bg-[#f8fbfc] p-3 sm:p-5">
+        {/* Search and Filters Row 1 */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex w-full items-center gap-2 rounded-2xl border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-600 shadow-sm md:w-auto md:flex-1 md:rounded-lg md:px-4">
+            <Search className="h-4 w-4 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Search by Store Name, ID, or Owner..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              className="w-full bg-transparent outline-none placeholder:text-slate-400"
+            />
+          </div>
 
-        <div className="flex items-center gap-2 self-end md:self-auto">
-          <button className="rounded-xl border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 sm:px-4" type="button">
-            All Status
-          </button>
-          <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e3e8] bg-white text-slate-600 transition hover:bg-slate-50" type="button" aria-label="Filter stores">
-            <Filter className="h-4 w-4" />
-          </button>
-          <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d8e3e8] bg-white text-slate-600 transition hover:bg-slate-50" type="button" aria-label="Download stores">
+          {/* Download Button */}
+          <button className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-[#d8e3e8] bg-white text-slate-600 transition hover:bg-slate-50" type="button" aria-label="Download stores">
             <Download className="h-4 w-4" />
           </button>
+        </div>
+
+        {/* Filters Row 2 */}
+        <div className="flex flex-wrap gap-2">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => onStatusFilterChange?.(e.target.value as "all" | "Active" | "Suspended" | "Dormant")}
+            className="rounded-lg border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:bg-slate-50"
+          >
+            <option value="all">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Suspended">Suspended</option>
+            <option value="Dormant">Dormant</option>
+          </select>
+
+          {/* State Filter */}
+          <select
+            value={stateFilter}
+            onChange={(e) => onStateFilterChange?.(e.target.value)}
+            className="rounded-lg border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:bg-slate-50"
+          >
+            <option value="all">All States</option>
+            {availableStates.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
+
+          {/* Clear Filters Button */}
+          {(searchQuery || statusFilter !== "all" || stateFilter !== "all") && (
+            <button
+              type="button"
+              onClick={() => {
+                onSearchChange?.("");
+                onStatusFilterChange?.("all");
+                onStateFilterChange?.("all");
+              }}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -195,23 +288,110 @@ export default function StoreManagementTable({
             <div className="mt-2 flex items-center justify-end gap-2">
               {row.status === "Active" ? (
                 <>
-                  <ActionPill icon={CircleSlash} tone="slate" />
-                  <ActionPill icon={PhoneCall} tone="green" />
+                  <ActionPill 
+                    icon={CircleSlash} 
+                    tone="slate"
+                    onClick={() => onSuspend?.(row.id)}
+                  />
+                  <ActionPill 
+                    icon={PhoneCall} 
+                    tone="green"
+                    onClick={() => onContact?.(row.id)}
+                  />
                 </>
               ) : row.status === "Suspended" ? (
                 <>
-                  <ActionPill icon={ShieldAlert} tone="rose" />
-                  <ActionPill icon={PhoneCall} tone="slate" />
+                  <ActionPill 
+                    icon={ShieldAlert} 
+                    tone="rose"
+                    onClick={() => onActivate?.(row.id)}
+                  />
+                  <ActionPill 
+                    icon={PhoneCall} 
+                    tone="slate"
+                    onClick={() => onContact?.(row.id)}
+                  />
                 </>
               ) : (
                 <>
-                  <ActionPill icon={CircleCheck} tone="green" />
-                  <ActionPill icon={PhoneCall} tone="slate" />
+                  <ActionPill 
+                    icon={CircleCheck} 
+                    tone="green"
+                    onClick={() => onActivate?.(row.id)}
+                  />
+                  <ActionPill 
+                    icon={PhoneCall} 
+                    tone="slate"
+                    onClick={() => onContact?.(row.id)}
+                  />
                 </>
               )}
-              <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" type="button" aria-label="More actions">
-                <Ellipsis className="h-4 w-4" />
-              </button>
+              <div className="relative" ref={menuRef}>
+                <button 
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" 
+                  type="button" 
+                  onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
+                  aria-label="More actions"
+                >
+                  <Ellipsis className="h-4 w-4" />
+                </button>
+
+                {openMenuId === row.id && (
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-[#e5edf1] bg-white shadow-lg z-50">
+                    <div className="p-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onManageProducts?.(row.id);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <Package className="h-4 w-4" />
+                        Manage Products
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onViewAnalytics?.(row.id);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Analytics
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onViewStore?.(row.id);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Contact Owner
+                      </button>
+
+                      <div className="my-1 border-t border-[#e5edf1]" />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onDeleteStore?.(row.id);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-rose-600 transition hover:bg-rose-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Store
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -258,23 +438,98 @@ export default function StoreManagementTable({
                 <div className="flex items-center justify-end gap-2">
                   {row.status === "Active" ? (
                     <>
-                      <ActionPill icon={CircleSlash} tone="slate" />
-                      <ActionPill icon={PhoneCall} tone="green" />
+                      <ActionPill 
+                        icon={CircleSlash} 
+                        tone="slate"
+                        onClick={() => onSuspend?.(row.id)}
+                      />
+                      <ActionPill 
+                        icon={PhoneCall} 
+                        tone="green"
+                        onClick={() => onContact?.(row.id)}
+                      />
                     </>
                   ) : row.status === "Suspended" ? (
                     <>
-                      <ActionPill icon={ShieldAlert} tone="rose" />
-                      <ActionPill icon={PhoneCall} tone="slate" />
+                      <ActionPill 
+                        icon={ShieldAlert} 
+                        tone="rose"
+                        onClick={() => onActivate?.(row.id)}
+                      />
+                      <ActionPill 
+                        icon={PhoneCall} 
+                        tone="slate"
+                        onClick={() => onContact?.(row.id)}
+                      />
                     </>
                   ) : (
                     <>
-                      <ActionPill icon={CircleCheck} tone="green" />
-                      <ActionPill icon={PhoneCall} tone="slate" />
+                      <ActionPill 
+                        icon={CircleCheck} 
+                        tone="green"
+                        onClick={() => onActivate?.(row.id)}
+                      />
+                      <ActionPill 
+                        icon={PhoneCall} 
+                        tone="slate"
+                        onClick={() => onContact?.(row.id)}
+                      />
                     </>
                   )}
-                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" type="button" aria-label="More actions">
-                    <Ellipsis className="h-4 w-4" />
-                  </button>
+                  <div className="relative" ref={menuRef}>
+                    <button 
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" 
+                      type="button"
+                      onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
+                      aria-label="More actions"
+                    >
+                      <Ellipsis className="h-4 w-4" />
+                    </button>
+
+                    {openMenuId === row.id && (
+                      <div className="fixed right-4 top-auto rounded-lg border border-[#e5edf1] bg-white shadow-xl" style={{ zIndex: 9999, minWidth: '200px' }}>
+                        <div className="p-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onManageProducts?.(row.id);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+                          >
+                            <Package className="h-4 w-4" />
+                            Manage Products
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onContact?.(row.id);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+                          >
+                            <Mail className="h-4 w-4" />
+                            Contact Owner
+                          </button>
+
+                          <div className="my-1 border-t border-[#e5edf1]" />
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onDeleteStore?.(row.id);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-rose-600 transition hover:bg-rose-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete Store
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
