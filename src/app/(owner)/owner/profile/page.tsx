@@ -12,6 +12,8 @@ type StoreApplication = {
   phone: string;
   requestedAt: string;
   category: string;
+  status?: string;
+  ownerSignupLink?: string;
 };
 
 function EditBadge({ onClick, loading }: { onClick?: () => void; loading?: boolean }) {
@@ -57,8 +59,13 @@ function ApplicationsCard({ applications }: { applications: StoreApplication[] }
             <p className="text-xs text-slate-600 dark:text-slate-400">{application.email}</p>
             <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
               <span>{application.requestedAt}</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">{application.category}</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">{application.status === "approved_by_admin" ? "Approved" : application.status === "denied_by_admin" ? "Denied" : "Pending"}</span>
             </div>
+            {application.status === "approved_by_admin" && (
+              <div className="mt-2 text-[11px] text-emerald-700 dark:text-emerald-300 break-all">
+                Owner signup link: {application.ownerSignupLink || "http://localhost:3000/store-signup"}
+              </div>
+            )}
           </Link>
         ))}
       </div>
@@ -535,6 +542,8 @@ export default function OwnerProfilePage() {
             phone: app.applicant?.phone || "",
             requestedAt: app.createdAt ? new Date(app.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : "",
             category: app.storeName || "Store",
+            status: app.status || "new",
+            ownerSignupLink: app.ownerSignupLink,
           }));
           setApplications(mapped);
         }

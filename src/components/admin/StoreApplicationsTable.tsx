@@ -4,12 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, Filter, Search } from "lucide-react";
 
 export type ApplicationRow = {
+  id: string;
   name: string;
   email: string;
   number: string;
   address: string;
   state: string;
   vacancy: string;
+  status: string;
+  ownerSignupLink?: string;
 };
 
 function parseMessage(message: string | undefined) {
@@ -80,12 +83,15 @@ function ApplicationsTable() {
         const mapped: ApplicationRow[] = (data.applications || []).map((app: any) => {
           const parsed = parseMessage(app?.applicant?.message);
           return {
+            id: String(app?._id),
             name: app?.applicant?.name || "",
             email: app?.applicant?.email || "",
             number: app?.applicant?.phone || "-",
             address: parsed.address || "-",
             state: parsed.state || "-",
             vacancy: app?.vacancy ?? "-",
+            status: app?.status || "forwarded_to_admin",
+            ownerSignupLink: app?.ownerSignupLink,
           };
         });
 
@@ -103,6 +109,37 @@ function ApplicationsTable() {
   }, []);
 
   const dataRows = useMemo(() => rows, [rows]);
+
+  const updateStatus = async (applicationId: string, action: "approve" | "deny") => {
+    try {
+      const res = await fetch(`/api/admin/stores/applications/${applicationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) return;
+
+      setRows((prev) =>
+        prev.map((r) => {
+          if (r.id !== applicationId) return r;
+          const nextStatus = action === "approve" ? "approved_by_admin" : "denied_by_admin";
+          return {
+            ...r,
+            status: nextStatus,
+            ownerSignupLink: action === "approve" ? "http://localhost:3000/store-signup" : r.ownerSignupLink,
+          };
+        })
+      );
+    } catch (error) {
+      console.error("Failed to update application status:", error);
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === "approved_by_admin") return "Approved";
+    if (status === "denied_by_admin") return "Denied";
+    return "Pending";
+  };
 
   return (
     <div className="overflow-hidden rounded-[22px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
@@ -140,9 +177,18 @@ function ApplicationsTable() {
                 </div>
                 <div className="text-slate-600">{row.state}</div>
                 <div className="text-slate-700">{row.vacancy}</div>
-                <div className="flex justify-end gap-2 text-slate-500">
+                <div className="flex justify-end gap-2 text-slate-500 items-center">
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
+                    row.status === "approved_by_admin"
+                      ? "bg-green-100 text-green-700"
+                      : row.status === "denied_by_admin"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-amber-100 text-amber-700"
+                  }`}>{statusLabel(row.status)}</span>
                   <button
                     type="button"
+                    onClick={() => updateStatus(row.id, "approve")}
+                    disabled={row.status === "approved_by_admin"}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:bg-slate-50"
                     aria-label="Accept application"
                   >
@@ -150,6 +196,8 @@ function ApplicationsTable() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => updateStatus(row.id, "deny")}
+                    disabled={row.status === "denied_by_admin"}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 transition hover:bg-slate-50"
                     aria-label="Reject application"
                   >

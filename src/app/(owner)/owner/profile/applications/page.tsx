@@ -10,6 +10,8 @@ type ApplicationRow = {
   email: string;
   phone: string;
   state: string;
+  status: string;
+  ownerSignupLink?: string;
 };
 
 function extractFromMessage(message: string | undefined) {
@@ -26,6 +28,17 @@ export default function OwnerProfileApplicationsPage() {
   const [storeName, setStoreName] = useState("Name of the store here");
   const [rows, setRows] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState("");
+
+  const copyLink = async (id: string, link: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(""), 1500);
+    } catch (error) {
+      console.error("Failed to copy signup link:", error);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -55,6 +68,8 @@ export default function OwnerProfileApplicationsPage() {
               email: app?.applicant?.email || "",
               phone: app?.applicant?.phone || "",
               state: parsed.state,
+              status: app?.status || "new",
+              ownerSignupLink: app?.ownerSignupLink,
             };
           });
           setRows(mapped);
@@ -96,18 +111,19 @@ export default function OwnerProfileApplicationsPage() {
                     <th className="px-4 py-3 font-semibold">Email</th>
                     <th className="px-4 py-3 font-semibold">Phone Number</th>
                     <th className="px-4 py-3 font-semibold">State</th>
+                    <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {!loading && !hasRows && (
                     <tr className="border-b border-slate-200 text-sm text-slate-900 last:border-b-0">
-                      <td className="px-4 py-4" colSpan={6}>No applications received yet.</td>
+                      <td className="px-4 py-4" colSpan={7}>No applications received yet.</td>
                     </tr>
                   )}
                   {loading && (
                     <tr className="border-b border-slate-200 text-sm text-slate-900 last:border-b-0">
-                      <td className="px-4 py-4" colSpan={6}>Loading applications...</td>
+                      <td className="px-4 py-4" colSpan={7}>Loading applications...</td>
                     </tr>
                   )}
                   {rows.map((row) => (
@@ -118,13 +134,33 @@ export default function OwnerProfileApplicationsPage() {
                       <td className="px-4 py-4">{row.phone}</td>
                       <td className="px-4 py-4">{row.state}</td>
                       <td className="px-4 py-4">
-                        <a
-                          href={`/owner/profile?forwardAppId=${row.id}`}
-                          className="font-bold transition"
-                          style={{ color: "#15803D" }}
-                        >
-                          Forward To Admin
-                        </a>
+                        {row.status === "approved_by_admin" ? "Approved" : row.status === "denied_by_admin" ? "Denied" : row.status === "forwarded_to_admin" ? "Forwarded" : "New"}
+                      </td>
+                      <td className="px-4 py-4">
+                        {row.status === "approved_by_admin" ? (
+                          <div className="flex flex-col gap-2">
+                            <a href={row.ownerSignupLink || "http://localhost:3000/store-signup"} className="font-bold text-emerald-700 break-all" target="_blank" rel="noreferrer">
+                              {row.ownerSignupLink || "http://localhost:3000/store-signup"}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => copyLink(row.id, row.ownerSignupLink || "http://localhost:3000/store-signup")}
+                              className="w-fit rounded-md border border-emerald-600 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                            >
+                              {copiedId === row.id ? "Copied" : "Copy"}
+                            </button>
+                          </div>
+                        ) : row.status === "denied_by_admin" || row.status === "forwarded_to_admin" ? (
+                          <span className="text-slate-500">No Action</span>
+                        ) : (
+                          <a
+                            href={`/owner/profile?forwardAppId=${row.id}`}
+                            className="font-bold transition"
+                            style={{ color: "#15803D" }}
+                          >
+                            Forward To Admin
+                          </a>
+                        )}
                       </td>
                     </tr>
                   ))}

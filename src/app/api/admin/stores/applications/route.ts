@@ -13,7 +13,7 @@ export async function GET() {
 
     const applications = await db
       .collection("store_applications")
-      .find({ status: "forwarded_to_admin" })
+      .find({ status: { $in: ["forwarded_to_admin", "approved_by_admin", "denied_by_admin"] } })
       .sort({ createdAt: -1 })
       .limit(200)
       .toArray();
