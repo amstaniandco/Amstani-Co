@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { PenLine, Square, Store } from "lucide-react";
+import { PenLine, Square, Store, Loader2 } from "lucide-react";
 
 type StoreApplication = {
   id: string;
@@ -32,11 +32,16 @@ const storeApplications: StoreApplication[] = [
   },
 ];
 
-function EditBadge() {
+function EditBadge({ onClick, loading }: { onClick?: () => void; loading?: boolean }) {
   return (
-    <div className="grid h-7 w-7 place-items-center rounded-full bg-[#65bbc5] text-white shadow-sm">
-      <PenLine className="h-3.5 w-3.5" />
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="grid h-7 w-7 place-items-center rounded-full bg-[#65bbc5] text-white shadow-sm transition hover:bg-[#53aab5] disabled:opacity-60"
+      disabled={loading}
+    >
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}
+    </button>
   );
 }
 
@@ -74,9 +79,65 @@ function ApplicationsCard() {
   );
 }
 
-function ProfileHero({ store }: { store: any }) {
+function ProfileHero({ store, onRefresh }: { store: any; onRefresh: () => void }) {
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+
+  const uploadImage = async (
+    file: File,
+    field: "logoUrl" | "bannerUrl",
+    setUploading: (v: boolean) => void
+  ) => {
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) return;
+
+      await fetch("/api/owner/store", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: uploadData.url }),
+      });
+
+      onRefresh();
+    } catch {
+      // silent — user can retry by clicking again
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <section className="overflow-hidden rounded-[26px] bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-5">
+      {/* Hidden file inputs */}
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) uploadImage(file, "logoUrl", setUploadingLogo);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={bannerInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) uploadImage(file, "bannerUrl", setUploadingBanner);
+          e.target.value = "";
+        }}
+      />
+
       <div className="relative h-[126px] overflow-hidden rounded-[12px] bg-zinc-900 sm:h-[176px]">
         {store?.bannerUrl ? (
           <img src={store.bannerUrl} alt="Store Banner" className="absolute inset-0 h-full w-full object-cover" />
@@ -87,8 +148,15 @@ function ProfileHero({ store }: { store: any }) {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_20%_60%,rgba(255,255,255,0.06),transparent_30%)]" />
           </>
         )}
-        <div className="absolute top-3 right-3 grid h-8 w-8 place-items-center rounded-full bg-[#65bbc5] dark:bg-cyan-600 text-white shadow-sm">
-          <PenLine className="h-4 w-4" />
+        <div className="absolute top-3 right-3">
+          <button
+            type="button"
+            onClick={() => bannerInputRef.current?.click()}
+            disabled={uploadingBanner}
+            className="grid h-8 w-8 place-items-center rounded-full bg-[#65bbc5] dark:bg-cyan-600 text-white shadow-sm transition hover:bg-[#53aab5] disabled:opacity-60"
+          >
+            {uploadingBanner ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
+          </button>
         </div>
       </div>
 
@@ -99,16 +167,13 @@ function ProfileHero({ store }: { store: any }) {
               <img src={store.logoUrl} alt="Logo" className="h-full w-full object-cover" />
             ) : null}
             <div className="absolute -right-1 -bottom-1 z-10">
-              <EditBadge />
+              <EditBadge onClick={() => logoInputRef.current?.click()} loading={uploadingLogo} />
             </div>
           </div>
 
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-[1.75rem] font-bold leading-none text-slate-900 dark:text-slate-100 sm:text-[2rem]">{store?.name || "Setup Your Store"}</h2>
-              <div className="-mt-1">
-                <EditBadge />
-              </div>
             </div>
             <p className="mt-2 max-w-[300px] text-[13px] leading-5 text-slate-400 dark:text-slate-500">
               {store?.description || "Description of the store can be written here"}
@@ -187,6 +252,21 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
   const [languages, setLanguages] = useState<string[]>(store?.settings?.languages || []);
   const [logoUrl, setLogoUrl] = useState(store?.logoUrl || "");
   const [bannerUrl, setBannerUrl] = useState(store?.bannerUrl || "");
+
+  // Sync form fields when parent re-fetches after a successful save
+  useEffect(() => {
+    setStoreName(store?.name || "");
+    setStoreDescription(store?.description || "");
+    setLogoUrl(store?.logoUrl || "");
+    setBannerUrl(store?.bannerUrl || "");
+    setLanguages(store?.settings?.languages || []);
+  }, [store]);
+
+  useEffect(() => {
+    setOwnerName(user?.name || "");
+    setOwnerEmail(user?.email || "");
+    setOwnerPhone(user?.phone || "");
+  }, [user]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -352,27 +432,6 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-300 dark:border-slate-600 p-3 text-sm text-slate-600 dark:text-slate-300">
-          <p className="font-semibold text-slate-800 dark:text-slate-100">Logo URL</p>
-          <input 
-            type="url" 
-            value={logoUrl}
-            onChange={(e) => setLogoUrl(e.target.value)}
-            placeholder="https://example.com/logo.png"
-            className="mt-2 block w-full text-xs h-8 border border-slate-300 dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400" 
-          />
-        </div>
-
-        <div className="rounded-lg border border-slate-300 dark:border-slate-600 p-3 text-sm text-slate-600 dark:text-slate-300">
-          <p className="font-semibold text-slate-800 dark:text-slate-100">Banner URL</p>
-          <input 
-            type="url" 
-            value={bannerUrl}
-            onChange={(e) => setBannerUrl(e.target.value)}
-            placeholder="https://example.com/banner.png"
-            className="mt-2 block w-full text-xs h-8 border border-slate-300 dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400" 
-          />
-        </div>
       </div>
 
       <div className="mt-4 flex justify-end">
@@ -471,7 +530,7 @@ export default function OwnerProfilePage() {
       </section>
 
       <section className="mt-4">
-        <ProfileHero store={store} />
+        <ProfileHero store={store} onRefresh={fetchProfile} />
       </section>
 
       <section className="mt-4 grid gap-4 lg:grid-cols-2">

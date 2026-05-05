@@ -1,42 +1,40 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import * as jose from "jose";
 import { ObjectId } from "mongodb";
-import clientPromise from "../../../../lib/db";
+import clientPromise, { DB_NAME } from "../../../../lib/db";
+import { getUserFromToken } from "../../../../lib/auth";
 import { User } from "../../../../models/user";
 import { Store } from "../../../../models/store";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development";
-
-async function getUserIdFromToken() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  if (!token) return null;
-  try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jose.jwtVerify(token, secret);
-    return payload.id as string;
-  } catch {
-    return null;
-  }
-}
-
 export async function GET() {
   try {
-    const userId = await getUserIdFromToken();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tokenUser = await getUserFromToken();
+    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (tokenUser.role !== "owner") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DBNAME || "amstanico");
-    
-    const user = await db.collection<User>("users").findOne({ _id: new ObjectId(userId) });
-    if (!user || user.role !== "owner") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const db = client.db(DB_NAME);
 
-    let store = await db.collection<Store>("stores").findOne({ ownerId: new ObjectId(userId) });
+    const user = await db.collection<User>("users").findOne(
+      { _id: new ObjectId(tokenUser.id) },
+      { projection: { password: 0 } }
+    );
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    return NextResponse.json({ user: { name: user.name, email: user.email }, store }, { status: 200 });
+    const store = await db.collection<Store>("stores").findOne({ ownerId: new ObjectId(tokenUser.id) });
+
+    return NextResponse.json(
+      {
+        user: {
+          name: user.name,
+          email: user.email,
+          phone: user.phone ?? "",
+          state: user.state ?? "",
+          avatarUrl: user.avatarUrl ?? "",
+        },
+        store,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("GET /api/owner/store error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -45,80 +43,109 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    const userId = await getUserIdFromToken();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tokenUser = await getUserFromToken();
+    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (tokenUser.role !== "owner") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
     const { storeName, storeDescription, ownerName, ownerEmail, ownerPhone, languages, logoUrl, bannerUrl } = body;
 
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DBNAME || "amstani");
-
-    const user = await db.collection<User>("users").findOne({ _id: new ObjectId(userId) });
-    if (!user || user.role !== "owner") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!storeName?.trim()) {
+      return NextResponse.json({ error: "Store name is required" }, { status: 400 });
+    }
+    if (!ownerName?.trim()) {
+      return NextResponse.json({ error: "Owner name is required" }, { status: 400 });
+    }
+    if (!ownerEmail?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) {
+      return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
+    }
+    if (!languages || languages.length === 0) {
+      return NextResponse.json({ error: "At least one language is required" }, { status: 400 });
     }
 
-    // Update User details
-    const userUpdate: any = {};
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    const user = await db.collection<User>("users").findOne({ _id: new ObjectId(tokenUser.id) });
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+    // Update user details
+    const userUpdate: Record<string, unknown> = { updatedAt: new Date() };
     if (ownerName) userUpdate.name = ownerName;
     if (ownerEmail) userUpdate.email = ownerEmail;
-    if (ownerPhone) userUpdate.phone = ownerPhone;
-    
-    if (Object.keys(userUpdate).length > 0) {
-      userUpdate.updatedAt = new Date();
-      await db.collection("users").updateOne(
-        { _id: new ObjectId(userId) },
-        { $set: userUpdate }
-      );
-    }
+    if (ownerPhone !== undefined) userUpdate.phone = ownerPhone;
 
-    // Update or Create Store details
-    const store = await db.collection<Store>("stores").findOne({ ownerId: new ObjectId(userId) });
-    
-    const storeUpdate: any = {
-      updatedAt: new Date()
-    };
-    if (storeName) storeUpdate.name = storeName;
-    if (storeDescription) storeUpdate.description = storeDescription;
-    if (logoUrl) storeUpdate.logoUrl = logoUrl;
-    if (bannerUrl) storeUpdate.bannerUrl = bannerUrl;
-    
-    // Merge nested settings
-    if (languages) {
-      storeUpdate["settings.languages"] = languages;
-    }
+    await db.collection("users").updateOne(
+      { _id: new ObjectId(tokenUser.id) },
+      { $set: userUpdate }
+    );
 
-    if (store) {
+    // Build store update fields
+    const storeFields: Record<string, unknown> = { updatedAt: new Date() };
+    if (storeName) storeFields.name = storeName;
+    if (storeDescription !== undefined) storeFields.description = storeDescription;
+    if (logoUrl !== undefined) storeFields.logoUrl = logoUrl;
+    if (bannerUrl !== undefined) storeFields.bannerUrl = bannerUrl;
+    if (languages) storeFields["settings.languages"] = languages;
+
+    const existingStore = await db.collection<Store>("stores").findOne({ ownerId: new ObjectId(tokenUser.id) });
+
+    if (existingStore) {
       await db.collection("stores").updateOne(
-        { _id: store._id },
-        { $set: storeUpdate }
+        { _id: existingStore._id },
+        { $set: storeFields }
       );
     } else {
-      // Create new store if it doesn't exist
       const newStore: Store = {
-        ownerId: new ObjectId(userId),
-        name: storeName || "My New Store",
+        ownerId: new ObjectId(tokenUser.id),
+        name: storeName,
         description: storeDescription || "",
         status: "pending",
-        logoUrl,
-        bannerUrl,
+        logoUrl: logoUrl || undefined,
+        bannerUrl: bannerUrl || undefined,
         settings: { languages: languages || [] },
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       const result = await db.collection("stores").insertOne(newStore as any);
-      
-      // Link the new store back to the user
+
+      // Link the new store to the user
       await db.collection("users").updateOne(
-        { _id: new ObjectId(userId) },
+        { _id: new ObjectId(tokenUser.id) },
         { $set: { storeId: result.insertedId } }
       );
     }
 
-    return NextResponse.json({ message: "Store updated successfully" }, { status: 200 });
+    return NextResponse.json({ message: "Store saved successfully" }, { status: 200 });
   } catch (error) {
     console.error("PUT /api/owner/store error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const tokenUser = await getUserFromToken();
+    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (tokenUser.role !== "owner") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const body = await req.json();
+    const update: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.logoUrl !== undefined) update.logoUrl = body.logoUrl;
+    if (body.bannerUrl !== undefined) update.bannerUrl = body.bannerUrl;
+
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    await db.collection("stores").updateOne(
+      { ownerId: new ObjectId(tokenUser.id) },
+      { $set: update },
+      { upsert: false }
+    );
+
+    return NextResponse.json({ message: "Updated" }, { status: 200 });
+  } catch (error) {
+    console.error("PATCH /api/owner/store error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
