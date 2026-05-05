@@ -7,7 +7,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development";
 // Define role-based protected paths
 const ADMIN_PATHS = ["/admin"];
 const OWNER_PATHS = [
-  "/store",
   "/orders",
   "/performance",
   "/products",
