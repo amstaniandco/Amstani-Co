@@ -1,4 +1,8 @@
+import { useStore } from "../../../../context/StoreContext";
+
 export default function StoreRatingSection() {
+  const store = useStore();
+  const rating = store?.rating ?? 5.0;
   const ratingBreakdown = [
     { stars: 5, percent: "95%", width: "w-[95%]" },
     { stars: 4, percent: "5%", width: "w-[5%]" },
@@ -23,7 +27,7 @@ export default function StoreRatingSection() {
 
       <div className="flex items-start gap-6">
         <div className="flex flex-col items-start">
-          <div className="text-5xl font-bold text-gray-800 dark:text-slate-100">5.0</div>
+          <div className="text-5xl font-bold text-gray-800 dark:text-slate-100">{String(rating)}</div>
           <div className="flex text-yellow-400 mt-1">
             {[...Array(5)].map((_, idx) => (
               <svg

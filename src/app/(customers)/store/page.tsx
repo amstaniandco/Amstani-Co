@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Music2, VolumeX } from "lucide-react";
 import StoreHero from "./components/StoreHero";
 import LiveChat from "./components/LiveChat";
@@ -9,13 +9,34 @@ import OfferingSection from "./components/OfferingSection";
 import LiveStreamsSection from "./components/LiveStreamsSection";
 import ProductGrid from "./components/ProductGrid";
 import StoreRatingSection from "./components/StoreRatingSection";
+import { StoreProvider } from "../../../context/StoreContext";
 
 export default function StorePage() {
   const [isMusicMuted, setIsMusicMuted] = useState(false);
+  const [store, setStore] = useState<any | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/stores');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!mounted) return;
+        const s = (data.stores || [])[0] || null;
+        setStore(s);
+      } catch (e) {
+        console.error('Failed to fetch store for store page', e);
+      }
+    })();
+
+    return () => { mounted = false };
+  }, []);
 
   return (
     <div className="w-full py-6 dark:bg-slate-950">
       <div className="mx-auto w-full px-2 sm:px-6 lg:px-8">
+        <StoreProvider store={store}>
         <div className="mb-4 flex justify-end">
           <button
             type="button"
@@ -50,6 +71,7 @@ export default function StorePage() {
 
         <ProductGrid />
         <StoreRatingSection />
+        </StoreProvider>
       </div>
     </div>
   );

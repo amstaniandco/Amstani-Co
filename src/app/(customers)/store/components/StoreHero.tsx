@@ -3,16 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Eye } from "lucide-react";
+import { useStore } from "../../../../context/StoreContext";
 
 export default function StoreHero() {
   const [showLanguages, setShowLanguages] = useState(false);
+  const store = useStore();
 
   return (
     <div className="ui-panel flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="relative h-[260px] w-full overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-700">
         <Image
-          src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1400&q=80"
-          alt="Store banner"
+          src={store?.bannerUrl || store?.logoUrl || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1400&q=80"}
+          alt={store?.name ?? "Store banner"}
           fill
           className="object-cover"
         />
@@ -20,14 +22,18 @@ export default function StoreHero() {
 
       <div className="mt-4 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 sm:min-w-0 sm:flex-1">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
-            S
+          <div className="flex h-16 w-16 items-center justify-center rounded-full overflow-hidden bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
+            {store?.logoUrl ? (
+              <Image src={store.logoUrl} alt={store.name || "logo"} width={64} height={64} className="object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">S</div>
+            )}
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Name of the store</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{store?.name || 'Name of the store'}</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Description of the store can be written here
+              {store?.description || 'Description of the store can be written here'}
             </p>
 
             <div className="relative mt-3">
@@ -49,8 +55,8 @@ export default function StoreHero() {
               </div>
 
               {showLanguages ? (
-                  <div className="ui-subpanel absolute left-0 top-9 z-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-md dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
-                  Languages: English, Spanish, Arabic
+                <div className="ui-subpanel absolute left-0 top-9 z-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-md dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                  Languages: {store?.settings?.languages?.join(', ') ?? 'English, Spanish, Arabic'}
                 </div>
               ) : null}
             </div>

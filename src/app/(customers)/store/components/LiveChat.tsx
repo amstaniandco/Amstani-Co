@@ -1,4 +1,5 @@
 import { Languages, Lock } from "lucide-react";
+import { useStore } from "../../../../context/StoreContext";
 
 type ChatMessageProps = {
   name: string;
@@ -41,6 +42,7 @@ type LiveChatProps = {
 };
 
 export default function LiveChat({ className = "", hideWrapper = false }: LiveChatProps) {
+  const store = useStore();
   return (
     <div className={`${hideWrapper ? "flex h-full flex-col" : "ui-panel flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800"} ${className}`}>
       <div className="flex items-center justify-between">
@@ -56,7 +58,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
 
       <div className="ui-subpanel mt-3 flex items-center gap-2 rounded-xl border border-[#d6edf0] bg-[#f2fbfc] px-3 py-2 text-xs font-medium text-[#3f98a3] dark:border-slate-600 dark:bg-slate-700 dark:text-sky-300">
         <Languages className="h-4 w-4" />
-        Store owner languages: English, Spanish, Arabic
+        Store owner languages: {store?.settings?.languages?.join(", ") ?? 'English, Spanish, Arabic'}
       </div>
 
       <div className="mt-4 space-y-4">
