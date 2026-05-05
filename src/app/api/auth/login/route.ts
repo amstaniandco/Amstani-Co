@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import * as jose from "jose";
 import clientPromise from "../../../../lib/db";
 import { User } from "../../../../models/user";
 
@@ -41,12 +41,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Generate token
-    const token = jwt.sign(
-      { id: user._id?.toString() || user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    // Generate token using jose
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const token = await new jose.SignJWT({
+      id: user._id?.toString() || user.id,
+      role: user.role,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7d")
+      .sign(secret);
 
     // Set cookie for 7 days
     const cookieStore = await cookies();

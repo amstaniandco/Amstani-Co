@@ -5,9 +5,9 @@ import { User } from "../../../../models/user";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, state, role } = await req.json();
+    const { name, email, password, state } = await req.json();
 
-    if (!name || !email || !password || !state || !role) {
+    if (!name || !email || !password || !state) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       email,
       password: hashedPassword,
       state,
-      role,
+      role: "user",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

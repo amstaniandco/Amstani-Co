@@ -9,6 +9,7 @@ export type StoreTimings = {
 export type StoreSettings = {
   musicUrl?: string; // For the owner music feature
   themeColor?: string;
+  languages?: string[]; // E.g. ["English", "Spanish"]
 };
 
 export type Store = {

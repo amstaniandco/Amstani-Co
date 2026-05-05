@@ -18,7 +18,6 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
     state: "",
-    role: "user" as "user" | "owner" | "admin",
   });
 
   const handleStepTwoSubmit = async (updatedFormData: typeof formData) => {
@@ -56,7 +55,7 @@ export default function SignupPage() {
           email: formData.email,
           password: formData.password,
           state,
-          role: formData.role,
+          role: "user",
         }),
       });
 
