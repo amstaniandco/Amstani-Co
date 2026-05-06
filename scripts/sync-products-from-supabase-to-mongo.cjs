@@ -207,8 +207,9 @@ async function main() {
 
     if (dryRun) {
       const imageCount = docs.reduce((total, product) => total + product.imageUrls.length, 0);
-      console.log(`Dry run only. Would copy ${docs.length} products and ${imageCount} image URLs.`);
-      console.log(`Dry run only. Would copy ${brands.length} brands and ${categories.length} categories.`);
+      console.log(`Dry run only. Found ${docs.length} products (${imageCount} image URLs) in Supabase.`);
+      console.log(`Dry run only. Found ${brands.length} brands and ${categories.length} categories in Supabase.`);
+      console.log(`Only items not already in MongoDB would be inserted (existing ones are never modified).`);
       return;
     }
 
@@ -218,30 +219,33 @@ async function main() {
     const brandsCollection = db.collection("brands");
     const categoriesCollection = db.collection("categories");
 
+    let newProducts = 0;
     if (docs.length > 0) {
-      await collection.bulkWrite(
+      const result = await collection.bulkWrite(
         docs.map((doc) => ({
           updateOne: {
             filter: { sourceProductId: doc.sourceProductId },
-            update: { $set: doc },
+            update: { $setOnInsert: doc },
             upsert: true,
           },
         })),
         { ordered: false }
       );
+      newProducts = result.upsertedCount;
     }
 
     await collection.createIndex({ sourceProductId: 1 }, { unique: true });
     await collection.createIndex({ slug: 1 }, { sparse: true });
     await collection.createIndex({ sku: 1 }, { sparse: true });
 
+    let newBrands = 0;
     if (brands.length > 0) {
-      await brandsCollection.bulkWrite(
+      const result = await brandsCollection.bulkWrite(
         brands.map((brand) => ({
           updateOne: {
             filter: { sourceBrandId: brand.id },
             update: {
-              $set: {
+              $setOnInsert: {
                 sourceBrandId: brand.id,
                 source: "supabase-postgres",
                 name: brand.name,
@@ -257,15 +261,17 @@ async function main() {
         })),
         { ordered: false }
       );
+      newBrands = result.upsertedCount;
     }
 
+    let newCategories = 0;
     if (categories.length > 0) {
-      await categoriesCollection.bulkWrite(
+      const result = await categoriesCollection.bulkWrite(
         categories.map((category) => ({
           updateOne: {
             filter: { sourceCategoryId: category.id },
             update: {
-              $set: {
+              $setOnInsert: {
                 sourceCategoryId: category.id,
                 source: "supabase-postgres",
                 name: category.name,
@@ -288,6 +294,7 @@ async function main() {
         })),
         { ordered: false }
       );
+      newCategories = result.upsertedCount;
     }
 
     await brandsCollection.createIndex({ sourceBrandId: 1 }, { unique: true, sparse: true });
@@ -295,8 +302,13 @@ async function main() {
     await categoriesCollection.createIndex({ sourceCategoryId: 1 }, { unique: true, sparse: true });
     await categoriesCollection.createIndex({ slug: 1 }, { unique: true, sparse: true });
 
-    console.log(`Copied ${docs.length} products into local MongoDB.`);
-    console.log(`Copied ${brands.length} brands and ${categories.length} categories into local MongoDB.`);
+    const skippedProducts = docs.length - newProducts;
+    const skippedBrands = brands.length - newBrands;
+    const skippedCategories = categories.length - newCategories;
+
+    console.log(`Products: ${newProducts} new, ${skippedProducts} already existed (skipped).`);
+    console.log(`Brands: ${newBrands} new, ${skippedBrands} already existed (skipped).`);
+    console.log(`Categories: ${newCategories} new, ${skippedCategories} already existed (skipped).`);
     console.log("Supabase/Postgres was read only; no upstream rows, files, or images were changed.");
   } finally {
     await mongoClient.close().catch(() => {});
