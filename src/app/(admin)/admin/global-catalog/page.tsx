@@ -11,6 +11,23 @@ import TaxPricingPage from "./tax-pricing/page";
 
 export default function AdminGlobalCatalogPage() {
   const [activeTab, setActiveTab] = useState<"products" | "tax-pricing" | "brands" | "category" | "add-product">("products");
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productsRefreshKey, setProductsRefreshKey] = useState(0);
+
+  const openAddProduct = () => {
+    setEditingProductId(null);
+    setActiveTab("add-product");
+  };
+
+  const openEditProduct = (productId: string) => {
+    setEditingProductId(productId);
+    setActiveTab("add-product");
+  };
+
+  const returnToProducts = () => {
+    setEditingProductId(null);
+    setActiveTab("products");
+  };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
@@ -35,7 +52,7 @@ export default function AdminGlobalCatalogPage() {
               {activeTab === "products" && (
                 <button
                   type="button"
-                  onClick={() => setActiveTab("add-product")}
+                  onClick={openAddProduct}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6ec0c9] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#5db1bb] sm:px-4 sm:py-2.5 sm:text-sm md:rounded-xl"
                 >
                   <svg
@@ -58,7 +75,7 @@ export default function AdminGlobalCatalogPage() {
 
             <div className="mt-3 flex gap-4 border-b border-[#e7edf1] text-xs font-semibold text-slate-700 sm:gap-6 sm:text-sm">
               <button
-                onClick={() => setActiveTab("products")}
+                onClick={returnToProducts}
                 className={`border-b-2 pb-2 transition sm:pb-3 ${
                   activeTab === "products"
                     ? "border-[#58b8c3] text-[#2f7f8d]"
@@ -101,12 +118,16 @@ export default function AdminGlobalCatalogPage() {
           </section>
 
           <section className="mt-3 md:mt-4">
-            {activeTab === "products" && <GlobalCatalogTable />}
+            {activeTab === "products" && <GlobalCatalogTable refreshKey={productsRefreshKey} onEdit={openEditProduct} />}
             {activeTab === "tax-pricing" && <TaxPricingPage />}
             {activeTab === "brands" && <BrandsTab />}
             {activeTab === "category" && <CategoryTab />}
             {activeTab === "add-product" && (
-              <AddGlobalProductForm onBack={() => setActiveTab("products")} />
+              <AddGlobalProductForm
+                productId={editingProductId}
+                onBack={returnToProducts}
+                onSaved={() => setProductsRefreshKey((key) => key + 1)}
+              />
             )}
           </section>
         </main>

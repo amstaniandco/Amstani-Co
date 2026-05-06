@@ -1,75 +1,88 @@
 "use client";
 
-import { Search, MoreVertical } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Edit3, Eye, Search, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-interface Product {
-  id: string;
-  sku: string;
+export type CatalogProductRow = {
+  _id: string;
+  sku?: string;
   name: string;
-  category: string;
-  basePrice: number;
-  status: "Active" | "Inactive";
-  availability: number;
-}
+  category?: string;
+  price?: number;
+  status?: "active" | "draft" | "archived";
+  totalStock?: number;
+  stock?: number;
+  isPublished?: boolean;
+  imageUrls?: string[];
+};
 
-const PRODUCTS: Product[] = [
-  {
-    id: "1",
-    sku: "ARPT-3003",
-    name: "Premium Ceramic Vessel",
-    category: "HOMEWARE",
-    basePrice: 124.50,
-    status: "Active",
-    availability: 42,
-  },
-  {
-    id: "2",
-    sku: "ARPT-4412",
-    name: "Brushed Nickel Handle",
-    category: "HARDWARE",
-    basePrice: 18.99,
-    status: "Active",
-    availability: 38,
-  },
-  {
-    id: "3",
-    sku: "ARPT-1003",
-    name: "Minimalist Oak Chair",
-    category: "FURNITURE",
-    basePrice: 240.0,
-    status: "Inactive",
-    availability: 0,
-  },
-  {
-    id: "4",
-    sku: "ARPT-4412",
-    name: "Brushed Nickel Handle",
-    category: "HARDWARE",
-    basePrice: 18.99,
-    status: "Active",
-    availability: 38,
-  },
-  {
-    id: "5",
-    sku: "ARPT-4412",
-    name: "Brushed Nickel Handle",
-    category: "HARDWARE",
-    basePrice: 18.99,
-    status: "Active",
-    availability: 38,
-  },
-  {
-    id: "6",
-    sku: "ARPT-4412",
-    name: "Brushed Nickel Handle",
-    category: "HARDWARE",
-    basePrice: 18.99,
-    status: "Active",
-    availability: 38,
-  },
-];
+type GlobalCatalogTableProps = {
+  refreshKey?: number;
+  onEdit: (productId: string) => void;
+};
 
-export default function GlobalCatalogTable() {
+export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCatalogTableProps) {
+  const router = useRouter();
+  const [products, setProducts] = useState<CatalogProductRow[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+
+    const timeout = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ limit: "200" });
+        if (search.trim()) params.set("q", search.trim());
+
+        const res = await fetch(`/api/admin/global-catalog/products?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to load products");
+          return;
+        }
+
+        setProducts((data.products || []) as CatalogProductRow[]);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") setError("Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [search, refreshKey]);
+
+  const rows = useMemo(() => products, [products]);
+
+  const deleteProduct = async (productId: string) => {
+    const confirmed = window.confirm("Delete this product from the local global catalog?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/admin/global-catalog/products/${productId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to delete product");
+        return;
+      }
+      setProducts((prev) => prev.filter((product) => product._id !== productId));
+    } catch {
+      setError("Failed to delete product");
+    }
+  };
+
   return (
     <div className="rounded-xl bg-white shadow-sm md:rounded-[26px]">
       <div className="flex flex-col gap-3 border-b border-[#e7edf1] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-4 md:px-5 md:py-5">
@@ -77,14 +90,18 @@ export default function GlobalCatalogTable() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search Global SKU or Name..."
             className="w-full rounded-lg border border-[#e7edf1] bg-white py-2 pl-9 pr-3 text-xs text-slate-700 placeholder-slate-500 transition focus:border-[#58b8c3] focus:outline-none sm:text-sm"
           />
         </div>
       </div>
 
+      {error && <div className="border-b border-red-100 bg-red-50 px-5 py-3 text-sm text-red-700">{error}</div>}
+
       <div className="overflow-x-auto">
-        <table className="min-w-[760px] w-full text-xs sm:text-sm">
+        <table className="min-w-[900px] w-full text-xs sm:text-sm">
           <thead>
             <tr className="border-b border-[#e7edf1] bg-[#f8fafb]">
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">SKU</th>
@@ -92,44 +109,83 @@ export default function GlobalCatalogTable() {
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">GLOBAL CATEGORY</th>
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">BASE PRICE</th>
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">STATUS</th>
-              <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">AVAILABILITY</th>
+              <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">STOCK</th>
               <th className="px-3 py-3 text-center font-semibold text-slate-600 sm:px-4 md:px-5">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            {PRODUCTS.map((product) => (
-              <tr key={product.id} className="border-b border-[#e7edf1] transition hover:bg-[#f8fafb]">
-                <td className="px-3 py-3 font-medium text-slate-800 sm:px-4 md:px-5">{product.sku}</td>
-                <td className="px-3 py-3 text-slate-800 sm:px-4 md:px-5">{product.name}</td>
-                <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">{product.category}</td>
-                <td className="px-3 py-3 font-semibold text-slate-800 sm:px-4 md:px-5">${product.basePrice.toFixed(2)}</td>
-                <td className="px-3 py-3 sm:px-4 md:px-5">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                      product.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    <span className={`h-2 w-2 rounded-full ${product.status === "Active" ? "bg-green-600" : "bg-red-600"}`} />
-                    {product.status}
-                  </span>
-                </td>
-                <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">
-                  Active in {product.availability} <br />
-                  Stores
-                </td>
-                <td className="px-3 py-3 text-center sm:px-4 md:px-5">
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-lg p-2 transition hover:bg-[#f0f4f8]"
-                    aria-label="Actions"
-                  >
-                    <MoreVertical className="h-4 w-4 text-slate-600" />
-                  </button>
-                </td>
+            {loading && (
+              <tr>
+                <td className="px-5 py-4 text-slate-600" colSpan={7}>Loading products...</td>
               </tr>
-            ))}
+            )}
+            {!loading && rows.length === 0 && (
+              <tr>
+                <td className="px-5 py-4 text-slate-600" colSpan={7}>No products found.</td>
+              </tr>
+            )}
+            {rows.map((product) => {
+              const isActive = product.status === "active" || product.isPublished;
+              const stock = product.totalStock ?? product.stock ?? 0;
+
+              return (
+                <tr key={product._id} className="border-b border-[#e7edf1] transition hover:bg-[#f8fafb]">
+                  <td className="px-3 py-3 font-medium text-slate-800 sm:px-4 md:px-5">{product.sku || "-"}</td>
+                  <td className="px-3 py-3 text-slate-800 sm:px-4 md:px-5">
+                    <div className="flex items-center gap-3">
+                      {product.imageUrls?.[0] && (
+                        <img src={product.imageUrls[0]} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                      )}
+                      <span className="font-medium">{product.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">{product.category || "-"}</td>
+                  <td className="px-3 py-3 font-semibold text-slate-800 sm:px-4 md:px-5">${(product.price ?? 0).toFixed(2)}</td>
+                  <td className="px-3 py-3 sm:px-4 md:px-5">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${isActive ? "bg-green-600" : "bg-red-600"}`} />
+                      {isActive ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">{stock}</td>
+                  <td className="px-3 py-3 sm:px-4 md:px-5">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/global-catalog/products/${product._id}`)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-[#f0f4f8]"
+                        aria-label="View product"
+                        title="View"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onEdit(product._id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-[#f0f4f8]"
+                        aria-label="Edit product"
+                        title="Edit"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteProduct(product._id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 text-red-600 transition hover:bg-red-50"
+                        aria-label="Delete product"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
