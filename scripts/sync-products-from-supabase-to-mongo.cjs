@@ -1,50 +1,152 @@
+/**
+ * Syncs products, brands, and categories from Supabase (PostgreSQL) into local MongoDB.
+ * Only inserts items that don't already exist — never overwrites existing MongoDB data.
+ *
+ * Required env vars (set in .env):
+ *   SUPABASE_DATABASE_URL  — Postgres connection string from Supabase dashboard
+ *   MONGODB_URI            — MongoDB connection string
+ *   MONGODB_DBNAME         — MongoDB database name (default: amstani)
+ */
+
 const fs = require("fs");
 const path = require("path");
-const { createRequire } = require("module");
+const { Pool } = require("pg");
 const { MongoClient } = require("mongodb");
-
-const SOURCE_PROJECT = process.env.SOURCE_PROJECT || "C:\\Development\\As\\amstani-ws";
-const SOURCE_PACKAGE = path.join(SOURCE_PROJECT, "package.json");
-const SOURCE_ENV = path.join(SOURCE_PROJECT, ".env");
-const LOCAL_ENV = path.join(process.cwd(), ".env");
 
 function parseEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
-
   const env = {};
-  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
-
-  for (const line of lines) {
+  for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
-
     const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
     if (!match) continue;
-
     let value = match[2].trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-
     env[match[1]] = value;
   }
-
   return env;
 }
 
-function requireSourcePackage(packageName) {
-  return createRequire(SOURCE_PACKAGE)(packageName);
+const localEnv = parseEnvFile(path.join(process.cwd(), ".env"));
+
+const SUPABASE_DATABASE_URL = process.env.SUPABASE_DATABASE_URL || localEnv.SUPABASE_DATABASE_URL;
+const MONGODB_URI = process.env.MONGODB_URI || localEnv.MONGODB_URI || "mongodb://127.0.0.1:27017/amstani";
+const MONGODB_DBNAME = process.env.MONGODB_DBNAME || localEnv.MONGODB_DBNAME || "amstani";
+const DRY_RUN = process.argv.includes("--dry-run");
+
+if (!SUPABASE_DATABASE_URL) {
+  console.error("SUPABASE_DATABASE_URL is not set. Add it to your .env file.");
+  process.exitCode = 1;
+  process.exit();
 }
+
+// ── Postgres helpers ──────────────────────────────────────────────────────────
+
+function groupById(rows, key = "productId") {
+  const map = {};
+  for (const row of rows) {
+    const id = row[key];
+    if (!map[id]) map[id] = [];
+    map[id].push(row);
+  }
+  return map;
+}
+
+async function fetchFromSupabase(pool) {
+  const [
+    { rows: brands },
+    { rows: categories },
+    { rows: sizeVariables },
+    { rows: products },
+    { rows: images },
+    { rows: productCategories },
+    { rows: variants },
+    { rows: sizeCharts },
+    { rows: shippings },
+  ] = await Promise.all([
+    pool.query(`SELECT * FROM brand ORDER BY name ASC`),
+    pool.query(`SELECT * FROM category ORDER BY name ASC`),
+    pool.query(`SELECT * FROM category_size_variable ORDER BY "sortOrder" ASC`),
+    pool.query(`SELECT * FROM product ORDER BY "createdAt" ASC`),
+    pool.query(`SELECT * FROM product_images ORDER BY "sortOrder" ASC`),
+    pool.query(`
+      SELECT pc.*, c.id AS cat_id, c.name AS cat_name, c.slug AS cat_slug
+      FROM product_category pc
+      JOIN category c ON c.id = pc."categoryId"
+    `),
+    pool.query(`SELECT * FROM product_variant`),
+    pool.query(`SELECT * FROM size_chart`),
+    pool.query(`SELECT * FROM shipping_info`),
+  ]);
+
+  // Index brand lookup
+  const brandsById = {};
+  for (const b of brands) brandsById[b.id] = b;
+
+  // Group related rows by productId
+  const imagesByProduct = groupById(images, "productId");
+  const catsByProduct = groupById(productCategories, "productId");
+  const variantsByProduct = groupById(variants, "productId");
+  const sizeChartsByProduct = groupById(sizeCharts, "productId");
+  const shippingByProduct = {};
+  for (const s of shippings) shippingByProduct[s.productId] = s;
+
+  // Group size variables by categoryId
+  const sizeVarsByCategory = groupById(sizeVariables, "categoryId");
+
+  // Attach brand product counts
+  const brandProductCount = {};
+  for (const p of products) {
+    if (p.brandId) brandProductCount[p.brandId] = (brandProductCount[p.brandId] || 0) + 1;
+  }
+
+  // Attach category product counts
+  const categoryProductCount = {};
+  for (const pc of productCategories) {
+    categoryProductCount[pc.categoryId] = (categoryProductCount[pc.categoryId] || 0) + 1;
+  }
+
+  const enrichedBrands = brands.map((b) => ({
+    ...b,
+    _count: { products: brandProductCount[b.id] || 0 },
+  }));
+
+  const enrichedCategories = categories.map((c) => ({
+    ...c,
+    sizeVariables: sizeVarsByCategory[c.id] || [],
+    _count: { products: categoryProductCount[c.id] || 0 },
+  }));
+
+  const enrichedProducts = products.map((p) => ({
+    ...p,
+    brand: p.brandId ? brandsById[p.brandId] : null,
+    images: imagesByProduct[p.id] || [],
+    categories: (catsByProduct[p.id] || [])
+      .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0))
+      .map((pc) => ({
+        categoryId: pc.categoryId,
+        isPrimary: pc.isPrimary,
+        category: { id: pc.cat_id, name: pc.cat_name, slug: pc.cat_slug },
+      })),
+    variants: variantsByProduct[p.id] || [],
+    sizeChart: sizeChartsByProduct[p.id] || [],
+    shipping: shippingByProduct[p.id] || null,
+  }));
+
+  return { brands: enrichedBrands, categories: enrichedCategories, products: enrichedProducts };
+}
+
+// ── Product mapping (same shape as before) ───────────────────────────────────
 
 function toStatus(isPublished) {
   return isPublished ? "active" : "draft";
 }
 
 function mapProduct(product) {
-  const imageObjects = product.images.map((image) => ({
+  const imageObjects = (product.images || []).map((image) => ({
     id: image.id,
     imageUrl: image.imageUrl,
     alt: image.alt ?? null,
@@ -52,10 +154,7 @@ function mapProduct(product) {
     sortOrder: image.sortOrder,
     createdAt: image.createdAt,
   }));
-  const imageUrls = [
-    product.mainImage,
-    ...imageObjects.map((image) => image.imageUrl),
-  ].filter(Boolean);
+  const imageUrls = [product.mainImage, ...imageObjects.map((i) => i.imageUrl)].filter(Boolean);
   const uniqueImageUrls = Array.from(new Set(imageUrls));
   const primaryCategory =
     product.categories.find((item) => item.isPrimary)?.category ??
@@ -65,58 +164,43 @@ function mapProduct(product) {
   return {
     sourceProductId: product.id,
     source: "supabase-postgres",
-
     name: product.name,
     sku: product.sku,
     slug: product.slug,
     description: product.shortDescription ?? product.fullDescription,
     shortDescription: product.shortDescription ?? null,
     fullDescription: product.fullDescription,
-
     price: product.price,
     compareAtPrice: product.compareAtPrice ?? null,
     costPrice: product.costPrice ?? null,
-
     stock: product.totalStock,
     totalStock: product.totalStock,
     stockStatus: product.stockStatus,
-
     imageUrls: uniqueImageUrls,
     images: imageObjects,
     mainImage: product.mainImage ?? uniqueImageUrls[0] ?? null,
-
     category: primaryCategory?.name ?? "",
     categories: product.categories.map((item) => ({
       categoryId: item.categoryId,
       isPrimary: item.isPrimary,
-      category: {
-        id: item.category.id,
-        name: item.category.name,
-        slug: item.category.slug,
-      },
+      category: { id: item.category.id, name: item.category.name, slug: item.category.slug },
     })),
     brand: product.brand
-      ? {
-          id: product.brand.id,
-          name: product.brand.name,
-          slug: product.brand.slug,
-        }
+      ? { id: product.brand.id, name: product.brand.name, slug: product.brand.slug }
       : undefined,
-
-    variants: product.variants.map((variant) => ({
-      id: variant.id,
-      size: variant.size,
-      color: variant.color ?? undefined,
-      sku: variant.skuVariant,
-      stock: variant.stockQuantity,
-      priceModifier:
-        variant.priceOverride == null ? undefined : variant.priceOverride - product.price,
-      priceOverride: variant.priceOverride ?? null,
-      stockQuantity: variant.stockQuantity,
-      skuVariant: variant.skuVariant,
-      isCustomSize: variant.isCustomSize,
+    variants: (product.variants || []).map((v) => ({
+      id: v.id,
+      size: v.size,
+      color: v.color ?? undefined,
+      sku: v.skuVariant,
+      priceModifier: v.priceOverride == null ? undefined : v.priceOverride - product.price,
+      priceOverride: v.priceOverride ?? null,
+      stock: v.stockQuantity,
+      stockQuantity: v.stockQuantity,
+      skuVariant: v.skuVariant,
+      isCustomSize: v.isCustomSize,
     })),
-    sizeChart: product.sizeChart.map((chart) => ({
+    sizeChart: (product.sizeChart || []).map((chart) => ({
       id: chart.id,
       size: chart.size,
       measurements: chart.measurements,
@@ -132,93 +216,48 @@ function mapProduct(product) {
           shippingClass: product.shipping.shippingClass ?? null,
         }
       : null,
-
     status: toStatus(product.isPublished),
     isFeatured: product.isFeatured,
     isPublished: product.isPublished,
     seoTitle: product.seoTitle ?? null,
     seoDescription: product.seoDescription ?? null,
-
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
     copiedAt: new Date(),
   };
 }
 
+// ── Main ─────────────────────────────────────────────────────────────────────
+
 async function main() {
-  if (!fs.existsSync(SOURCE_PACKAGE)) {
-    throw new Error(`Source project not found at ${SOURCE_PROJECT}`);
-  }
+  const pool = new Pool({
+    connectionString: SUPABASE_DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
 
-  const sourceEnv = parseEnvFile(SOURCE_ENV);
-  const localEnv = parseEnvFile(LOCAL_ENV);
-
-  process.env.DATABASE_URL = process.env.DATABASE_URL || sourceEnv.DATABASE_URL;
-  process.env.DIRECT_URL = process.env.DIRECT_URL || sourceEnv.DIRECT_URL;
-
-  const mongoUri =
-    process.env.MONGODB_URI ||
-    localEnv.MONGODB_URI ||
-    "mongodb://127.0.0.1:27017/amstani";
-  const mongoDbName = process.env.MONGODB_DBNAME || localEnv.MONGODB_DBNAME || "amstani";
-  const collectionName = process.env.MONGODB_PRODUCTS_COLLECTION || "products";
-  const dryRun = process.argv.includes("--dry-run");
-
-  const { PrismaClient } = requireSourcePackage("@prisma/client");
-  const prisma = new PrismaClient({ log: [] });
-  const mongoClient = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 10000 });
+  const mongoClient = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
 
   try {
-    const [brands, categories, products] = await Promise.all([
-      prisma.brand.findMany({
-        orderBy: { name: "asc" },
-        include: { _count: { select: { products: true } } },
-      }),
-      prisma.category.findMany({
-        orderBy: { name: "asc" },
-        include: {
-          sizeVariables: { orderBy: { sortOrder: "asc" } },
-          _count: { select: { products: true } },
-        },
-      }),
-      prisma.product.findMany({
-      include: {
-        brand: { select: { id: true, name: true, slug: true } },
-        categories: {
-          orderBy: { isPrimary: "desc" },
-          include: {
-            category: { select: { id: true, name: true, slug: true } },
-          },
-        },
-        images: { orderBy: { sortOrder: "asc" } },
-        variants: true,
-        sizeChart: true,
-        shipping: true,
-      },
-      orderBy: { createdAt: "asc" },
-      }),
-    ]);
-
+    console.log("Connecting to Supabase…");
+    const { brands, categories, products } = await fetchFromSupabase(pool);
     const docs = products.map(mapProduct);
 
-    console.log(`Read ${docs.length} products from Supabase/Postgres.`);
-    console.log(`Read ${brands.length} brands and ${categories.length} categories from Supabase/Postgres.`);
-    console.log(`Target MongoDB database: ${mongoDbName}, collection: ${collectionName}.`);
+    console.log(`Read ${docs.length} products, ${brands.length} brands, ${categories.length} categories from Supabase.`);
 
-    if (dryRun) {
-      const imageCount = docs.reduce((total, product) => total + product.imageUrls.length, 0);
-      console.log(`Dry run only. Found ${docs.length} products (${imageCount} image URLs) in Supabase.`);
-      console.log(`Dry run only. Found ${brands.length} brands and ${categories.length} categories in Supabase.`);
-      console.log(`Only items not already in MongoDB would be inserted (existing ones are never modified).`);
+    if (DRY_RUN) {
+      console.log("Dry run — no changes written to MongoDB.");
+      console.log("Only items not already in MongoDB would be inserted (existing ones are never modified).");
       return;
     }
 
+    console.log("Connecting to MongoDB…");
     await mongoClient.connect();
-    const db = mongoClient.db(mongoDbName);
-    const collection = db.collection(collectionName);
+    const db = mongoClient.db(MONGODB_DBNAME);
+    const collection = db.collection("products");
     const brandsCollection = db.collection("brands");
     const categoriesCollection = db.collection("categories");
 
+    // ── Insert new products (skip existing) ──
     let newProducts = 0;
     if (docs.length > 0) {
       const result = await collection.bulkWrite(
@@ -238,6 +277,7 @@ async function main() {
     await collection.createIndex({ slug: 1 }, { sparse: true });
     await collection.createIndex({ sku: 1 }, { sparse: true });
 
+    // ── Insert new brands (skip existing) ──
     let newBrands = 0;
     if (brands.length > 0) {
       const result = await brandsCollection.bulkWrite(
@@ -264,6 +304,7 @@ async function main() {
       newBrands = result.upsertedCount;
     }
 
+    // ── Insert new categories (skip existing) ──
     let newCategories = 0;
     if (categories.length > 0) {
       const result = await categoriesCollection.bulkWrite(
@@ -277,12 +318,12 @@ async function main() {
                 name: category.name,
                 slug: category.slug,
                 productCount: category._count.products,
-                sizeVariables: category.sizeVariables.map((variable) => ({
-                  sourceSizeVariableId: variable.id,
-                  name: variable.name,
-                  label: variable.label,
-                  sortOrder: variable.sortOrder,
-                  isDefault: variable.isDefault,
+                sizeVariables: (category.sizeVariables || []).map((sv) => ({
+                  sourceSizeVariableId: sv.id,
+                  name: sv.name,
+                  label: sv.label,
+                  sortOrder: sv.sortOrder,
+                  isDefault: sv.isDefault,
                 })),
                 createdAt: category.createdAt,
                 updatedAt: category.updatedAt,
@@ -302,8 +343,8 @@ async function main() {
     await categoriesCollection.createIndex({ sourceCategoryId: 1 }, { unique: true, sparse: true });
     await categoriesCollection.createIndex({ slug: 1 }, { unique: true, sparse: true });
 
-    // Recompute productCount for brands and categories from actual MongoDB products
-    // Uses name-based matching so UI-added and Supabase-sourced products both count
+    // ── Recompute productCount from actual MongoDB data ──
+    // Zero out all counts, then re-aggregate from products collection
     await Promise.all([
       brandsCollection.updateMany({}, { $set: { productCount: 0 } }),
       categoriesCollection.updateMany({}, { $set: { productCount: 0 } }),
@@ -323,10 +364,7 @@ async function main() {
     if (brandCounts.length > 0) {
       await brandsCollection.bulkWrite(
         brandCounts.map(({ _id, count }) => ({
-          updateOne: {
-            filter: { name: _id },
-            update: { $set: { productCount: count } },
-          },
+          updateOne: { filter: { name: _id }, update: { $set: { productCount: count } } },
         })),
         { ordered: false }
       );
@@ -335,10 +373,7 @@ async function main() {
     if (categoryCounts.length > 0) {
       await categoriesCollection.bulkWrite(
         categoryCounts.map(({ _id, count }) => ({
-          updateOne: {
-            filter: { name: _id },
-            update: { $set: { productCount: count } },
-          },
+          updateOne: { filter: { name: _id }, update: { $set: { productCount: count } } },
         })),
         { ordered: false }
       );
@@ -352,14 +387,14 @@ async function main() {
     console.log(`Brands: ${newBrands} new, ${skippedBrands} already existed (skipped).`);
     console.log(`Categories: ${newCategories} new, ${skippedCategories} already existed (skipped).`);
     console.log(`Product counts relinked: ${brandCounts.length} brands, ${categoryCounts.length} categories updated.`);
-    console.log("Supabase/Postgres was read only; no upstream rows, files, or images were changed.");
+    console.log("Supabase was read-only — no upstream data was changed.");
   } finally {
     await mongoClient.close().catch(() => {});
-    await prisma.$disconnect().catch(() => {});
+    await pool.end().catch(() => {});
   }
 }
 
 main().catch((error) => {
-  console.error("Product sync failed:", error.message || error);
+  console.error("Sync failed:", error.message || error);
   process.exitCode = 1;
 });
