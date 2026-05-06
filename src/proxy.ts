@@ -12,6 +12,7 @@ const OWNER_PATHS = [
   "/products",
   "/timings",
   "/owner",
+  "/store-signup",
 ];
 const USER_PATHS = ["/home", "/cart", "/wishlist", "/profile"];
 
@@ -48,7 +49,6 @@ export async function proxy(req: NextRequest) {
       if (isOwnerPath && role !== "owner") {
         return NextResponse.redirect(new URL("/login", req.url));
       }
-
     } catch (error) {
       // Invalid token, clear cookie and redirect
       const response = NextResponse.redirect(new URL("/login", req.url));
@@ -58,14 +58,19 @@ export async function proxy(req: NextRequest) {
   }
 
   // Redirect authenticated users away from login/signup
-  if (token && (path === "/login" || path === "/signup" || path === "/store-signup")) {
+  if (
+    token &&
+    (path === "/login" || path === "/signup" || path === "/store-signup")
+  ) {
     try {
       const secret = new TextEncoder().encode(JWT_SECRET);
       const { payload } = await jose.jwtVerify(token, secret);
       const role = payload.role as string;
 
-      if (role === "admin") return NextResponse.redirect(new URL("/admin", req.url));
-      if (role === "owner") return NextResponse.redirect(new URL("/store/chats", req.url));
+      if (role === "admin")
+        return NextResponse.redirect(new URL("/admin", req.url));
+      if (role === "owner")
+        return NextResponse.redirect(new URL("/store/chats", req.url));
       return NextResponse.redirect(new URL("/home", req.url));
     } catch (e) {
       // Token invalid, let them stay on login
