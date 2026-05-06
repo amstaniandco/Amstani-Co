@@ -35,6 +35,7 @@ export type OrderTimelineStep = {
 
 export type OrderRow = {
   id: string;
+  _mongoId?: string;
   customer: string;
   email: string;
   date: string;

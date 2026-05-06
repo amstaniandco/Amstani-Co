@@ -55,7 +55,7 @@ export default function ProductGrid({ storeId }: { storeId?: string | null }) {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <div key={product.productId} className="overflow-hidden rounded-3xl border border-gray-100 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
-            <Link href={`/product?productId=${product.productId}`} className="relative block h-[300px] w-full overflow-hidden bg-white dark:bg-slate-900">
+            <Link href={`/product?productId=${product.productId}&storeId=${storeId}`} className="relative block h-[300px] w-full overflow-hidden bg-white dark:bg-slate-900">
               {product.mainImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={product.mainImage} alt={product.name} className="h-full w-full object-cover" />

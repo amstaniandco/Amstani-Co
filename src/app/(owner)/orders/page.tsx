@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CreditCard,
@@ -16,14 +16,14 @@ import {
   Truck,
 } from "lucide-react";
 import {
-  filters,
   getStatusTone,
-  orders as baseOrders,
   ownerStatusOptions,
   type OrderRow,
   type OrderStatus,
   statusStyles,
 } from "./data";
+
+const filters = ["All", "Incoming", "Accepted", "On Hold", "Shipped"];
 
 function SearchField() {
   return (
@@ -39,26 +39,21 @@ function SearchField() {
   );
 }
 
-function FilterPills() {
+function FilterPills({ active, onFilter }: { active: string; onFilter: (f: string) => void }) {
   return (
     <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {filters.map((filter) => {
-        const isActive = filter === "All";
-
-        return (
-          <button
-            key={filter}
-            type="button"
-            className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
-              isActive
-                ? "bg-[#65bbc5] text-white shadow-sm"
-                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-            }`}
-          >
-            {filter}
-          </button>
-        );
-      })}
+      {filters.map((filter) => (
+        <button
+          key={filter}
+          type="button"
+          onClick={() => onFilter(filter)}
+          className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+            active === filter ? "bg-[#65bbc5] text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+          }`}
+        >
+          {filter}
+        </button>
+      ))}
     </div>
   );
 }
@@ -119,9 +114,68 @@ function OrdersTable({ orders, selectedOrderId, onSelectOrder }: OrdersTableProp
   );
 }
 
+function mapOrder(o: Record<string, any>): OrderRow {
+  const id = o._id?.toString() ?? "";
+  const statusTone = getStatusTone((o.status as OrderStatus) ?? "Incoming");
+  const subtotal = (o.items ?? []).reduce((s: number, i: any) => s + i.price * i.quantity, 0);
+  return {
+    id: o.orderNumber ?? id,
+    _mongoId: id,
+    customer: o.customerName ?? "Customer",
+    email: o.customerEmail ?? "",
+    date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "",
+    total: `Rs ${Number(o.total ?? subtotal).toLocaleString()}`,
+    status: (o.status as OrderStatus) ?? "Incoming",
+    statusTone,
+    paymentMethod: o.paymentMethod ?? "Cash on Delivery",
+    paymentStatus: o.paymentStatus ?? "Pending",
+    transactionId: o.transactionId ?? "—",
+    shippingMethod: o.shippingMethod ?? "Standard",
+    carrier: o.carrier ?? "—",
+    trackingNumber: o.trackingNumber ?? "—",
+    estimatedDelivery: o.estimatedDelivery ?? "—",
+    shippingAddress: o.shippingAddress ?? { fullName: "", line1: "", city: "", state: "", zip: "", country: "", phone: "" },
+    billingAddress: o.billingAddress ?? o.shippingAddress ?? { fullName: "", line1: "", city: "", state: "", zip: "", country: "", phone: "" },
+    items: (o.items ?? []).map((i: any) => ({
+      name: i.name ?? "",
+      sku: i.sku ?? "",
+      variant: "",
+      quantity: i.quantity ?? 1,
+      unitPrice: i.price ?? 0,
+    })),
+    subtotal: o.subtotal ?? subtotal,
+    shippingFee: o.shippingFee ?? 0,
+    taxAmount: o.taxAmount ?? 0,
+    discountAmount: o.discountAmount ?? 0,
+    notes: o.notes ?? "",
+    timeline: [
+      { label: "Order Placed", dateTime: o.createdAt ? new Date(o.createdAt).toLocaleString() : "", complete: true },
+    ],
+  };
+}
+
 export default function OwnerOrdersPage() {
-  const [orders, setOrders] = useState<OrderRow[]>(baseOrders);
-  const [selectedOrderId, setSelectedOrderId] = useState(baseOrders[0]?.id ?? "");
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [storeName, setStoreName] = useState("My Store");
+  const [loading, setLoading] = useState(true);
+  const [selectedOrderId, setSelectedOrderId] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
+
+  const fetchOrders = useCallback(() => {
+    setLoading(true);
+    fetch("/api/owner/orders")
+      .then((r) => r.json())
+      .then((d) => {
+        const mapped = (d.orders ?? []).map(mapOrder);
+        setOrders(mapped);
+        setStoreName(d.storeName ?? "My Store");
+        if (mapped.length) setSelectedOrderId(mapped[0].id);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.id === selectedOrderId) ?? orders[0],
@@ -137,20 +191,17 @@ export default function OwnerOrdersPage() {
     (selectedOrder?.taxAmount ?? 0) -
     (selectedOrder?.discountAmount ?? 0);
 
-  const handleStatusChange = (orderId: string, nextStatus: OrderStatus) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => {
-        if (order.id !== orderId) {
-          return order;
-        }
-
-        return {
-          ...order,
-          status: nextStatus,
-          statusTone: getStatusTone(nextStatus),
-        };
-      }),
-    );
+  const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    // Optimistic update
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: nextStatus, statusTone: getStatusTone(nextStatus) } : o));
+    // Save to backend using _mongoId
+    await fetch("/api/owner/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: (order as any)._mongoId ?? orderId, status: nextStatus }),
+    });
   };
 
   return (
@@ -158,7 +209,7 @@ export default function OwnerOrdersPage() {
           <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-slate-900">
               <Store className="h-5 w-5 text-[#65bbc5]" />
-              <h1 className="text-xl font-semibold sm:text-2xl">Name of the store here</h1>
+              <h1 className="text-xl font-semibold sm:text-2xl">{storeName}</h1>
             </div>
 
             <button
@@ -200,12 +251,20 @@ export default function OwnerOrdersPage() {
               <div className="shrink-0">
                 <SearchField />
               </div>
-              <FilterPills />
+              <FilterPills active={activeFilter} onFilter={setActiveFilter} />
             </div>
           </section>
 
           <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
-            <OrdersTable orders={orders} selectedOrderId={selectedOrderId} onSelectOrder={setSelectedOrderId} />
+            {loading ? (
+              <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center text-sm text-slate-400">Loading orders…</div>
+            ) : (
+            <OrdersTable
+              orders={activeFilter === "All" ? orders : orders.filter((o) => o.status === activeFilter)}
+              selectedOrderId={selectedOrderId}
+              onSelectOrder={setSelectedOrderId}
+            />
+            )}
 
             {selectedOrder && (
               <aside className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_14px_35px_rgba(15,23,42,0.04)] sm:p-6">
