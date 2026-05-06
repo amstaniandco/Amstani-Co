@@ -1,42 +1,91 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Filter, Download } from "lucide-react";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
-import { defaultRows } from "../../../../../components/admin/StoreManagementTable";
-import ListedProducts, { ProductItem } from "./components/ListedProducts";
-import ListingRequests, { ListingRequestItem } from "./components/ListingRequests";
+import ListedProducts, { type StoreProductItem } from "./components/ListedProducts";
+import ListingRequests, { type ListingRequestItem } from "./components/ListingRequests";
 import AddNewProduct from "./components/AddNewProduct";
-
-const products: ProductItem[] = Array.from({ length: 8 }, (_, index) => ({
-  id: index + 1,
-  name: "Name Of Product",
-  price: "$51",
-  quantity: 423,
-}));
-
-const listingRequests: ListingRequestItem[] = Array.from({ length: 12 }, (_, index) => ({
-  id: 12345 + index,
-  orderDate: "02/10/2020",
-  products: 2,
-  productId: 12345 + index,
-  quantity: 7,
-  status: index % 2 === 0 ? "approved" : "rejected",
-}));
-
-function getStoreName(storeId?: string) {
-  return defaultRows.find((store) => store.id === storeId)?.name ?? "Name of Store";
-}
 
 export default function StoreProductsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const storeId = searchParams.get("storeId") ?? "";
-  const paramTab = searchParams.get("tab") ?? "listed";
-  const [currentTab, setCurrentTab] = useState(paramTab);
-  const storeName = getStoreName(storeId);
+  const [currentTab, setCurrentTab] = useState("listed");
+  const [storeName, setStoreName] = useState("Store");
+  const [search, setSearch] = useState("");
+
+  // Listed products state
+  const [listedProducts, setListedProducts] = useState<StoreProductItem[]>([]);
+  const [listedLoading, setListedLoading] = useState(false);
+
+  // Listing requests state
+  const [listingRequests, setListingRequests] = useState<ListingRequestItem[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+
+  // Fetch store name
+  useEffect(() => {
+    if (!storeId) return;
+    fetch("/api/admin/stores")
+      .then((r) => r.json())
+      .then((data) => {
+        const store = data.stores?.find((s: { _id: string }) => s._id === storeId);
+        if (store) setStoreName(store.name);
+      })
+      .catch(() => {});
+  }, [storeId]);
+
+  const fetchListedProducts = useCallback(() => {
+    if (!storeId) return;
+    setListedLoading(true);
+    fetch(`/api/admin/stores/${storeId}/products`)
+      .then((r) => r.json())
+      .then((data) => setListedProducts(data.products ?? []))
+      .catch(() => {})
+      .finally(() => setListedLoading(false));
+  }, [storeId]);
+
+  const fetchListingRequests = useCallback(() => {
+    if (!storeId) return;
+    setRequestsLoading(true);
+    fetch(`/api/admin/stores/${storeId}/listing-requests`)
+      .then((r) => r.json())
+      .then((data) => setListingRequests(data.requests ?? []))
+      .catch(() => {})
+      .finally(() => setRequestsLoading(false));
+  }, [storeId]);
+
+  useEffect(() => {
+    if (currentTab === "listed") fetchListedProducts();
+    if (currentTab === "listing-requests") fetchListingRequests();
+  }, [currentTab, fetchListedProducts, fetchListingRequests]);
+
+  const handleRemoveProduct = async (productId: string) => {
+    if (!confirm("Remove this product from the store?")) return;
+    await fetch(`/api/admin/stores/${storeId}/products`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId }),
+    });
+    fetchListedProducts();
+  };
+
+  const handleRequestAction = async (requestId: string, action: "approve" | "reject") => {
+    await fetch(`/api/admin/stores/${storeId}/listing-requests/${requestId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    fetchListingRequests();
+    if (action === "approve") fetchListedProducts();
+  };
+
+  const handleProductsAdded = () => {
+    setCurrentTab("listed");
+    fetchListedProducts();
+  };
 
   const tabs = [
     { label: "Listed", value: "listed" },
@@ -44,18 +93,16 @@ export default function StoreProductsClient() {
     { label: "Add New", value: "add-new" },
   ];
 
-  const actionButtonLabel =
-    currentTab === "listing-requests" || currentTab === "add-new"
-      ? "Update Store Listing"
-      : "Promote";
-
-  useEffect(() => {
-    if (searchParams.get("tab")) {
-      const basePath = "/admin/stores/store-products";
-      const path = storeId ? `${basePath}?storeId=${encodeURIComponent(storeId)}` : basePath;
-      router.replace(path);
-    }
-  }, [router, searchParams, storeId]);
+  // Filter by search
+  const filteredListed = listedProducts.filter(
+    (p) =>
+      !search ||
+      p.name?.toLowerCase().includes(search.toLowerCase()) ||
+      p.sku?.toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredRequests = listingRequests.filter(
+    (r) => !search || r.orderId?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
@@ -78,7 +125,7 @@ export default function StoreProductsClient() {
               <button
                 type="button"
                 onClick={() => {
-                  if (actionButtonLabel === "Promote") {
+                  if (currentTab === "listed") {
                     const path = storeId
                       ? `/admin/stores/promote?storeId=${encodeURIComponent(storeId)}`
                       : "/admin/stores/promote";
@@ -87,7 +134,7 @@ export default function StoreProductsClient() {
                 }}
                 className="inline-flex items-center justify-center rounded-full border border-[#d8e3e8] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
-                {actionButtonLabel}
+                {currentTab === "listed" ? "Promote" : "Update Store Listing"}
               </button>
             </div>
 
@@ -114,7 +161,9 @@ export default function StoreProductsClient() {
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="search"
-                    placeholder="Search by Product Name, ID, or..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search by Product Name, ID, or SKU..."
                     className="h-11 w-full rounded-xl border border-[#dbe5ea] bg-[#f8fafc] pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
                   />
                 </div>
@@ -128,7 +177,6 @@ export default function StoreProductsClient() {
                 <button
                   type="button"
                   className="inline-flex h-11 items-center justify-center rounded-xl border border-[#d8e3e8] bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  aria-label="Download report"
                 >
                   <Download className="h-4 w-4" />
                 </button>
@@ -139,11 +187,19 @@ export default function StoreProductsClient() {
           <section className="mt-4 overflow-hidden rounded-[28px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
             <div className="overflow-x-auto">
               {currentTab === "listing-requests" ? (
-                <ListingRequests listingRequests={listingRequests} />
+                <ListingRequests
+                  listingRequests={filteredRequests}
+                  loading={requestsLoading}
+                  onAction={handleRequestAction}
+                />
               ) : currentTab === "add-new" ? (
-                <AddNewProduct storeName={storeName} />
+                <AddNewProduct storeId={storeId} storeName={storeName} onAdded={handleProductsAdded} />
               ) : (
-                <ListedProducts products={products} />
+                <ListedProducts
+                  products={filteredListed}
+                  loading={listedLoading}
+                  onRemove={handleRemoveProduct}
+                />
               )}
             </div>
           </section>
