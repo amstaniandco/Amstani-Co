@@ -339,7 +339,7 @@ export default function StoreManagementTable({
                 </button>
 
                 {openMenuId === row.id && (
-                  <div className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-[#e5edf1] bg-white shadow-lg z-50">
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-[#e5edf1] bg-white shadow-lg z-50" onMouseDown={(e) => e.stopPropagation()}>
                     <div className="p-1">
                       <button
                         type="button"
@@ -489,7 +489,7 @@ export default function StoreManagementTable({
                     </button>
 
                     {openMenuId === row.id && (
-                      <div className="fixed right-4 top-auto rounded-lg border border-[#e5edf1] bg-white shadow-xl" style={{ zIndex: 9999, minWidth: '200px' }}>
+                      <div className="fixed right-4 top-auto rounded-lg border border-[#e5edf1] bg-white shadow-xl" style={{ zIndex: 9999, minWidth: '200px' }} onMouseDown={(e) => e.stopPropagation()}>
                         <div className="p-1">
                           <button
                             type="button"
