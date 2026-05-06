@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Upload } from "lucide-react";
 
 type Variant = {
@@ -183,6 +183,20 @@ export default function AddGlobalProductForm({ onBack, productId, onSaved }: Add
   const [loading, setLoading] = useState(Boolean(productId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [brandOptions, setBrandOptions] = useState<string[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/admin/global-catalog/brands").then((r) => r.json()),
+      fetch("/api/admin/global-catalog/categories").then((r) => r.json()),
+    ])
+      .then(([brandsData, categoriesData]) => {
+        setBrandOptions(brandsData.brands?.map((b: { name: string }) => b.name) ?? []);
+        setCategoryOptions(categoriesData.categories?.map((c: { name: string }) => c.name) ?? []);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!productId) {
@@ -381,9 +395,9 @@ export default function AddGlobalProductForm({ onBack, productId, onSaved }: Add
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <TextInput label="Brand" value={form.brand} onChange={(value) => updateField("brand", value)} />
+            <SearchableSelect label="Brand" value={form.brand} onChange={(value) => updateField("brand", value)} options={brandOptions} placeholder="Select a brand…" />
             <TextInput label="SKU" value={form.sku} onChange={(value) => updateField("sku", value)} required />
-            <TextInput label="Categories" value={form.category} onChange={(value) => updateField("category", value)} />
+            <SearchableSelect label="Category" value={form.category} onChange={(value) => updateField("category", value)} options={categoryOptions} placeholder="Select a category…" />
           </div>
         </Section>
 
@@ -569,5 +583,95 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
     <button type="button" onClick={onClick} className="mt-6 inline-flex h-10 items-center justify-center rounded-lg text-red-400 transition-colors hover:text-red-600">
       <Trash2 className="h-5 w-5" />
     </button>
+  );
+}
+
+function SearchableSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Select…",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = options.filter((opt) => opt.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div className="block">
+      <span className="mb-1.5 block text-sm text-gray-600">{label}</span>
+      <div ref={ref} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+        >
+          <span className={value ? "text-gray-700" : "text-gray-400"}>{value || placeholder}</span>
+          <svg
+            className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {open && (
+          <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="p-2">
+              <input
+                autoFocus
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search…"
+                className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              />
+            </div>
+            <ul className="max-h-48 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-gray-400">No results</li>
+              ) : (
+                filtered.map((opt) => (
+                  <li
+                    key={opt}
+                    className={`cursor-pointer px-3 py-2 text-sm transition hover:bg-teal-50 ${
+                      value === opt ? "bg-teal-50 font-medium text-teal-700" : "text-gray-700"
+                    }`}
+                    onMouseDown={() => {
+                      onChange(opt);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                  >
+                    {opt}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

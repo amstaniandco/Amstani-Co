@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
+import { recomputeCatalogCounts } from "../../../../../lib/catalog-counts";
 
 type ProductImageInput = {
   imageUrl: string;
@@ -220,6 +221,8 @@ export async function POST(req: Request) {
       source: "admin",
       createdAt: new Date(),
     });
+
+    await recomputeCatalogCounts(client.db(DB_NAME));
 
     return NextResponse.json({ product: { ...product, _id: result.insertedId } }, { status: 201 });
   } catch (error) {

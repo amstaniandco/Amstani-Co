@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../../lib/db";
 import { getUserFromToken } from "../../../../../../lib/auth";
+import { recomputeCatalogCounts } from "../../../../../../lib/catalog-counts";
 
 type ProductPayload = {
   name?: string;
@@ -183,6 +184,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     );
     if (!result) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
+    await recomputeCatalogCounts(client.db(DB_NAME));
+
     return NextResponse.json({ product: result }, { status: 200 });
   } catch (error) {
     console.error("PUT /api/admin/global-catalog/products/[id] error:", error);
@@ -200,8 +203,11 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     if (!objectId) return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
 
     const client = await clientPromise;
-    const result = await client.db(DB_NAME).collection("products").deleteOne({ _id: objectId });
+    const db = client.db(DB_NAME);
+    const result = await db.collection("products").deleteOne({ _id: objectId });
     if (!result.deletedCount) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+
+    await recomputeCatalogCounts(db);
 
     return NextResponse.json({ message: "Product deleted" }, { status: 200 });
   } catch (error) {

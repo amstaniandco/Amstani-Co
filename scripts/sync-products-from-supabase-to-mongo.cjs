@@ -302,6 +302,48 @@ async function main() {
     await categoriesCollection.createIndex({ sourceCategoryId: 1 }, { unique: true, sparse: true });
     await categoriesCollection.createIndex({ slug: 1 }, { unique: true, sparse: true });
 
+    // Recompute productCount for brands and categories from actual MongoDB products
+    // Uses name-based matching so UI-added and Supabase-sourced products both count
+    await Promise.all([
+      brandsCollection.updateMany({}, { $set: { productCount: 0 } }),
+      categoriesCollection.updateMany({}, { $set: { productCount: 0 } }),
+    ]);
+
+    const [brandCounts, categoryCounts] = await Promise.all([
+      collection.aggregate([
+        { $match: { "brand.name": { $exists: true, $ne: null } } },
+        { $group: { _id: "$brand.name", count: { $sum: 1 } } },
+      ]).toArray(),
+      collection.aggregate([
+        { $unwind: "$categories" },
+        { $group: { _id: "$categories.category.name", count: { $sum: 1 } } },
+      ]).toArray(),
+    ]);
+
+    if (brandCounts.length > 0) {
+      await brandsCollection.bulkWrite(
+        brandCounts.map(({ _id, count }) => ({
+          updateOne: {
+            filter: { name: _id },
+            update: { $set: { productCount: count } },
+          },
+        })),
+        { ordered: false }
+      );
+    }
+
+    if (categoryCounts.length > 0) {
+      await categoriesCollection.bulkWrite(
+        categoryCounts.map(({ _id, count }) => ({
+          updateOne: {
+            filter: { name: _id },
+            update: { $set: { productCount: count } },
+          },
+        })),
+        { ordered: false }
+      );
+    }
+
     const skippedProducts = docs.length - newProducts;
     const skippedBrands = brands.length - newBrands;
     const skippedCategories = categories.length - newCategories;
@@ -309,6 +351,7 @@ async function main() {
     console.log(`Products: ${newProducts} new, ${skippedProducts} already existed (skipped).`);
     console.log(`Brands: ${newBrands} new, ${skippedBrands} already existed (skipped).`);
     console.log(`Categories: ${newCategories} new, ${skippedCategories} already existed (skipped).`);
+    console.log(`Product counts relinked: ${brandCounts.length} brands, ${categoryCounts.length} categories updated.`);
     console.log("Supabase/Postgres was read only; no upstream rows, files, or images were changed.");
   } finally {
     await mongoClient.close().catch(() => {});
