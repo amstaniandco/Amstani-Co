@@ -1,3 +1,5 @@
+"use client";
+
 import { CircleCheck, CircleSlash, Download, Ellipsis, Filter, PhoneCall, Search, ShieldAlert, Package, Trash2, Eye, Mail } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 

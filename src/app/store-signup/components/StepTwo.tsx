@@ -1,26 +1,25 @@
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import type { StoreSignupFormData } from "../page";
 
 type StepProps = {
+  formData: StoreSignupFormData;
+  updateFormData: (fields: Partial<StoreSignupFormData>) => void;
   onNext: () => void;
   onBack: () => void;
 };
 
-export default function StepTwo({ onNext, onBack }: StepProps) {
+export default function StepTwo({ formData, updateFormData, onNext, onBack }: StepProps) {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    password: "",
-    confirmPassword: "",
-  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    updateFormData({ [name]: value } as Partial<StoreSignupFormData>);
   };
+
+  const passwordMismatch = Boolean(formData.password || formData.confirmPassword) && formData.password !== formData.confirmPassword;
+  const passwordTooShort = Boolean(formData.password) && formData.password.length < 6;
+  const canContinue = !passwordMismatch && !passwordTooShort;
 
   return (
     <div className="text-black dark:text-slate-100">
@@ -67,10 +66,13 @@ export default function StepTwo({ onNext, onBack }: StepProps) {
         {/* Next Button */}
         <button
           onClick={onNext}
-          className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1]"
+          disabled={!canContinue}
+          className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] disabled:cursor-not-allowed disabled:opacity-60"
         >
           Next
         </button>
+        {passwordMismatch && <p className="text-sm text-red-600">Passwords do not match.</p>}
+        {passwordTooShort && <p className="text-sm text-red-600">Password must be at least 6 characters.</p>}
       </div>
 
       <p className="mt-12 text-center text-[15px] text-gray-500 dark:text-slate-400">

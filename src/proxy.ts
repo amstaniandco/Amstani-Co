@@ -12,8 +12,8 @@ const OWNER_PATHS = [
   "/products",
   "/timings",
   "/owner",
-  "/store-signup",
 ];
+const AUTHENTICATED_PATHS = ["/store-signup"];
 const USER_PATHS = ["/home", "/cart", "/wishlist", "/profile"];
 
 export async function proxy(req: NextRequest) {
@@ -23,9 +23,10 @@ export async function proxy(req: NextRequest) {
   // Determine if the current path requires protection
   const isAdminPath = ADMIN_PATHS.some((p) => path.startsWith(p));
   const isOwnerPath = OWNER_PATHS.some((p) => path.startsWith(p));
+  const isAuthenticatedPath = AUTHENTICATED_PATHS.some((p) => path.startsWith(p));
   const isUserPath = USER_PATHS.some((p) => path.startsWith(p));
 
-  const isProtectedPath = isAdminPath || isOwnerPath || isUserPath;
+  const isProtectedPath = isAdminPath || isOwnerPath || isUserPath || isAuthenticatedPath;
 
   if (isProtectedPath) {
     if (!token) {
@@ -49,7 +50,7 @@ export async function proxy(req: NextRequest) {
       if (isOwnerPath && role !== "owner") {
         return NextResponse.redirect(new URL("/login", req.url));
       }
-    } catch (error) {
+    } catch {
       // Invalid token, clear cookie and redirect
       const response = NextResponse.redirect(new URL("/login", req.url));
       response.cookies.delete("token");
@@ -60,7 +61,7 @@ export async function proxy(req: NextRequest) {
   // Redirect authenticated users away from login/signup
   if (
     token &&
-    (path === "/login" || path === "/signup" || path === "/store-signup")
+    (path === "/login" || path === "/signup")
   ) {
     try {
       const secret = new TextEncoder().encode(JWT_SECRET);
@@ -72,7 +73,7 @@ export async function proxy(req: NextRequest) {
       if (role === "owner")
         return NextResponse.redirect(new URL("/store/chats", req.url));
       return NextResponse.redirect(new URL("/home", req.url));
-    } catch (e) {
+    } catch {
       // Token invalid, let them stay on login
     }
   }

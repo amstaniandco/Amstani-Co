@@ -3,43 +3,76 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Upload, ArrowLeft, Loader } from "lucide-react";
+import type { StoreSignupFormData } from "../page";
 
 type StepProps = {
+  formData: StoreSignupFormData;
+  updateFormData: (fields: Partial<StoreSignupFormData>) => void;
   onBack: () => void;
 };
 
-export default function StepThree({ onBack }: StepProps) {
+export default function StepThree({ formData, updateFormData, onBack }: StepProps) {
   const router = useRouter();
   const [isVerifying, setIsVerifying] = useState(false);
-  const [formData, setFormData] = useState({
-    storeName: "",
-    storeDescription: "",
-    storeIcon: null as File | null,
-    storeCover: null as File | null,
-    storeCardMedia: null as File | null,
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [fileNames, setFileNames] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    updateFormData({ [name]: value } as Partial<StoreSignupFormData>);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: "logoUrl" | "bannerUrl" | "cardMediaUrl") => {
     const file = e.target.files?.[0];
-    if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        [fieldName]: file,
-      }));
+    if (!file) return;
+
+    setError("");
+    setFileNames((prev) => ({ ...prev, [fieldName]: file.name }));
+
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Image upload failed");
+        return;
+      }
+      updateFormData({ [fieldName]: data.url } as Partial<StoreSignupFormData>);
+    } catch {
+      setError("Image upload failed");
     }
   };
 
-  const handleCreate = () => {
-    setIsVerifying(true);
+  const handleCreate = async () => {
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch("/api/store-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not submit signup request");
+        return;
+      }
+      setIsVerifying(true);
+    } catch {
+      setError("Could not submit signup request");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const canCreate = Boolean(formData.storeName.trim()) && !isSubmitting;
 
   if (isVerifying) {
     return (
@@ -121,12 +154,12 @@ export default function StepThree({ onBack }: StepProps) {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileChange(e, "storeIcon")}
+              onChange={(e) => handleFileChange(e, "logoUrl")}
               className="hidden"
             />
             <div className="flex flex-col items-center gap-2">
               <Upload size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-slate-300">Upload Image</span>
+              <span className="text-sm text-gray-600 dark:text-slate-300">{fileNames.logoUrl || formData.logoUrl ? "Image ready" : "Upload Image"}</span>
             </div>
           </label>
         </div>
@@ -138,12 +171,12 @@ export default function StepThree({ onBack }: StepProps) {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileChange(e, "storeCover")}
+              onChange={(e) => handleFileChange(e, "bannerUrl")}
               className="hidden"
             />
             <div className="flex flex-col items-center gap-2">
               <Upload size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-slate-300">Upload Image</span>
+              <span className="text-sm text-gray-600 dark:text-slate-300">{fileNames.bannerUrl || formData.bannerUrl ? "Image ready" : "Upload Image"}</span>
             </div>
           </label>
         </div>
@@ -155,22 +188,24 @@ export default function StepThree({ onBack }: StepProps) {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileChange(e, "storeCardMedia")}
+              onChange={(e) => handleFileChange(e, "cardMediaUrl")}
               className="hidden"
             />
             <div className="flex flex-col items-center gap-2">
               <Upload size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-slate-300">Upload Image</span>
+              <span className="text-sm text-gray-600 dark:text-slate-300">{fileNames.cardMediaUrl || formData.cardMediaUrl ? "Image ready" : "Upload Image"}</span>
             </div>
           </label>
         </div>
 
         {/* Create Button */}
+        {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           onClick={handleCreate}
-          className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1]"
+          disabled={!canCreate}
+          className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Create
+          {isSubmitting ? "Submitting..." : "Create"}
         </button>
       </div>
 

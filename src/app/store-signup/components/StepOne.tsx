@@ -1,29 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import type { StoreSignupFormData } from "../page";
 
 type StepProps = {
+  formData: StoreSignupFormData;
+  updateFormData: (fields: Partial<StoreSignupFormData>) => void;
   onNext: () => void;
 };
 
-export default function StepOne({ onNext }: StepProps) {
+export default function StepOne({ formData, updateFormData, onNext }: StepProps) {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-    address: "",
-    state: "",
-  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    updateFormData({ [name]: value } as Partial<StoreSignupFormData>);
   };
+
+  const canContinue = Boolean(
+    formData.fullName.trim() &&
+      formData.email.trim() &&
+      formData.phoneNumber.trim() &&
+      formData.state.trim()
+  );
 
   return (
     <div className="mx-auto flex w-full flex-col items-center justify-center">
@@ -55,8 +54,9 @@ export default function StepOne({ onNext }: StepProps) {
             name="email"
             value={formData.email}
             onChange={handleChange}
+            readOnly
             placeholder="Placeholder"
-            className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
+            className="mt-2 w-full rounded-lg border border-gray-300 bg-slate-100 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -102,7 +102,8 @@ export default function StepOne({ onNext }: StepProps) {
         {/* Next Button */}
         <button
           onClick={onNext}
-          className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1]"
+          disabled={!canContinue}
+          className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] disabled:cursor-not-allowed disabled:opacity-60"
         >
           Next
         </button>
