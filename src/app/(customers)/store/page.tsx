@@ -73,7 +73,7 @@ export default function StorePage() {
           <LiveStreamsSection />
         </div>
 
-        <ProductGrid />
+        <ProductGrid storeId={storeId} />
         <StoreRatingSection />
         </StoreProvider>
       </div>

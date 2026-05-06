@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { LiveStore } from "../mockData";
 
@@ -16,17 +15,16 @@ export default function LiveStoresSection({ liveStores }: { liveStores: LiveStor
 
       <div className="flex items-start gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
         {liveStores.map((store, index) => (
-          <Link key={store.id} href="/store" className="flex min-w-[96px] flex-col items-center gap-2 cursor-pointer group sm:min-w-[104px]">
+          <Link key={store.id} href={`/store?storeId=${store.id}`} className="flex min-w-[96px] flex-col items-center gap-2 cursor-pointer group sm:min-w-[104px]">
             <div
               className={`relative h-[100px] w-[82px] overflow-hidden rounded-md ${store.live ? "border border-[#ff6f6f]" : "border border-gray-300 dark:border-slate-600"} sm:h-[112px] sm:w-[94px]`}
             >
               <div className="relative h-full w-full rounded-sm">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={store.img}
                   alt={store.name}
-                  fill
-                  sizes="(max-width: 640px) 82px, 94px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
 

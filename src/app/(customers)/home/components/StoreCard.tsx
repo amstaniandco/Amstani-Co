@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { BrowseStore } from "../mockData";
 
@@ -24,16 +23,15 @@ const LocationIcon = () => (
 export default function StoreCard({ store }: { store: BrowseStore }) {
   return (
     <Link
-      href="/store"
+      href={`/store?storeId=${store.id}`}
       className="home-store-card group relative block cursor-pointer overflow-hidden rounded-2xl border border-[#d7dde4] shadow-[0_1px_1px_rgba(0,0,0,0.03)] transition-shadow duration-300 hover:shadow-lg dark:border-slate-700 dark:shadow-[0_8px_24px_rgba(2,6,23,0.45)]"
     >
       <div className="relative h-[280px] sm:h-[430px]">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={store.img}
           alt={store.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-black/10" />
 

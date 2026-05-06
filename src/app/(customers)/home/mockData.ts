@@ -1,5 +1,5 @@
 export type LiveStore = {
-  id: number;
+  id: string | number;
   img: string;
   name: string;
   live?: boolean;
@@ -10,7 +10,7 @@ export type LiveStore = {
 };
 
 export type BrowseStore = {
-  id: number;
+  id: string | number;
   name: string;
   description: string;
   state: string;

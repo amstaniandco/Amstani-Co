@@ -22,9 +22,8 @@ export default function Home() {
         if (!mounted) return;
         const mapped = (data.stores || []).map((s: any, idx: number) => {
           const raw = (s.logoUrl || s.bannerUrl || "").trim();
-          const isImagesUnsplash = raw.includes("images.unsplash.com") || raw.includes("unsplash.com");
-          const hasImageExt = /\.(png|jpe?g|webp|avif|gif)$/i.test(raw);
-          const img = raw && (isImagesUnsplash || hasImageExt) ? raw : '/assets/placeholder-store.svg';
+          const isKnownHost = raw.startsWith("https://");
+          const img = isKnownHost ? raw : '/assets/placeholder-store.svg';
 
           return {
             id: s._id || idx,
@@ -54,7 +53,7 @@ export default function Home() {
           badge: 'Featured',
           badgeColor: 'bg-teal-500',
           rating: s.rating ? String(s.rating) : '4.9',
-          img: (s.logoUrl || s.bannerUrl) || '/assets/placeholder-store.svg',
+          img: ((s.logoUrl || s.bannerUrl) || '').startsWith('https://') ? (s.logoUrl || s.bannerUrl) : '/assets/placeholder-store.svg',
         }));
 
         setBrowseStores(mapped);
