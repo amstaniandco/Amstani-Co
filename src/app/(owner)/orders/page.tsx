@@ -143,7 +143,6 @@ function mapOrder(o: Record<string, any>): OrderRow {
       quantity: i.quantity ?? 1,
       unitPrice: i.price ?? 0,
     })),
-    subtotal: o.subtotal ?? subtotal,
     shippingFee: o.shippingFee ?? 0,
     taxAmount: o.taxAmount ?? 0,
     discountAmount: o.discountAmount ?? 0,

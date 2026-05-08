@@ -74,7 +74,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
           },
         };
       })
-      .filter(Boolean);
+      .filter((op): op is NonNullable<typeof op> => op !== null);
 
     if (ops.length > 0) {
       await storeProducts.bulkWrite(ops, { ordered: false });

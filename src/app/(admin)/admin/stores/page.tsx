@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, AlertCircle } from "lucide-react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
@@ -54,6 +54,8 @@ export default function AdminStoresPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Suspended" | "Dormant">("all");
   const [stateFilter, setStateFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
+  const [openChats, setOpenChats] = useState<{ id: string; name: string }[]>([]);
+  const [activeChatId, setActiveChatId] = useState("");
 
   // Get unique states from stores
   const uniqueStates = Array.from(new Set(stores.map(s => s.location).filter(Boolean)));
@@ -156,12 +158,16 @@ export default function AdminStoresPage() {
     }
   };
 
-  const handleContactOwner = (email?: string, phone?: string) => {
-    if (email) {
-      window.open(`mailto:${email}`);
-    } else if (phone) {
-      window.open(`tel:${phone}`);
-    }
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  const handleContactOwner = (storeId: string) => {
+    const store = stores.find((s) => s.id === storeId);
+    if (!store) return;
+    setOpenChats((prev) =>
+      prev.find((c) => c.id === storeId) ? prev : [...prev, { id: storeId, name: store.name }]
+    );
+    setActiveChatId(storeId);
+    chatRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
   return (
@@ -255,10 +261,7 @@ export default function AdminStoresPage() {
                   onSelectStore={handleStoreClick}
                   onSuspend={(storeId) => handleUpdateStatus(storeId, "suspended")}
                   onActivate={(storeId) => handleUpdateStatus(storeId, "active")}
-                  onContact={(storeId) => {
-                    const store = stores.find(s => s.id === storeId);
-                    if (store) handleContactOwner(store.ownerEmail, store.ownerPhone);
-                  }}
+                  onContact={(storeId) => handleContactOwner(storeId)}
                   onMoreActions={(storeId) => {
                     const store = stores.find(s => s.id === storeId);
                     if (store) setSelectedStore(store);
@@ -355,17 +358,13 @@ export default function AdminStoresPage() {
                 </section>
               )}
               
-              <div className="mt-4 grid gap-4 grid-cols-1">
-                <StoreChatPanel 
-                  title="Customer Conversations" 
-                  rightLabel="Last 30 days" 
-                  storeId={selectedStore?.id || "STN-8232"}
-                  panelType="customer"
-                />
-                <StoreChatPanel 
-                  title="Owner Communications" 
-                  rightLabel="Admin & Operations" 
-                  storeId={selectedStore?.id || "STN-8232"}
+              <div ref={chatRef} className="mt-4 grid gap-4 grid-cols-1">
+                <StoreChatPanel
+                  title="Owner Communications"
+                  rightLabel="Click 'Contact Owner' on a store to chat"
+                  stores={openChats}
+                  activeStoreId={activeChatId}
+                  onSelectStore={setActiveChatId}
                   panelType="owner"
                 />
               </div>

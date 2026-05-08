@@ -10,7 +10,8 @@
       "Bash(Write-Output \"dirs created\")",
       "PowerShell(New-Item -ItemType Directory -Force -Path \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\admin\\\\dashboard\")",
       "PowerShell(New-Item -ItemType Directory -Force -Path \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\admin\\\\stores\")",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
