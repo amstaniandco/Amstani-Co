@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-
-type Message = {
-  _id: string;
-  sender: "admin" | "owner";
-  senderName: string;
-  text: string;
-  createdAt: string;
-};
+import MessageBubble, { type Message } from "../chat/MessageBubble";
 
 type StoreEntry = {
   id: string;
@@ -18,9 +11,7 @@ type StoreEntry = {
 type StoreChatPanelProps = {
   title: string;
   rightLabel: string;
-  /** All stores currently open in the chat sidebar */
   stores: StoreEntry[];
-  /** The store whose thread is shown in the main area */
   activeStoreId: string;
   onSelectStore: (id: string) => void;
   panelType?: "customer" | "owner";
@@ -54,16 +45,17 @@ export default function StoreChatPanel({
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const esRef = useRef<EventSource | null>(null);
 
-  // Load messages when active store changes
   const loadMessages = useCallback(async (sid: string) => {
     setLoading(true);
     setMessages([]);
     setOtherTyping(false);
+    setReplyingTo(null);
     try {
       const res = await fetch(`/api/conversations/${sid}`);
       if (res.ok) {
@@ -76,7 +68,6 @@ export default function StoreChatPanel({
     return "";
   }, []);
 
-  // Start SSE stream
   const startStream = useCallback((sid: string, afterId: string) => {
     esRef.current?.close();
     const url = `/api/conversations/${sid}/stream${afterId ? `?after=${afterId}` : ""}`;
@@ -89,6 +80,10 @@ export default function StoreChatPanel({
         if (data.type === "message") {
           setMessages((prev) =>
             prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
+          );
+        } else if (data.type === "update") {
+          setMessages((prev) =>
+            prev.map((m) => m._id === data.message._id ? data.message : m)
           );
         } else if (data.type === "typing") {
           setOtherTyping(data.isTyping);
@@ -108,7 +103,6 @@ export default function StoreChatPanel({
     };
   }, [activeStoreId, panelType, loadMessages, startStream]);
 
-  // Scroll to bottom on new messages or typing indicator change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, otherTyping]);
@@ -139,10 +133,19 @@ export default function StoreChatPanel({
     sendTypingStatus(false);
     setSending(true);
     try {
+      const body: Record<string, unknown> = { text: trimmed };
+      if (replyingTo) {
+        body.replyTo = {
+          _id: replyingTo._id,
+          senderName: replyingTo.senderName,
+          text: replyingTo.text,
+          deleted: replyingTo.deleted ?? false,
+        };
+      }
       const res = await fetch(`/api/conversations/${activeStoreId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
@@ -150,11 +153,36 @@ export default function StoreChatPanel({
           prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
         );
         setInputText("");
+        setReplyingTo(null);
       }
     } finally {
       setSending(false);
     }
   }
+
+  const handleEdit = async (msgId: string, newText: string) => {
+    const res = await fetch(`/api/conversations/${activeStoreId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "edit", text: newText }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
+
+  const handleDelete = async (msgId: string) => {
+    const res = await fetch(`/api/conversations/${activeStoreId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete" }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
 
   const activeStore = stores.find((s) => s.id === activeStoreId);
 
@@ -169,7 +197,7 @@ export default function StoreChatPanel({
       </div>
 
       <div className="grid border-b border-[#edf2f5] md:grid-cols-[220px_1fr]" style={{ minHeight: 400 }}>
-        {/* Sidebar — stacked store conversations */}
+        {/* Sidebar */}
         <div className="hidden border-b border-[#edf2f5] bg-[#f9fbfc] md:flex md:flex-col md:border-b-0 md:border-r overflow-y-auto" style={{ maxHeight: 400 }}>
           {stores.length === 0 ? (
             <p className="px-4 py-6 text-center text-xs text-slate-400">
@@ -210,7 +238,7 @@ export default function StoreChatPanel({
 
         {/* Main chat area */}
         <div className="flex flex-col bg-[#fdfefe]">
-          {/* Messages — fixed height, internal scroll only */}
+          {/* Messages */}
           <div
             className="overflow-y-auto space-y-3 px-3 py-4 sm:px-4 sm:py-5"
             style={{ height: 320 }}
@@ -227,29 +255,18 @@ export default function StoreChatPanel({
               <p className="text-xs text-center text-slate-400 py-8">No messages yet.</p>
             ) : (
               messages.map((msg) => (
-                <div
+                <MessageBubble
                   key={msg._id}
-                  className={`flex items-end gap-2 ${msg.sender === "admin" ? "justify-end" : "justify-start"}`}
-                >
-                  {/* Owner avatar — left side */}
-                  {msg.sender === "owner" && (
-                    <div className="h-7 w-7 flex-shrink-0 rounded-full bg-[#dfe7ec] flex items-center justify-center text-xs font-bold text-slate-600">
-                      O
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[260px] rounded-2xl px-4 py-2.5 ${
-                      msg.sender === "admin"
-                        ? "rounded-br-sm bg-[#54b9c9] text-white"
-                        : "rounded-bl-sm bg-[#e8ecef] text-slate-700"
-                    }`}
-                  >
-                    {msg.sender === "owner" && (
-                      <p className="text-[10px] font-semibold mb-1 opacity-60">{msg.senderName}</p>
-                    )}
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
-                  </div>
-                </div>
+                  msg={msg}
+                  isOwn={msg.sender === "admin"}
+                  avatarLabel="O"
+                  avatarClassName="bg-[#dfe7ec] text-slate-600"
+                  ownBubbleCls="rounded-br-sm bg-[#54b9c9] text-white"
+                  otherBubbleCls="rounded-bl-sm bg-[#e8ecef] text-slate-700"
+                  onReply={setReplyingTo}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               ))
             )}
             {otherTyping && <TypingDots />}
@@ -259,6 +276,24 @@ export default function StoreChatPanel({
           {/* Input */}
           {panelType === "owner" && activeStoreId && (
             <div className="border-t border-[#edf2f5] bg-[#fdfefe] px-3 py-3 sm:px-4 sm:py-4">
+              {/* Reply preview */}
+              {replyingTo && (
+                <div className="mb-2 flex items-center justify-between rounded-lg border-l-2 border-[#54b9c9] bg-slate-50 px-3 py-1.5 text-xs">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#54b9c9]">Replying to {replyingTo.senderName}</p>
+                    <p className="truncate text-slate-500">
+                      {replyingTo.deleted ? <em>This message was deleted</em> : replyingTo.text}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    className="ml-2 flex-shrink-0 text-slate-400 hover:text-slate-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-2 rounded-lg border border-[#dce5ea] bg-white px-3 py-2.5 focus-within:border-[#54b9c9] focus-within:ring-1 focus-within:ring-[#54b9c9]">
                 <input
                   className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"

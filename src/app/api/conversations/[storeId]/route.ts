@@ -29,11 +29,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   return NextResponse.json({
     messages: messages.map((m: WithId<Document>) => ({
-      _id: m._id.toString(),
+      _id: (m._id as ObjectId).toString(),
       sender: m.sender as string,
       senderName: m.senderName as string,
       text: m.text as string,
       createdAt: m.createdAt as Date,
+      deleted: (m.deleted as boolean) ?? false,
+      edited: (m.edited as boolean) ?? false,
+      replyTo: (m.replyTo as { _id: string; senderName: string; text: string; deleted?: boolean } | undefined) ?? undefined,
     })),
   });
 }
@@ -56,7 +59,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }
 
-  const { text } = await req.json();
+  const { text, replyTo } = await req.json();
   if (!text?.trim()) return NextResponse.json({ error: "Message text required" }, { status: 400 });
 
   let senderName = user.role === "admin" ? "Super Admin" : "Store Owner";
@@ -65,17 +68,30 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (ownerDoc?.name) senderName = ownerDoc.name as string;
   }
 
-  const doc = {
+  const doc: Record<string, unknown> = {
     storeId,
     sender: user.role as "admin" | "owner",
     senderName,
     text: text.trim() as string,
     createdAt: new Date(),
   };
+  if (replyTo && typeof replyTo === "object" && replyTo._id) {
+    doc.replyTo = {
+      _id: replyTo._id as string,
+      senderName: (replyTo.senderName as string) ?? "",
+      text: (replyTo.text as string) ?? "",
+      deleted: (replyTo.deleted as boolean) ?? false,
+    };
+  }
 
   const result = await db.collection("store_messages").insertOne(doc);
 
   return NextResponse.json({
-    message: { _id: result.insertedId.toString(), ...doc },
+    message: {
+      _id: result.insertedId.toString(),
+      ...doc,
+      deleted: false,
+      edited: false,
+    },
   });
 }

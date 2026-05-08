@@ -31,7 +31,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
       // Start polling from the message after `afterParam`, or from now if empty
       let lastId: ObjectId = afterParam ? new ObjectId(afterParam) : new ObjectId();
-
+      let lastUpdateCheck = new Date();
       let lastTyping = false;
 
       const sleep = (ms: number) =>
@@ -59,9 +59,37 @@ export async function GET(req: NextRequest, { params }: Params) {
                 senderName: msg.senderName as string,
                 text: msg.text as string,
                 createdAt: msg.createdAt,
+                deleted: (msg.deleted as boolean) ?? false,
+                edited: (msg.edited as boolean) ?? false,
+                replyTo: msg.replyTo ?? undefined,
               },
             });
             lastId = id;
+          }
+
+          // Edited / deleted messages since last check
+          const nowCheck = new Date();
+          const updatedMessages = await db
+            .collection("store_messages")
+            .find({ storeId, updatedAt: { $gt: lastUpdateCheck } })
+            .sort({ updatedAt: 1 })
+            .toArray();
+          lastUpdateCheck = nowCheck;
+
+          for (const msg of updatedMessages) {
+            send({
+              type: "update",
+              message: {
+                _id: (msg._id as ObjectId).toString(),
+                sender: msg.sender as string,
+                senderName: msg.senderName as string,
+                text: msg.text as string,
+                createdAt: msg.createdAt,
+                deleted: (msg.deleted as boolean) ?? false,
+                edited: (msg.edited as boolean) ?? false,
+                replyTo: msg.replyTo ?? undefined,
+              },
+            });
           }
 
           // Typing status from the other party

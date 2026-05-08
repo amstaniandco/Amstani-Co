@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import ownerCard from "@/src/app/imagess/ownercard.png";
+import MessageBubble, { type Message as ChatMessage } from "@/src/components/chat/MessageBubble";
 
 function FacebookBrandIcon() {
   return (
@@ -81,14 +82,6 @@ const channels: ChannelItem[] = [
   { title: "WhatsApp Call", icon: WhatsAppBrandIcon },
 ];
 
-type ChatMessage = {
-  _id: string;
-  sender: "admin" | "owner";
-  senderName: string;
-  text: string;
-  createdAt: string;
-};
-
 export default function OwnerChatsPage() {
   const [storeId, setStoreId] = useState("");
   const [storeName, setStoreName] = useState("My Store");
@@ -96,6 +89,7 @@ export default function OwnerChatsPage() {
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -111,6 +105,10 @@ export default function OwnerChatsPage() {
         if (data.type === "message") {
           setMessages((prev) =>
             prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
+          );
+        } else if (data.type === "update") {
+          setMessages((prev) =>
+            prev.map((m) => m._id === data.message._id ? data.message : m)
           );
         } else if (data.type === "typing") {
           setAdminTyping(data.isTyping);
@@ -162,6 +160,30 @@ export default function OwnerChatsPage() {
     typingTimeoutRef.current = setTimeout(() => sendTypingStatus(false), 3000);
   };
 
+  const handleEdit = async (msgId: string, newText: string) => {
+    const res = await fetch(`/api/conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "edit", text: newText }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
+
+  const handleDelete = async (msgId: string) => {
+    const res = await fetch(`/api/conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete" }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
+
   const handleSendReply = async (event: FormEvent) => {
     event.preventDefault();
     const trimmed = replyText.trim();
@@ -170,10 +192,19 @@ export default function OwnerChatsPage() {
     sendTypingStatus(false);
     setSending(true);
     try {
+      const body: Record<string, unknown> = { text: trimmed };
+      if (replyingTo) {
+        body.replyTo = {
+          _id: replyingTo._id,
+          senderName: replyingTo.senderName,
+          text: replyingTo.text,
+          deleted: replyingTo.deleted ?? false,
+        };
+      }
       const res = await fetch(`/api/conversations/${storeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
@@ -181,6 +212,7 @@ export default function OwnerChatsPage() {
           prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
         );
         setReplyText("");
+        setReplyingTo(null);
       }
     } finally {
       setSending(false);
@@ -321,25 +353,18 @@ export default function OwnerChatsPage() {
               <p className="text-center text-xs text-slate-400 py-8">No messages yet. Start the conversation!</p>
             ) : (
               messages.map((message) => (
-                <div
+                <MessageBubble
                   key={message._id}
-                  className={`flex items-end gap-2 ${message.sender === "owner" ? "justify-end" : "justify-start"}`}
-                >
-                  {message.sender === "admin" && (
-                    <div className="w-8 h-8 rounded-full bg-[#a8b4c6] flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
-                      A
-                    </div>
-                  )}
-                  <div
-                    className={`w-fit max-w-[85%] px-5 py-3 text-sm text-white sm:max-w-[360px] sm:px-6 ${
-                      message.sender === "owner"
-                        ? "rounded-[24px] rounded-br-sm bg-[#65bbc5]"
-                        : "rounded-[24px] rounded-bl-sm bg-[#a8b4c6]"
-                    }`}
-                  >
-                    {message.text}
-                  </div>
-                </div>
+                  msg={message}
+                  isOwn={message.sender === "owner"}
+                  avatarLabel="A"
+                  avatarClassName="bg-[#a8b4c6] text-white"
+                  ownBubbleCls="rounded-[24px] rounded-br-sm bg-[#65bbc5] text-white"
+                  otherBubbleCls="rounded-[24px] rounded-bl-sm bg-[#a8b4c6] text-white"
+                  onReply={setReplyingTo}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               ))
             )}
             {adminTyping && (
@@ -355,22 +380,42 @@ export default function OwnerChatsPage() {
             <div ref={bottomRef} />
           </div>
 
-          <form onSubmit={handleSendReply} className="mt-4 flex items-center gap-2 border-t border-slate-200 pt-4">
-            <input
-              type="text"
-              value={replyText}
-              onChange={(event) => handleReplyChange(event.target.value)}
-              placeholder="Write your reply..."
-              className="h-11 w-full rounded-full border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#65bbc5]"
-            />
-            <button
-              type="submit"
-              disabled={sending || !replyText.trim()}
-              className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-[#65bbc5] px-4 text-sm font-semibold text-white transition hover:bg-[#53aab5] disabled:opacity-50"
-            >
-              <SendHorizontal className="h-4 w-4" />
-              {sending ? "…" : "Send"}
-            </button>
+          <form onSubmit={handleSendReply} className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4">
+            {/* Reply preview */}
+            {replyingTo && (
+              <div className="flex items-center justify-between rounded-lg border-l-2 border-[#65bbc5] bg-slate-50 px-3 py-1.5 text-xs">
+                <div className="min-w-0">
+                  <p className="font-semibold text-[#65bbc5]">Replying to {replyingTo.senderName}</p>
+                  <p className="truncate text-slate-500">
+                    {replyingTo.deleted ? <em>This message was deleted</em> : replyingTo.text}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyingTo(null)}
+                  className="ml-2 flex-shrink-0 text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(event) => handleReplyChange(event.target.value)}
+                placeholder="Write your reply..."
+                className="h-11 w-full rounded-full border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#65bbc5]"
+              />
+              <button
+                type="submit"
+                disabled={sending || !replyText.trim()}
+                className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-[#65bbc5] px-4 text-sm font-semibold text-white transition hover:bg-[#53aab5] disabled:opacity-50"
+              >
+                <SendHorizontal className="h-4 w-4" />
+                {sending ? "…" : "Send"}
+              </button>
+            </div>
           </form>
         </div>
       </section>
