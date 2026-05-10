@@ -32,16 +32,13 @@ const sidebarItems: SidebarItem[] = [
   { label: "Products", href: "/products", icon: Boxes },
   { label: "Timings", href: "/timings", icon: Timer },
   { label: "Communications", href: "/communications", icon: Bell },
+  { label: "Notifications", href: "/owner/notifications", icon: Bell },
   { label: "Claims", href: "/owner/claims", icon: TriangleAlert },
   { label: "Music", href: "/music", icon: Music2 },
   { label: "Profile", href: "/owner/profile", icon: UserRound },
 ];
 
 function getActiveLabel(pathname: string) {
-  if (pathname === "/owner/notifications") {
-    return "Profile";
-  }
-
   const match = sidebarItems.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );

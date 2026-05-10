@@ -1,18 +1,24 @@
+"use client";
+
 import { ChevronLeft, Square, Store } from "lucide-react";
+import { useEffect, useState } from "react";
 
 type NotificationItem = {
-  id: number;
+  _id: string;
   title: string;
   message: string;
-  time: string;
+  createdAt: string;
 };
 
-const notifications: NotificationItem[] = Array.from({ length: 8 }, (_, index) => ({
-  id: index + 1,
-  title: "Title of the notification",
-  message: "Notification Message will be written here to let viewer know the exact details",
-  time: "9 min ago",
-}));
+function relativeTime(value: string) {
+  const diff = Date.now() - new Date(value).getTime();
+  const minutes = Math.max(1, Math.floor(diff / 60000));
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
 
 function NotificationRow({ item }: { item: NotificationItem }) {
   return (
@@ -22,12 +28,21 @@ function NotificationRow({ item }: { item: NotificationItem }) {
         <h3 className="text-[17px] font-bold leading-tight text-slate-900 sm:text-[18px]">{item.title}</h3>
         <p className="mt-0.5 text-[11px] leading-4 text-slate-700">{item.message}</p>
       </div>
-      <p className="col-span-2 pl-[56px] text-xs text-slate-700 sm:col-span-1 sm:justify-self-end sm:pl-0">{item.time}</p>
+      <p className="col-span-2 pl-[56px] text-xs text-slate-700 sm:col-span-1 sm:justify-self-end sm:pl-0">{relativeTime(item.createdAt)}</p>
     </article>
   );
 }
 
 export default function OwnerNotificationsPage() {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => setNotifications(data?.notifications ?? []))
+      .catch(() => {});
+  }, []);
+
   return (
     <>
           <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -57,9 +72,13 @@ export default function OwnerNotificationsPage() {
             <h2 className="text-[2.35rem] font-bold text-slate-900">Notifications</h2>
 
             <div className="mt-4 space-y-1 sm:space-y-0.5">
-              {notifications.map((item) => (
-                <NotificationRow key={item.id} item={item} />
-              ))}
+              {notifications.length === 0 ? (
+                <p className="py-8 text-center text-sm text-slate-400">No notifications yet.</p>
+              ) : (
+                notifications.map((item) => (
+                  <NotificationRow key={item._id} item={item} />
+                ))
+              )}
             </div>
           </section>
     </>

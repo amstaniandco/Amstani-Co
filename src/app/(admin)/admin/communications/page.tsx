@@ -1,9 +1,14 @@
+"use client";
+
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import CommunicationsTable from "../../../../components/admin/CommunicationsTable";
 
 export default function AdminCommunicationsPage() {
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
       <div className="mx-auto grid min-h-screen max-w-[1500px] grid-cols-1 gap-3 md:gap-4 lg:grid-cols-[280px_1fr]">
@@ -23,6 +28,7 @@ export default function AdminCommunicationsPage() {
 
               <button
                 type="button"
+                onClick={() => setIsComposerOpen(true)}
                 className="inline-flex h-9 w-9 items-center justify-center self-start rounded-md border border-[#d8e1e8] bg-white text-slate-700 transition hover:bg-slate-50"
                 aria-label="Add announcement"
               >
@@ -31,7 +37,10 @@ export default function AdminCommunicationsPage() {
             </div>
 
             <div className="mt-4">
-              <CommunicationsTable />
+              <CommunicationsTable
+                isComposerOpen={isComposerOpen}
+                onCloseComposer={() => setIsComposerOpen(false)}
+              />
             </div>
           </section>
         </main>

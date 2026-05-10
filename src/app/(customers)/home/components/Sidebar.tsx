@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import type { ActiveOrder, OnSaleStore } from "../mockData";
 import Image from "next/image";
 import DesktopOnSaleSidebar from "./DesktopOnSaleSidebar";
+import { useEffect, useState } from "react";
 
 interface SidebarProps {
   onSaleStores: OnSaleStore[];
@@ -9,6 +12,15 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
+  const [banner, setBanner] = useState<{ title: string; imageUrl: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/communications/banners")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => setBanner(data?.banners?.[0] ?? null))
+      .catch(() => {});
+  }, []);
+
   return (
     <aside className="w-full shrink-0 space-y-5 lg:ml-2 lg:w-[280px]">
       <div className="hidden lg:block">
@@ -63,8 +75,8 @@ export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
       </div>
       <div>
         <Image
-          src="/assets/poster.png"
-          alt="Side Banner"
+          src={banner?.imageUrl || "/assets/poster.png"}
+          alt={banner?.title || "Side Banner"}
           width={280}
           height={200}
           className="rounded-2xl object-cover"
