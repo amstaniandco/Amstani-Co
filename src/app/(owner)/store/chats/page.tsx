@@ -75,6 +75,13 @@ type ChannelItem = {
   icon: React.ComponentType;
 };
 
+type CustomerThread = {
+  _id: string;
+  customerName: string;
+  lastMessage: string;
+  updatedAt: string;
+};
+
 const channels: ChannelItem[] = [
   { title: "facebook Live", icon: FacebookBrandIcon },
   { title: "Instagram Live", icon: InstagramBrandIcon },
@@ -82,15 +89,26 @@ const channels: ChannelItem[] = [
   { title: "WhatsApp Call", icon: WhatsAppBrandIcon },
 ];
 
+function messagePreview(message?: ChatMessage | null) {
+  if (!message) return "No messages yet";
+  return message.deleted ? "This message was deleted" : message.text;
+}
+
 export default function OwnerChatsPage() {
+  const [activeThread, setActiveThread] = useState<"admin" | "customer">("admin");
   const [storeId, setStoreId] = useState("");
   const [storeName, setStoreName] = useState("My Store");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [customerThreads, setCustomerThreads] = useState<CustomerThread[]>([]);
+  const [selectedCustomerThread, setSelectedCustomerThread] = useState<CustomerThread | null>(null);
+  const [customerMessages, setCustomerMessages] = useState<ChatMessage[]>([]);
   const [replyText, setReplyText] = useState("");
+  const [customerReplyText, setCustomerReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [customerReplyingTo, setCustomerReplyingTo] = useState<ChatMessage | null>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -117,6 +135,71 @@ export default function OwnerChatsPage() {
     };
   }, []);
 
+  const startCustomerStream = useCallback((sid: string, chatId: string, afterId: string) => {
+    esRef.current?.close();
+    const params = new URLSearchParams({ chatId });
+    if (afterId) params.set("after", afterId);
+    const es = new EventSource(`/api/customer-conversations/${sid}/stream?${params.toString()}`);
+    esRef.current = es;
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === "message") {
+          setCustomerMessages((prev) =>
+            prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
+          );
+          setCustomerThreads((prev) =>
+            prev.map((thread) =>
+              thread._id === chatId
+                ? { ...thread, lastMessage: data.message.text, updatedAt: data.message.createdAt }
+                : thread
+            )
+          );
+        } else if (data.type === "update") {
+          setCustomerMessages((prev) =>
+            prev.map((m) => m._id === data.message._id ? data.message : m)
+          );
+          setCustomerThreads((prev) =>
+            prev.map((thread) =>
+              thread._id === chatId
+                ? { ...thread, lastMessage: messagePreview(data.message), updatedAt: data.message.createdAt }
+                : thread
+            )
+          );
+        }
+      } catch {}
+    };
+  }, []);
+
+  const loadCustomerThreads = useCallback(async () => {
+    const res = await fetch("/api/customer-conversations/owner-store");
+    if (!res.ok) return;
+    const data = await res.json();
+    setCustomerThreads(data.chats ?? []);
+  }, []);
+
+  const openAdminThread = useCallback(() => {
+    setActiveThread("admin");
+    if (storeId) {
+      startStream(storeId, messages.at(-1)?._id ?? "");
+    }
+  }, [messages, startStream, storeId]);
+
+  const openCustomerThread = useCallback(
+    async (thread: CustomerThread) => {
+      if (!storeId) return;
+      setActiveThread("customer");
+      setSelectedCustomerThread(thread);
+      const res = await fetch(`/api/customer-conversations/${storeId}?chatId=${thread._id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const loadedMessages: ChatMessage[] = data.messages ?? [];
+      setCustomerMessages(loadedMessages);
+      startCustomerStream(storeId, thread._id, loadedMessages.at(-1)?._id ?? "");
+    },
+    [startCustomerStream, storeId]
+  );
+
   useEffect(() => {
     fetch("/api/conversations/owner-store")
       .then((r) => r.json())
@@ -132,14 +215,16 @@ export default function OwnerChatsPage() {
           const lastId = msgs[msgs.length - 1]?._id ?? "";
           startStream(d.storeId, lastId);
         }
+        loadCustomerThreads();
       })
       .catch(() => {});
     return () => { esRef.current?.close(); };
-  }, [startStream]);
+  }, [loadCustomerThreads, startStream]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, adminTyping]);
+    const box = messagesRef.current;
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [messages, customerMessages, adminTyping]);
 
   const sendTypingStatus = useCallback(
     (isTyping: boolean) => {
@@ -184,6 +269,47 @@ export default function OwnerChatsPage() {
     }
   };
 
+  const handleCustomerEdit = async (msgId: string, newText: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/customer-conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "edit", text: newText }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setCustomerMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+      setCustomerThreads((prev) =>
+        prev.map((thread) =>
+            thread._id === selectedCustomerThread?._id
+            ? { ...thread, lastMessage: messagePreview(data.message), updatedAt: data.message.createdAt }
+            : thread
+        )
+      );
+    }
+  };
+
+  const handleCustomerDelete = async (msgId: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/customer-conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete" }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setCustomerMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+      if (customerReplyingTo?._id === msgId) setCustomerReplyingTo(data.message);
+      setCustomerThreads((prev) =>
+        prev.map((thread) =>
+          thread._id === selectedCustomerThread?._id
+            ? { ...thread, lastMessage: messagePreview(data.message), updatedAt: data.message.createdAt }
+            : thread
+        )
+      );
+    }
+  };
+
   const handleSendReply = async (event: FormEvent) => {
     event.preventDefault();
     const trimmed = replyText.trim();
@@ -213,6 +339,51 @@ export default function OwnerChatsPage() {
         );
         setReplyText("");
         setReplyingTo(null);
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendCustomerReply = async (event: FormEvent) => {
+    event.preventDefault();
+    const trimmed = customerReplyText.trim();
+    if (!trimmed || !storeId || !selectedCustomerThread || sending) return;
+
+    setSending(true);
+    try {
+      const body: Record<string, unknown> = {
+        text: trimmed,
+        chatId: selectedCustomerThread._id,
+      };
+      if (customerReplyingTo) {
+        body.replyTo = {
+          _id: customerReplyingTo._id,
+          senderName: customerReplyingTo.senderName,
+          text: customerReplyingTo.text,
+          deleted: customerReplyingTo.deleted ?? false,
+        };
+      }
+
+      const res = await fetch(`/api/customer-conversations/${storeId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomerMessages((prev) =>
+          prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
+        );
+        setCustomerThreads((prev) =>
+          prev.map((thread) =>
+              thread._id === selectedCustomerThread._id
+              ? { ...thread, lastMessage: messagePreview(data.message), updatedAt: data.message.createdAt }
+              : thread
+          )
+        );
+        setCustomerReplyText("");
+        setCustomerReplyingTo(null);
       }
     } finally {
       setSending(false);
@@ -292,6 +463,7 @@ export default function OwnerChatsPage() {
             {/* Super Admin thread */}
             <button
               type="button"
+              onClick={openAdminThread}
               className="flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left bg-slate-100"
             >
               <div className="h-12 w-12 rounded-full bg-[#65bbc5] flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">
@@ -301,7 +473,7 @@ export default function OwnerChatsPage() {
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-[#65bbc5]">Super Admin</span>
                   <span className="mt-0.5 flex items-center gap-2 truncate text-xs text-slate-700">
-                    {lastAdminMsg?.text ?? "No messages yet"}
+                    {messagePreview(lastAdminMsg)}
                   </span>
                 </span>
                 <span className="mt-2 h-3 w-3 rounded-full bg-[#65bbc5]" />
@@ -309,28 +481,54 @@ export default function OwnerChatsPage() {
             </button>
 
             {/* Live Chat placeholder */}
-            <button
-              type="button"
-              className="flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left hover:bg-slate-100"
-            >
-              <Image
-                src={ownerCard}
-                alt="Live Chat"
-                width={50}
-                height={50}
-                className="h-12 w-12 rounded-full border border-slate-300 object-cover"
-              />
-              <span className="flex flex-1 items-center justify-between gap-2">
+            {customerThreads.length === 0 ? (
+              <button
+                type="button"
+                className="flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left text-slate-400"
+              >
+                <Image
+                  src={ownerCard}
+                  alt="Live Chat"
+                  width={50}
+                  height={50}
+                  className="h-12 w-12 rounded-full border border-slate-300 object-cover"
+                />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-[#f04444]">Live Chat</span>
-                  <span className="mt-0.5 flex items-center gap-2 truncate text-xs text-slate-700">
-                    Customer messages
-                    <strong className="font-semibold">5 Pending</strong>
-                  </span>
+                  <span className="mt-0.5 block truncate text-xs">No customer messages yet</span>
                 </span>
-                <span className="mt-2 h-3 w-3 rounded-full bg-[#f04444]" />
-              </span>
-            </button>
+              </button>
+            ) : (
+              customerThreads.map((thread) => (
+                <button
+                  key={thread._id}
+                  type="button"
+                  onClick={() => openCustomerThread(thread)}
+                  className={`flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left ${
+                    selectedCustomerThread?._id === thread._id && activeThread === "customer"
+                      ? "bg-slate-100"
+                      : "hover:bg-slate-100"
+                  }`}
+                >
+                  <Image
+                    src={ownerCard}
+                    alt={thread.customerName}
+                    width={50}
+                    height={50}
+                    className="h-12 w-12 rounded-full border border-slate-300 object-cover"
+                  />
+                  <span className="flex flex-1 items-center justify-between gap-2">
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-[#f04444]">{thread.customerName}</span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-700">
+                        {thread.lastMessage || "Customer chat"}
+                      </span>
+                    </span>
+                    <span className="mt-2 h-3 w-3 rounded-full bg-[#f04444]" />
+                  </span>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
@@ -338,20 +536,24 @@ export default function OwnerChatsPage() {
         <div className="flex h-full flex-col p-4">
           <header className="mb-4 flex items-center gap-3 border-b border-[#9fb0c6] pb-3">
             <div className="h-14 w-14 rounded-full bg-[#65bbc5] flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl">
-              A
+              {activeThread === "admin" ? "A" : (selectedCustomerThread?.customerName?.[0] ?? "C").toUpperCase()}
             </div>
             <div>
-              <p className="text-xl font-medium text-slate-900 sm:text-2xl">Super Admin</p>
+              <p className="text-xl font-medium text-slate-900 sm:text-2xl">
+                {activeThread === "admin" ? "Super Admin" : selectedCustomerThread?.customerName ?? "Customer Chat"}
+              </p>
               <p className="text-sm text-slate-600">
-                {messages.length > 0 ? "Active" : "No messages yet"}
+                {(activeThread === "admin" ? messages.length : customerMessages.length) > 0 ? "Active" : "No messages yet"}
               </p>
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1" style={{ maxHeight: 360 }}>
-            {messages.length === 0 ? (
+          <div ref={messagesRef} className="flex-1 overflow-y-auto space-y-4 py-2 pr-1" style={{ maxHeight: 360 }}>
+            {activeThread === "customer" && !selectedCustomerThread ? (
+              <p className="text-center text-xs text-slate-400 py-8">Select a customer conversation.</p>
+            ) : (activeThread === "admin" ? messages.length : customerMessages.length) === 0 ? (
               <p className="text-center text-xs text-slate-400 py-8">No messages yet. Start the conversation!</p>
-            ) : (
+            ) : activeThread === "admin" ? (
               messages.map((message) => (
                 <MessageBubble
                   key={message._id}
@@ -366,8 +568,23 @@ export default function OwnerChatsPage() {
                   onDelete={handleDelete}
                 />
               ))
+            ) : (
+              customerMessages.map((message) => (
+                <MessageBubble
+                  key={message._id}
+                  msg={message}
+                  isOwn={message.sender === "owner"}
+                  avatarLabel={(selectedCustomerThread?.customerName?.[0] ?? "C").toUpperCase()}
+                  avatarClassName="bg-[#a8b4c6] text-white"
+                  ownBubbleCls="rounded-[24px] rounded-br-sm bg-[#65bbc5] text-white"
+                  otherBubbleCls="rounded-[24px] rounded-bl-sm bg-[#a8b4c6] text-white"
+                  onReply={setCustomerReplyingTo}
+                  onEdit={handleCustomerEdit}
+                  onDelete={handleCustomerDelete}
+                />
+              ))
             )}
-            {adminTyping && (
+            {activeThread === "admin" && adminTyping && (
               <div className="flex items-center gap-2 px-1">
                 <div className="w-8 h-8 rounded-full bg-[#a8b4c6] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">A</div>
                 <div className="rounded-full bg-[#a8b4c6] px-4 py-3 flex items-center gap-1">
@@ -377,12 +594,11 @@ export default function OwnerChatsPage() {
                 </div>
               </div>
             )}
-            <div ref={bottomRef} />
           </div>
 
-          <form onSubmit={handleSendReply} className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4">
+          <form onSubmit={activeThread === "admin" ? handleSendReply : handleSendCustomerReply} className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4">
             {/* Reply preview */}
-            {replyingTo && (
+            {activeThread === "admin" && replyingTo && (
               <div className="flex items-center justify-between rounded-lg border-l-2 border-[#65bbc5] bg-slate-50 px-3 py-1.5 text-xs">
                 <div className="min-w-0">
                   <p className="font-semibold text-[#65bbc5]">Replying to {replyingTo.senderName}</p>
@@ -399,17 +615,38 @@ export default function OwnerChatsPage() {
                 </button>
               </div>
             )}
+            {activeThread === "customer" && customerReplyingTo && (
+              <div className="flex items-center justify-between rounded-lg border-l-2 border-[#65bbc5] bg-slate-50 px-3 py-1.5 text-xs">
+                <div className="min-w-0">
+                  <p className="font-semibold text-[#65bbc5]">Replying to {customerReplyingTo.senderName}</p>
+                  <p className="truncate text-slate-500">
+                    {customerReplyingTo.deleted ? <em>This message was deleted</em> : customerReplyingTo.text}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCustomerReplyingTo(null)}
+                  className="ml-2 flex-shrink-0 text-slate-400 hover:text-slate-600"
+                >
+                  x
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={replyText}
-                onChange={(event) => handleReplyChange(event.target.value)}
+                value={activeThread === "admin" ? replyText : customerReplyText}
+                onChange={(event) =>
+                  activeThread === "admin"
+                    ? handleReplyChange(event.target.value)
+                    : setCustomerReplyText(event.target.value)
+                }
                 placeholder="Write your reply..."
                 className="h-11 w-full rounded-full border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#65bbc5]"
               />
               <button
                 type="submit"
-                disabled={sending || !replyText.trim()}
+                disabled={sending || !(activeThread === "admin" ? replyText : customerReplyText).trim() || (activeThread === "customer" && !selectedCustomerThread)}
                 className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-[#65bbc5] px-4 text-sm font-semibold text-white transition hover:bg-[#53aab5] disabled:opacity-50"
               >
                 <SendHorizontal className="h-4 w-4" />

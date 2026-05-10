@@ -47,7 +47,7 @@ export default function StoreChatPanel({
   const [otherTyping, setOtherTyping] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const esRef = useRef<EventSource | null>(null);
 
@@ -104,7 +104,8 @@ export default function StoreChatPanel({
   }, [activeStoreId, panelType, loadMessages, startStream]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const box = messagesRef.current;
+    if (box) box.scrollTop = box.scrollHeight;
   }, [messages, otherTyping]);
 
   const sendTypingStatus = useCallback(
@@ -240,6 +241,7 @@ export default function StoreChatPanel({
         <div className="flex flex-col bg-[#fdfefe]">
           {/* Messages */}
           <div
+            ref={messagesRef}
             className="overflow-y-auto space-y-3 px-3 py-4 sm:px-4 sm:py-5"
             style={{ height: 320 }}
           >
@@ -270,7 +272,6 @@ export default function StoreChatPanel({
               ))
             )}
             {otherTyping && <TypingDots />}
-            <div ref={bottomRef} />
           </div>
 
           {/* Input */}

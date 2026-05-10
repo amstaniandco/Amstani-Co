@@ -5,7 +5,7 @@ import { MoreHorizontal, Pencil, Reply, Trash2 } from "lucide-react";
 
 export type Message = {
   _id: string;
-  sender: "admin" | "owner";
+  sender: "admin" | "owner" | "customer";
   senderName: string;
   text: string;
   createdAt: string;
@@ -51,11 +51,6 @@ export default function MessageBubble({
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(msg.text);
   const touchStartX = useRef(0);
-
-  // Keep edit text in sync when not actively editing
-  useEffect(() => {
-    if (!editing) setEditText(msg.text);
-  }, [msg.text, editing]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -107,7 +102,7 @@ export default function MessageBubble({
             <>
               <button
                 type="button"
-                onClick={() => { setEditing(true); setMenuOpen(false); }}
+                onClick={() => { setEditText(msg.text); setEditing(true); setMenuOpen(false); }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
               >
                 <Pencil className="h-3.5 w-3.5" /> Edit
