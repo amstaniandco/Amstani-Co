@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus, AlertCircle } from "lucide-react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
+import CustomerOwnerChatsPanel from "../../../../components/admin/CustomerOwnerChatsPanel";
 import StoreChatPanel from "../../../../components/admin/StoreChatPanel";
 import StoreManagementTable, {
   type StoreRow,
@@ -118,8 +119,16 @@ export default function AdminStoresPage() {
     loadStores();
   }, []);
 
+  const openOwnerChat = (store: StoreRow) => {
+    setOpenChats((prev) =>
+      prev.find((chat) => chat.id === store.id) ? prev : [...prev, { id: store.id, name: store.name }]
+    );
+    setActiveChatId(store.id);
+  };
+
   const handleStoreClick = (store: StoreRow) => {
     setSelectedStore(store);
+    openOwnerChat(store);
   };
 
   const handleUpdateStatus = async (storeId: string, newStatus: "active" | "suspended" | "pending") => {
@@ -163,10 +172,7 @@ export default function AdminStoresPage() {
   const handleContactOwner = (storeId: string) => {
     const store = stores.find((s) => s.id === storeId);
     if (!store) return;
-    setOpenChats((prev) =>
-      prev.find((c) => c.id === storeId) ? prev : [...prev, { id: storeId, name: store.name }]
-    );
-    setActiveChatId(storeId);
+    openOwnerChat(store);
     chatRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
@@ -361,12 +367,13 @@ export default function AdminStoresPage() {
               <div ref={chatRef} className="mt-4 grid gap-4 grid-cols-1">
                 <StoreChatPanel
                   title="Owner Communications"
-                  rightLabel="Click 'Contact Owner' on a store to chat"
+                  rightLabel="Select a store to chat with its owner"
                   stores={openChats}
                   activeStoreId={activeChatId}
                   onSelectStore={setActiveChatId}
                   panelType="owner"
                 />
+                <CustomerOwnerChatsPanel />
               </div>
             </>
           )}
