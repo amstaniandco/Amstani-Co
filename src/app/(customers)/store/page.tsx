@@ -43,6 +43,11 @@ export default function StorePage() {
     return () => { mounted = false };
   }, [storeId]);
 
+  useEffect(() => {
+    if (!storeId) return;
+    fetch(`/api/stores/${storeId}/visits`, { method: "POST" }).catch(() => {});
+  }, [storeId]);
+
   return (
     <div className="w-full py-6 dark:bg-slate-950">
       <div className="mx-auto w-full px-2 sm:px-6 lg:px-8">

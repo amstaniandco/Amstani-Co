@@ -11,6 +11,24 @@ type Review = {
   createdAt: string;
 };
 
+type ProductImage = string | { url?: string; imageUrl?: string };
+
+type ProductVariant = {
+  size?: string | number;
+};
+
+type ProductDetail = {
+  name: string;
+  sku?: string;
+  price: number;
+  description?: string;
+  mainImage?: string | null;
+  images?: ProductImage[];
+  variants?: ProductVariant[];
+  storeName?: string;
+  brand?: { name?: string };
+};
+
 function StarRating({ rating, interactive = false, onRate }: { rating: number; interactive?: boolean; onRate?: (s: number) => void }) {
   const [hovered, setHovered] = useState(0);
   return (
@@ -46,7 +64,7 @@ export default function ProductPage() {
   const productId = searchParams.get("productId") ?? "";
   const storeId = searchParams.get("storeId") ?? "";
 
-  const [product, setProduct] = useState<Record<string, any> | null>(null);
+  const [product, setProduct] = useState<ProductDetail | null>(null);
   const [productLoading, setProductLoading] = useState(true);
 
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -86,14 +104,23 @@ export default function ProductPage() {
       .catch(() => {});
   }, [storeId]);
 
+  useEffect(() => {
+    if (!productId || !storeId) return;
+    fetch(`/api/products/${productId}/views`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeId }),
+    }).catch(() => {});
+  }, [productId, storeId]);
+
   const images: string[] = product?.images?.length
-    ? product.images.map((img: any) => img.url ?? img)
+    ? product.images.map((img) => (typeof img === "string" ? img : img.url ?? img.imageUrl ?? "")).filter(Boolean)
     : product?.mainImage
     ? [product.mainImage]
     : [];
 
   const sizes: (string | number)[] = product?.variants
-    ? [...new Set(product.variants.map((v: any) => v.size).filter(Boolean))] as (string | number)[]
+    ? [...new Set(product.variants.map((v) => v.size).filter(Boolean))] as (string | number)[]
     : [];
 
   async function handleAddToCart() {
