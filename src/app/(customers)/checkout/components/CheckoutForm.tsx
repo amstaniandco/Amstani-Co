@@ -1,23 +1,17 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-
-type Address = {
-  id: number;
-  name: string;
-  address: string;
-  city: string;
-  zip: string;
-};
+import type { Address } from "../../../../models/user";
 
 type CheckoutFormProps = {
   savedAddresses: Address[];
-  selectedAddress: number;
-  onSelectAddress: (id: number) => void;
+  selectedAddress: string;
+  onSelectAddress: (address: Address) => void;
   form: {
     fullName: string;
     phone: string;
     street: string;
+    city: string;
     state: string;
     zip: string;
   };
@@ -52,11 +46,15 @@ export default function CheckoutForm({
       </p>
 
       <div className="grid grid-cols-2 gap-3 mb-5">
-        {savedAddresses.map((addr) => (
+        {savedAddresses.length === 0 ? (
+          <div className="col-span-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400">
+            No saved shipping addresses yet. Add one from your profile or enter the details below.
+          </div>
+        ) : savedAddresses.map((addr) => (
           <button
             key={addr.id}
             type="button"
-            onClick={() => onSelectAddress(addr.id)}
+            onClick={() => onSelectAddress(addr)}
             className={`text-left border-2 rounded-xl p-4 transition-all duration-200 ${
               selectedAddress === addr.id
                 ? "border-teal-300 bg-teal-50 ring-2 ring-teal-100 dark:border-teal-400 dark:bg-teal-900/20 dark:ring-teal-900/40"
@@ -64,19 +62,21 @@ export default function CheckoutForm({
             }`}
           >
             <p className={`mb-1 dark:text-slate-100 ${selectedAddress === addr.id ? "text-base font-semibold" : "text-sm font-semibold"}`}>
-              {addr.name}
+              {addr.recipientName}
+              {addr.isDefault && <span className="ml-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-700">DEFAULT</span>}
             </p>
             <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} leading-relaxed text-black dark:text-slate-300`}>
-              {addr.address}
+              {addr.street}
             </p>
             <div className="flex justify-between items-center mt-1">
               <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} text-black dark:text-slate-300`}>
-                {addr.city}
+                {addr.city}, {addr.state}
               </p>
               <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} font-semibold text-black dark:text-slate-100`}>
                 {addr.zip}
               </p>
             </div>
+            <p className="mt-1 text-xs text-black/60 dark:text-slate-400">{addr.country}</p>
           </button>
         ))}
       </div>
@@ -110,7 +110,14 @@ export default function CheckoutForm({
           onChange={onFormChange}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <FormField
+            label="City"
+            name="city"
+            placeholder="City"
+            value={form.city}
+            onChange={onFormChange}
+          />
           <FormField
             label="State"
             name="state"

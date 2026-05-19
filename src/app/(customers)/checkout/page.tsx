@@ -3,6 +3,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import CheckoutForm from "./components/CheckoutForm";
+import type { Address } from "../../../models/user";
 
 type CartItem = {
   productId: string;
@@ -15,18 +16,15 @@ type CartItem = {
   quantity: number;
 };
 
-const savedAddresses = [
-  { id: 1, name: "", address: "", city: "", zip: "" },
-];
-
 export default function CheckoutPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
-  const [selectedAddress, setSelectedAddress] = useState(1);
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState("");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ fullName: "", phone: "", street: "", state: "", zip: "" });
+  const [form, setForm] = useState({ fullName: "", phone: "", street: "", city: "", state: "", zip: "" });
 
   useEffect(() => {
     fetch("/api/cart")
@@ -36,6 +34,37 @@ export default function CheckoutPage() {
       .finally(() => setCartLoading(false));
   }, []);
 
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        const addresses: Address[] = data?.user?.addresses ?? [];
+        const shippingAddresses = addresses.filter((address) => address.type !== "billing");
+        setSavedAddresses(shippingAddresses);
+        if (data?.user?.phone) {
+          setForm((prev) => ({ ...prev, phone: prev.phone || data.user.phone }));
+        }
+
+        const defaultAddress = shippingAddresses.find((address) => address.isDefault) ?? shippingAddresses[0];
+        if (defaultAddress) {
+          applySavedAddress(defaultAddress);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  function applySavedAddress(address: Address) {
+    setSelectedAddress(address.id);
+    setForm((prev) => ({
+      ...prev,
+      fullName: address.recipientName,
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      zip: address.zip,
+    }));
+  }
+
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -44,8 +73,8 @@ export default function CheckoutPage() {
 
   async function handlePlaceOrder() {
     setError("");
-    if (!form.fullName || !form.street || !form.state) {
-      setError("Please fill in your full name, street, and state.");
+    if (!form.fullName || !form.street || !form.city || !form.state) {
+      setError("Please fill in your full name, street, city, and state.");
       return;
     }
     setPlacing(true);
@@ -57,7 +86,7 @@ export default function CheckoutPage() {
           shippingAddress: {
             fullName: form.fullName,
             line1: form.street,
-            city: form.state,
+            city: form.city,
             state: form.state,
             zip: form.zip,
             country: "PK",
@@ -67,7 +96,7 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed to place order"); return; }
-      router.push("/");
+      router.push("/profile");
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -89,7 +118,7 @@ export default function CheckoutPage() {
         <CheckoutForm
           savedAddresses={savedAddresses}
           selectedAddress={selectedAddress}
-          onSelectAddress={setSelectedAddress}
+          onSelectAddress={applySavedAddress}
           form={form}
           onFormChange={handleChange}
         />

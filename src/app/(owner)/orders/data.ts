@@ -59,6 +59,167 @@ export type OrderRow = {
   timeline: OrderTimelineStep[];
 };
 
+type RawOrderItem = {
+  name?: string;
+  sku?: string;
+  quantity?: number;
+  price?: number;
+  unitPrice?: number;
+  selectedVariants?: Record<string, string>;
+};
+
+type RawOrder = {
+  _id?: { toString: () => string } | string;
+  orderNumber?: string;
+  customerName?: string;
+  customerEmail?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  total?: number;
+  subtotal?: number;
+  totals?: {
+    subtotal?: number;
+    shipping?: number;
+    tax?: number;
+    total?: number;
+  };
+  status?: string;
+  paymentMethod?: string;
+  paymentStatus?: "Paid" | "Pending" | "paid" | "pending";
+  transactionId?: string;
+  shippingMethod?: string;
+  carrier?: string;
+  trackingNumber?: string;
+  estimatedDelivery?: string;
+  shippingAddress?: Partial<Address>;
+  billingAddress?: Partial<Address>;
+  items?: RawOrderItem[];
+  shippingFee?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  notes?: string;
+};
+
+const emptyAddress: Address = {
+  fullName: "",
+  line1: "",
+  city: "",
+  state: "",
+  zip: "",
+  country: "",
+  phone: "",
+};
+
+function formatCurrency(amount: number) {
+  return `$${amount.toFixed(2)}`;
+}
+
+function formatDate(value?: string | Date) {
+  if (!value) return "";
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(value?: string | Date) {
+  if (!value) return "";
+  return new Date(value).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function normalizePaymentStatus(status?: RawOrder["paymentStatus"]): "Paid" | "Pending" {
+  return status?.toLowerCase() === "paid" ? "Paid" : "Pending";
+}
+
+function normalizeOrderStatus(status?: string): OrderStatus {
+  const statusMap: Record<string, OrderStatus> = {
+    incoming: "Incoming",
+    accepted: "Accepted",
+    rejected: "Rejected",
+    "on hold": "On Hold",
+    dispatched: "Dispatched",
+    shipped: "Shipped",
+    delivered: "Delivered",
+    pending: "Incoming",
+    processing: "Accepted",
+    cancelled: "Rejected",
+  };
+
+  return statusMap[status?.toLowerCase() ?? ""] ?? "Incoming";
+}
+
+function normalizeAddress(address?: Partial<Address>): Address {
+  return { ...emptyAddress, ...(address ?? {}) };
+}
+
+export function mapOrderToRow(order: RawOrder): OrderRow {
+  const mongoId = typeof order._id === "string" ? order._id : order._id?.toString() ?? "";
+  const items = order.items ?? [];
+  const itemsSubtotal = items.reduce(
+    (sum, item) => sum + (Number(item.price ?? item.unitPrice ?? 0) * Number(item.quantity ?? 1)),
+    0,
+  );
+  const subtotal = Number(order.subtotal ?? order.totals?.subtotal ?? itemsSubtotal);
+  const shippingFee = Number(order.shippingFee ?? order.totals?.shipping ?? 0);
+  const taxAmount = Number(order.taxAmount ?? order.totals?.tax ?? 0);
+  const discountAmount = Number(order.discountAmount ?? 0);
+  const total = Number(order.total ?? order.totals?.total ?? subtotal + shippingFee + taxAmount - discountAmount);
+  const status = normalizeOrderStatus(order.status);
+  const paymentStatus = normalizePaymentStatus(order.paymentStatus);
+  const shippingAddress = normalizeAddress(order.shippingAddress);
+
+  return {
+    id: order.orderNumber ?? mongoId,
+    _mongoId: mongoId,
+    customer: order.customerName ?? "Customer",
+    email: order.customerEmail ?? "",
+    date: formatDate(order.createdAt),
+    total: formatCurrency(total),
+    status,
+    statusTone: getStatusTone(status),
+    paymentMethod: order.paymentMethod ?? "Cash on Delivery",
+    paymentStatus,
+    transactionId: order.transactionId ?? "-",
+    shippingMethod: order.shippingMethod ?? "Standard",
+    carrier: order.carrier ?? "-",
+    trackingNumber: order.trackingNumber ?? "-",
+    estimatedDelivery: order.estimatedDelivery ?? "-",
+    shippingAddress,
+    billingAddress: normalizeAddress(order.billingAddress ?? shippingAddress),
+    items: items.map((item, index) => ({
+      name: item.name ?? "Item",
+      sku: item.sku ?? `item-${index + 1}`,
+      variant: item.selectedVariants ? Object.values(item.selectedVariants).join(" / ") : "",
+      quantity: Number(item.quantity ?? 1),
+      unitPrice: Number(item.price ?? item.unitPrice ?? 0),
+    })),
+    shippingFee,
+    taxAmount,
+    discountAmount,
+    notes: order.notes || "No notes for this order.",
+    timeline: [
+      { label: "Order Placed", dateTime: formatDateTime(order.createdAt), complete: true },
+      {
+        label: paymentStatus === "Paid" ? "Payment Confirmed" : "Payment Pending",
+        dateTime: paymentStatus === "Paid" ? formatDateTime(order.updatedAt ?? order.createdAt) : "Pending",
+        complete: paymentStatus === "Paid",
+      },
+      {
+        label: "Fulfillment",
+        dateTime: ["Dispatched", "Shipped", "Delivered"].includes(status) ? formatDateTime(order.updatedAt) : "Pending",
+        complete: ["Dispatched", "Shipped", "Delivered"].includes(status),
+      },
+    ],
+  };
+}
+
 export const orders: OrderRow[] = [
   {
     id: "#AM-9921",

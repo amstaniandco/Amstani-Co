@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../lib/db";
 import { getUserFromToken } from "../../../lib/auth";
 
@@ -23,17 +24,39 @@ export async function POST(req: Request) {
 
   const { productId, storeId, storeName, name, sku, price, mainImage, quantity = 1 } = await req.json();
   if (!productId || !storeId) return NextResponse.json({ error: "productId and storeId required" }, { status: 400 });
+  if (!ObjectId.isValid(productId) || !ObjectId.isValid(storeId)) {
+    return NextResponse.json({ error: "Invalid product or store" }, { status: 400 });
+  }
 
   const client = await clientPromise;
   const db = client.db(DB_NAME);
   const now = new Date();
+  const [product, store] = await Promise.all([
+    db.collection("products").findOne({ _id: new ObjectId(productId) }),
+    db.collection("stores").findOne({ _id: new ObjectId(storeId) }),
+  ]);
+
+  if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
+
+  const normalizedItem = {
+    productId,
+    storeId,
+    storeName: store.name ?? storeName ?? "Store",
+    name: product.name ?? name ?? "Product",
+    sku: product.sku ?? sku ?? "",
+    price: Number(product.price ?? price ?? 0),
+    mainImage: product.mainImage ?? mainImage ?? product.images?.[0]?.url ?? product.images?.[0] ?? null,
+    quantity: Math.max(1, Number(quantity) || 1),
+    addedAt: now,
+  };
 
   const cart = await db.collection("carts").findOne({ userId: user.id });
 
   if (!cart) {
     await db.collection("carts").insertOne({
       userId: user.id,
-      items: [{ productId, storeId, storeName, name, sku, price, mainImage, quantity, addedAt: now }],
+      items: [normalizedItem],
       updatedAt: now,
     });
   } else {
@@ -41,12 +64,12 @@ export async function POST(req: Request) {
     if (idx >= 0) {
       await db.collection("carts").updateOne(
         { userId: user.id },
-        { $inc: { [`items.${idx}.quantity`]: quantity }, $set: { updatedAt: now } }
+        { $inc: { [`items.${idx}.quantity`]: normalizedItem.quantity }, $set: { updatedAt: now } }
       );
     } else {
       await db.collection("carts").updateOne(
         { userId: user.id },
-        { $push: { items: { productId, storeId, storeName, name, sku, price, mainImage, quantity, addedAt: now } as never }, $set: { updatedAt: now } }
+        { $push: { items: normalizedItem as never }, $set: { updatedAt: now } }
       );
     }
   }

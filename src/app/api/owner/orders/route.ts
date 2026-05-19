@@ -3,6 +3,8 @@ import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
 
+const validStatuses = ["Incoming", "Accepted", "Rejected", "On Hold", "Dispatched", "Shipped", "Delivered"];
+
 export async function GET() {
   const user = await getUserFromToken();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,10 +17,11 @@ export async function GET() {
 
   const store = await db.collection("stores").findOne({ ownerId: new ObjectId(user.id) });
   if (!store) return NextResponse.json({ orders: [] });
+  const storeId = store._id.toString();
 
   const orders = await db
     .collection("orders")
-    .find({ storeId: store._id.toString() })
+    .find({ $or: [{ storeId }, { storeId: store._id }] })
     .sort({ createdAt: -1 })
     .toArray();
 
@@ -33,16 +36,23 @@ export async function PATCH(req: Request) {
   }
 
   const { orderId, status } = await req.json();
-  const validStatuses = ["Incoming", "Accepted", "On Hold", "Shipped"];
-  if (!orderId || !validStatuses.includes(status)) {
+  if (!orderId || !ObjectId.isValid(orderId) || !validStatuses.includes(status)) {
     return NextResponse.json({ error: "Invalid orderId or status" }, { status: 400 });
   }
 
   const client = await clientPromise;
-  await client.db(DB_NAME).collection("orders").updateOne(
-    { _id: new ObjectId(orderId) },
+  const db = client.db(DB_NAME);
+  const store = await db.collection("stores").findOne({ ownerId: new ObjectId(user.id) });
+  if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
+
+  const result = await db.collection("orders").updateOne(
+    { _id: new ObjectId(orderId), $or: [{ storeId: store._id.toString() }, { storeId: store._id }] },
     { $set: { status, updatedAt: new Date() } }
   );
+
+  if (!result.matchedCount) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ ok: true });
 }

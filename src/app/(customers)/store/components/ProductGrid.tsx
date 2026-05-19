@@ -12,18 +12,41 @@ type StoreProduct = {
   quantity: number;
 };
 
-export default function ProductGrid({ storeId }: { storeId?: string | null }) {
+export default function ProductGrid({ storeId, storeName = "" }: { storeId?: string | null; storeName?: string }) {
   const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(storeId));
+  const [cartMessage, setCartMessage] = useState("");
 
   useEffect(() => {
-    if (!storeId) { setLoading(false); return; }
+    if (!storeId) return;
     fetch(`/api/stores/${storeId}/products`)
       .then((r) => r.json())
       .then((data) => setProducts(data.products ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [storeId]);
+
+  async function addToCart(product: StoreProduct) {
+    if (!storeId) return;
+
+    const response = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: product.productId,
+        storeId,
+        storeName,
+        name: product.name,
+        sku: product.sku,
+        price: product.price,
+        mainImage: product.mainImage ?? null,
+        quantity: 1,
+      }),
+    });
+
+    setCartMessage(response.ok ? "Added to cart." : "Sign in to add items to cart.");
+    setTimeout(() => setCartMessage(""), 2500);
+  }
 
   if (loading) {
     return (
@@ -51,6 +74,11 @@ export default function ProductGrid({ storeId }: { storeId?: string | null }) {
         <span className="text-[#5fb9c3]">📦</span>
         <h3 className="text-base font-semibold text-[#68B8C1]">Our Products</h3>
       </div>
+      {cartMessage && (
+        <p className="mb-4 rounded-lg bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-200">
+          {cartMessage}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
@@ -67,7 +95,7 @@ export default function ProductGrid({ storeId }: { storeId?: string | null }) {
             <div className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Link href={`/product?productId=${product.productId}`} className="text-sm font-semibold text-[#68B8C1] hover:text-[#4f9ea7]">
+                  <Link href={`/product?productId=${product.productId}&storeId=${storeId}`} className="text-sm font-semibold text-[#68B8C1] hover:text-[#4f9ea7]">
                     {product.name}
                   </Link>
                   {product.sku && (
@@ -96,15 +124,16 @@ export default function ProductGrid({ storeId }: { storeId?: string | null }) {
                       <path d="M12.1 21.55l-.1.1-.11-.1C7.14 17.24 4 14.39 4 10.5 4 7.42 6.42 5 9.5 5c1.74 0 3.41.81 4.5 2.09C15.09 5.81 16.76 5 18.5 5 21.58 5 24 7.42 24 10.5c0 3.89-3.14 6.74-7.9 11.05z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </Link>
-                  <Link
-                    href="/cart"
+                  <button
+                    type="button"
+                    onClick={() => addToCart(product)}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#68B8C1] text-white transition hover:bg-[#4f9ea7]"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       <path d="M8 6V4a2 2 0 114 0v2m4 0V4a2 2 0 114 0v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>

@@ -12,11 +12,17 @@ import ProductGrid from "./components/ProductGrid";
 import StoreRatingSection from "./components/StoreRatingSection";
 import { StoreProvider } from "../../../context/StoreContext";
 
+type StoreSummary = {
+  _id?: string;
+  name?: string;
+  [key: string]: unknown;
+};
+
 export default function StorePage() {
   const searchParams = useSearchParams();
   const storeId = searchParams.get("storeId");
   const [isMusicMuted, setIsMusicMuted] = useState(false);
-  const [store, setStore] = useState<any | null>(null);
+  const [store, setStore] = useState<StoreSummary | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -73,7 +79,7 @@ export default function StorePage() {
           <LiveStreamsSection />
         </div>
 
-        <ProductGrid storeId={storeId} />
+        <ProductGrid storeId={storeId} storeName={store?.name} />
         <StoreRatingSection />
         </StoreProvider>
       </div>
