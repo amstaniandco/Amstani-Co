@@ -134,6 +134,7 @@ export async function PATCH(req: Request) {
     if (body.logoUrl !== undefined) update.logoUrl = body.logoUrl;
     if (body.bannerUrl !== undefined) update.bannerUrl = body.bannerUrl;
     if (body.isLive !== undefined) update.isLive = Boolean(body.isLive);
+    if (body.automatedTemplates !== undefined) update.automatedTemplates = body.automatedTemplates;
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
