@@ -22,6 +22,15 @@ export async function GET() {
 
     const store = await db.collection<Store>("stores").findOne({ ownerId: new ObjectId(tokenUser.id) });
 
+    let followerCount = 0;
+    let productCount = 0;
+    if (store) {
+      [followerCount, productCount] = await Promise.all([
+        db.collection("storeFollowers").countDocuments({ storeId: store._id }),
+        db.collection("products").countDocuments({ storeId: store._id }),
+      ]);
+    }
+
     return NextResponse.json(
       {
         user: {
@@ -32,6 +41,8 @@ export async function GET() {
           avatarUrl: user.avatarUrl ?? "",
         },
         store,
+        followerCount,
+        productCount,
       },
       { status: 200 }
     );

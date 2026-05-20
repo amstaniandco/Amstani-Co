@@ -8,6 +8,8 @@ export type StoreInfo = {
   description?: string;
   logoUrl?: string;
   bannerUrl?: string;
+  isLive?: boolean;
+  liveLink?: string | null;
   live?: boolean;
   rating?: number | string;
   followers?: number;

@@ -38,6 +38,8 @@ export async function GET() {
       store.warningsResetAt = null;
     }
 
+    const followerCount = await db.collection("storeFollowers").countDocuments({ storeId: store._id });
+
     return NextResponse.json({
       dailyTimings: store.dailyTimings || { from: "09:00", to: "15:00" },
       warnings: store.warnings || 0,
@@ -48,6 +50,7 @@ export async function GET() {
       storeId: String(store._id),
       storeName: store.name || "My Store",
       storeStatus: store.status,
+      followerCount,
     });
   } catch (error) {
     console.error("GET /api/owner/timings error:", error);

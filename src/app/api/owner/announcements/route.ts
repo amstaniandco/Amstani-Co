@@ -73,6 +73,28 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     };
     const result = await db.collection("storeAnnouncements").insertOne(doc);
+
+    // Notify all followers of this store
+    const followers = await db
+      .collection("storeFollowers")
+      .find({ storeId: store._id })
+      .project({ userId: 1 })
+      .toArray();
+    if (followers.length > 0) {
+      await db.collection("notifications").insertMany(
+        followers.map((f) => ({
+          userId: f.userId,
+          title: doc.title,
+          message: doc.body,
+          type: "announcement",
+          referenceId: store._id,
+          storeName: store.name,
+          isRead: false,
+          createdAt: now,
+        }))
+      );
+    }
+
     return NextResponse.json({ announcement: mapAnnouncement({ _id: result.insertedId, ...doc }) });
   } catch (error) {
     console.error("POST /api/owner/announcements error:", error);

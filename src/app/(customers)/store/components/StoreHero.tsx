@@ -1,13 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Eye } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { useStore } from "../../../../context/StoreContext";
+
+function formatCount(n: number): string {
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
 
 export default function StoreHero() {
   const [showLanguages, setShowLanguages] = useState(false);
   const store = useStore();
+
+  const [followerCount, setFollowerCount] = useState<number>(0);
+  const [productCount, setProductCount] = useState<number>(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [statsLoaded, setStatsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!store?._id) return;
+    fetch(`/api/stores/${store._id}/stats`)
+      .then((r) => r.json())
+      .then((d) => {
+        setFollowerCount(d.followerCount ?? 0);
+        setProductCount(d.productCount ?? 0);
+        setIsFollowing(d.isFollowing ?? false);
+        setStatsLoaded(true);
+      })
+      .catch(() => setStatsLoaded(true));
+  }, [store?._id]);
+
+  const handleFollow = async () => {
+    if (!store?._id || followLoading) return;
+    setFollowLoading(true);
+    try {
+      const res = await fetch(`/api/stores/${store._id}/follow`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setIsFollowing(data.following);
+        setFollowerCount(data.followerCount);
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   return (
     <div className="ui-panel flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
@@ -31,9 +71,9 @@ export default function StoreHero() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{store?.name || 'Name of the store'}</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{store?.name || "Name of the store"}</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              {store?.description || 'Description of the store can be written here'}
+              {store?.description || "Description of the store can be written here"}
             </p>
 
             <div className="relative mt-3">
@@ -56,7 +96,7 @@ export default function StoreHero() {
 
               {showLanguages ? (
                 <div className="ui-subpanel absolute left-0 top-9 z-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-md dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
-                  Languages: {store?.settings?.languages?.join(', ') ?? 'English, Spanish, Arabic'}
+                  Languages: {store?.settings?.languages?.join(", ") ?? "English, Spanish, Arabic"}
                 </div>
               ) : null}
             </div>
@@ -65,16 +105,30 @@ export default function StoreHero() {
 
         <div className="flex flex-wrap items-center gap-4 sm:shrink-0 sm:pl-3">
           <div className="text-center">
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">8</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              {statsLoaded ? formatCount(productCount) : "—"}
+            </p>
             <p className="text-xs uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">Products</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">12K</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              {statsLoaded ? formatCount(followerCount) : "—"}
+            </p>
             <p className="text-xs uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">Followers</p>
           </div>
 
-          <button className="rounded-full bg-[#68B8C1] px-7 py-2 text-sm font-semibold text-white transition hover:bg-[#4f9ea7] sm:ml-2">
-            Follow
+          <button
+            type="button"
+            onClick={handleFollow}
+            disabled={followLoading || !store?._id}
+            className={`inline-flex items-center gap-2 rounded-full px-7 py-2 text-sm font-semibold transition sm:ml-2 disabled:opacity-60 ${
+              isFollowing
+                ? "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-100"
+                : "bg-[#68B8C1] text-white hover:bg-[#4f9ea7]"
+            }`}
+          >
+            {followLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {isFollowing ? "Following" : "Follow"}
           </button>
         </div>
       </div>

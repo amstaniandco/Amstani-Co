@@ -137,6 +137,7 @@ export default function OwnerChatsPage() {
   const [isLive, setIsLive] = useState(false);
   const [liveSessionStartedAt, setLiveSessionStartedAt] = useState<string | null>(null);
   const [dailyFrom, setDailyFrom] = useState("09:00");
+  const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
   const [preselectedPlatform, setPreselectedPlatform] = useState<string | undefined>(undefined);
   const [goingLive, setGoingLive] = useState(false);
@@ -253,6 +254,7 @@ export default function OwnerChatsPage() {
         setIsLive(d.isLive || false);
         setLiveSessionStartedAt(d.liveSessionStartedAt || null);
         setDailyFrom(d.dailyTimings?.from || "09:00");
+        setFollowerCount(d.followerCount ?? 0);
       })
       .catch(() => {});
 
@@ -503,7 +505,7 @@ export default function OwnerChatsPage() {
           <div className="flex items-center gap-1.5">
             <Users className="h-4 w-4" />
             <span>
-              Customers: <strong className="font-semibold text-slate-900">15</strong>
+              Followers: <strong className="font-semibold text-slate-900">{followerCount ?? "—"}</strong>
             </span>
           </div>
           <div className="flex items-center gap-1.5">
