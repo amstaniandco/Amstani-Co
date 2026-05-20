@@ -33,7 +33,18 @@ export type Store = {
   settings?: StoreSettings;
   
   status: "pending" | "active" | "suspended";
-  
+  isLive?: boolean;
+  liveLink?: string | null;
+  liveSessionStartedAt?: Date | string | null;
+
+  dailyTimings?: {
+    from: string; // "09:00"
+    to: string;   // "15:00"
+  };
+
+  warnings?: number;
+  warningsResetAt?: Date | string | null;
+
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };

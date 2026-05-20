@@ -20,18 +20,21 @@ export default function Home() {
         if (!res.ok) return;
         const data = await res.json();
         if (!mounted) return;
-        const mapped = (data.stores || []).map((s: any, idx: number) => {
-          const raw = (s.logoUrl || s.bannerUrl || "").trim();
-          const isKnownHost = raw.startsWith("https://");
-          const img = isKnownHost ? raw : '/assets/placeholder-store.svg';
+        const mapped = (data.stores || [])
+          .filter((s: any) => s.isLive === true)
+          .map((s: any, idx: number) => {
+            const raw = (s.logoUrl || s.bannerUrl || "").trim();
+            const isKnownHost = raw.startsWith("https://");
+            const img = isKnownHost ? raw : '/assets/placeholder-store.svg';
 
-          return {
-            id: s._id || idx,
-            img,
-            name: s.name || 'Store',
-            live: Boolean(s.live),
-          };
-        });
+            return {
+              id: s._id || idx,
+              img,
+              name: s.name || 'Store',
+              live: true,
+              liveLink: s.liveLink || null,
+            };
+          });
         setLiveStores(mapped);
       } catch (e) {
         console.error('Failed to load live stores', e);

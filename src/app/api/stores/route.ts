@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         .collection("stores")
         .findOne(
           { _id: new ObjectId(storeId), status: "active" },
-          { projection: { _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, live: 1, rating: 1, settings: 1 } }
+          { projection: { _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, isLive: 1, liveLink: 1, rating: 1, settings: 1 } }
         );
 
       return NextResponse.json({ stores: store ? [store] : [] }, { status: 200 });
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     const stores = await db
       .collection("stores")
       .find({ status: "active" })
-      .project({ _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, live: 1, rating: 1, settings: 1 })
+      .project({ _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, isLive: 1, liveLink: 1, rating: 1, settings: 1 })
       .limit(40)
       .toArray();
 

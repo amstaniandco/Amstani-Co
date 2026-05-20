@@ -133,6 +133,7 @@ export async function PATCH(req: Request) {
     const update: Record<string, unknown> = { updatedAt: new Date() };
     if (body.logoUrl !== undefined) update.logoUrl = body.logoUrl;
     if (body.bannerUrl !== undefined) update.bannerUrl = body.bannerUrl;
+    if (body.isLive !== undefined) update.isLive = Boolean(body.isLive);
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);

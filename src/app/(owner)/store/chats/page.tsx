@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   Clock3,
+  Loader2,
   Mic,
   Plus,
   Search,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import ownerCard from "@/src/app/imagess/ownercard.png";
 import MessageBubble, { type Message as ChatMessage } from "@/src/components/chat/MessageBubble";
+import GoLiveModal from "@/src/components/owner/GoLiveModal";
 
 function FacebookBrandIcon() {
   return (
@@ -71,6 +73,7 @@ function WhatsAppBrandIcon() {
 }
 
 type ChannelItem = {
+  key: string;
   title: string;
   icon: React.ComponentType;
 };
@@ -83,10 +86,10 @@ type CustomerThread = {
 };
 
 const channels: ChannelItem[] = [
-  { title: "facebook Live", icon: FacebookBrandIcon },
-  { title: "Instagram Live", icon: InstagramBrandIcon },
-  { title: "Tiktok Live", icon: TikTokBrandIcon },
-  { title: "WhatsApp Call", icon: WhatsAppBrandIcon },
+  { key: "facebook", title: "Facebook Live", icon: FacebookBrandIcon },
+  { key: "instagram", title: "Instagram Live", icon: InstagramBrandIcon },
+  { key: "tiktok", title: "TikTok Live", icon: TikTokBrandIcon },
+  { key: "whatsapp", title: "WhatsApp Call", icon: WhatsAppBrandIcon },
 ];
 
 function messagePreview(message?: ChatMessage | null) {
@@ -94,10 +97,50 @@ function messagePreview(message?: ChatMessage | null) {
   return message.deleted ? "This message was deleted" : message.text;
 }
 
+function useCountdown(fromTime: string, isLive: boolean, liveSessionStartedAt: string | null) {
+  const [display, setDisplay] = useState("");
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      if (isLive && liveSessionStartedAt) {
+        const diff = now.getTime() - new Date(liveSessionStartedAt).getTime();
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        setDisplay(`Live ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+        return;
+      }
+      const [fh, fm] = fromTime.split(":").map(Number);
+      const target = new Date(now);
+      target.setHours(fh, fm, 0, 0);
+      if (target <= now) target.setDate(target.getDate() + 1);
+      const diff = target.getTime() - now.getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setDisplay(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [fromTime, isLive, liveSessionStartedAt]);
+
+  return display;
+}
+
 export default function OwnerChatsPage() {
   const [activeThread, setActiveThread] = useState<"admin" | "customer">("admin");
   const [storeId, setStoreId] = useState("");
   const [storeName, setStoreName] = useState("My Store");
+  const [storeStatus, setStoreStatus] = useState("pending");
+  const [isLive, setIsLive] = useState(false);
+  const [liveSessionStartedAt, setLiveSessionStartedAt] = useState<string | null>(null);
+  const [dailyFrom, setDailyFrom] = useState("09:00");
+  const [showGoLiveModal, setShowGoLiveModal] = useState(false);
+  const [preselectedPlatform, setPreselectedPlatform] = useState<string | undefined>(undefined);
+  const [goingLive, setGoingLive] = useState(false);
+  const [goingOffline, setGoingOffline] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [customerThreads, setCustomerThreads] = useState<CustomerThread[]>([]);
   const [selectedCustomerThread, setSelectedCustomerThread] = useState<CustomerThread | null>(null);
@@ -111,6 +154,8 @@ export default function OwnerChatsPage() {
   const messagesRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const timerDisplay = useCountdown(dailyFrom, isLive, liveSessionStartedAt);
 
   const startStream = useCallback((sid: string, afterId: string) => {
     esRef.current?.close();
@@ -201,6 +246,16 @@ export default function OwnerChatsPage() {
   );
 
   useEffect(() => {
+    fetch("/api/owner/timings")
+      .then((r) => r.json())
+      .then((d) => {
+        setStoreStatus(d.storeStatus || "pending");
+        setIsLive(d.isLive || false);
+        setLiveSessionStartedAt(d.liveSessionStartedAt || null);
+        setDailyFrom(d.dailyTimings?.from || "09:00");
+      })
+      .catch(() => {});
+
     fetch("/api/conversations/owner-store")
       .then((r) => r.json())
       .then(async (d) => {
@@ -220,6 +275,42 @@ export default function OwnerChatsPage() {
       .catch(() => {});
     return () => { esRef.current?.close(); };
   }, [loadCustomerThreads, startStream]);
+
+  const handleGoLive = async (liveLink: string) => {
+    setGoingLive(true);
+    try {
+      const res = await fetch("/api/owner/store/go-live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ liveLink }),
+      });
+      if (res.ok) {
+        setIsLive(true);
+        setLiveSessionStartedAt(new Date().toISOString());
+        setShowGoLiveModal(false);
+      }
+    } finally {
+      setGoingLive(false);
+    }
+  };
+
+  const handleGoOffline = async () => {
+    setGoingOffline(true);
+    try {
+      const res = await fetch("/api/owner/store/go-offline", { method: "POST" });
+      if (res.ok) {
+        setIsLive(false);
+        setLiveSessionStartedAt(null);
+      }
+    } finally {
+      setGoingOffline(false);
+    }
+  };
+
+  const openGoLiveModal = (platform?: string) => {
+    setPreselectedPlatform(platform);
+    setShowGoLiveModal(true);
+  };
 
   useEffect(() => {
     const box = messagesRef.current;
@@ -394,6 +485,14 @@ export default function OwnerChatsPage() {
 
   return (
     <>
+      <GoLiveModal
+        isOpen={showGoLiveModal}
+        onClose={() => setShowGoLiveModal(false)}
+        onGoLive={handleGoLive}
+        loading={goingLive}
+        preselectedPlatform={preselectedPlatform}
+      />
+
       <section className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-slate-900">
           <Store className="h-5 w-5 text-[#65bbc5]" />
@@ -408,17 +507,37 @@ export default function OwnerChatsPage() {
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Clock3 className="h-4 w-4" />
+            <Clock3 className={`h-4 w-4 ${isLive ? "text-green-500" : ""}`} />
             <span>
-              Starts in <strong className="font-semibold text-slate-900">1:28:34</strong> min
+              {isLive
+                ? <strong className="font-semibold text-green-600">{timerDisplay}</strong>
+                : <><span>Starts in </span><strong className="font-semibold text-slate-900">{timerDisplay}</strong></>
+              }
             </span>
           </div>
-          <button
-            type="button"
-            className="rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5] sm:px-6"
-          >
-            Go Live
-          </button>
+
+          {isLive ? (
+            <button
+              type="button"
+              onClick={handleGoOffline}
+              disabled={goingOffline}
+              className="inline-flex items-center gap-1.5 rounded-2xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 sm:px-6 disabled:opacity-60"
+            >
+              {goingOffline && <Loader2 className="h-4 w-4 animate-spin" />}
+              End Live
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => openGoLiveModal()}
+              disabled={storeStatus !== "active"}
+              title={storeStatus !== "active" ? "Store must be approved to go live" : ""}
+              className="rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5] sm:px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Go Live
+            </button>
+          )}
+
           <button
             type="button"
             className="grid h-11 w-11 place-items-center rounded-full bg-[#7f8ca0] text-white transition hover:bg-[#6d7a8d]"
@@ -435,7 +554,9 @@ export default function OwnerChatsPage() {
             <button
               key={channel.title}
               type="button"
-              className="flex min-w-[210px] items-center justify-between rounded-xl bg-[#f8f8f8] px-4 py-3.5 text-left text-sm font-semibold text-slate-900 shadow-[0_0_0_1px_rgba(0,0,0,0.04)] sm:min-w-[220px] sm:px-5 sm:py-4 sm:text-base"
+              onClick={() => openGoLiveModal(channel.key)}
+              disabled={isLive}
+              className="flex min-w-[210px] items-center justify-between rounded-xl bg-[#f8f8f8] px-4 py-3.5 text-left text-sm font-semibold text-slate-900 shadow-[0_0_0_1px_rgba(0,0,0,0.04)] transition hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed sm:min-w-[220px] sm:px-5 sm:py-4 sm:text-base"
             >
               <span className="flex items-center gap-2 whitespace-nowrap">
                 <Icon />

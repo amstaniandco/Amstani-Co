@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, AlertCircle } from "lucide-react";
+import { Plus, AlertCircle, TriangleAlert } from "lucide-react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import CustomerOwnerChatsPanel from "../../../../components/admin/CustomerOwnerChatsPanel";
@@ -57,6 +57,10 @@ export default function AdminStoresPage() {
   const [ratingFilter, setRatingFilter] = useState("all");
   const [openChats, setOpenChats] = useState<{ id: string; name: string }[]>([]);
   const [activeChatId, setActiveChatId] = useState("");
+  const [liveWarnings, setLiveWarnings] = useState<{
+    storeId: string; storeName: string; warnings: number;
+    warningsResetAt: string | null; ownerName: string; ownerEmail: string;
+  }[]>([]);
 
   // Get unique states from stores
   const uniqueStates = Array.from(new Set(stores.map(s => s.location).filter(Boolean)));
@@ -117,6 +121,11 @@ export default function AdminStoresPage() {
     };
 
     loadStores();
+
+    fetch("/api/admin/live-warnings")
+      .then((r) => r.json())
+      .then((d) => setLiveWarnings(d.warnings || []))
+      .catch(() => {});
   }, []);
 
   const openOwnerChat = (store: StoreRow) => {
@@ -226,6 +235,45 @@ export default function AdminStoresPage() {
               </div>
             </div>
           </section>
+
+          {liveWarnings.length > 0 && (
+            <section className="mt-4 rounded-[22px] border border-amber-200 bg-amber-50 p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <TriangleAlert className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                <h2 className="text-sm font-bold text-amber-800">
+                  Compliance Warnings — {liveWarnings.length} Store{liveWarnings.length !== 1 ? "s" : ""} at 3/3
+                </h2>
+              </div>
+              <div className="space-y-2">
+                {liveWarnings.map((w) => (
+                  <div key={w.storeId} className="flex flex-col gap-1.5 rounded-xl border border-amber-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{w.storeName}</p>
+                      <p className="text-xs text-slate-500">{w.ownerName} · {w.ownerEmail}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600">
+                        3/3 Warnings
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const store = stores.find((s) => s.id === w.storeId);
+                          if (store) {
+                            handleContactOwner(w.storeId);
+                            chatRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                          }
+                        }}
+                        className="rounded-lg bg-[#6ec0c9] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#5db1bb]"
+                      >
+                        Contact Owner
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {error && (
             <section className="mt-4 flex items-center gap-3 rounded-[22px] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 sm:p-5">

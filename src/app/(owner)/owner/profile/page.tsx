@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { PenLine, Square, Store, Loader2 } from "lucide-react";
+import { PenLine, Store, Loader2 } from "lucide-react";
 
 type StoreApplication = {
   id: string;
@@ -197,13 +197,12 @@ function ProfileHero({ store, onRefresh }: { store: any; onRefresh: () => void }
             </div>
           </div>
 
-          <button
-            type="button"
+          <Link
+            href={`/store?storeId=${store?._id}`}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 dark:border-slate-600 bg-white dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 transition hover:bg-slate-50 dark:hover:bg-slate-600"
           >
-            <Square className="h-4 w-4" />
             User Preview
-          </button>
+          </Link>
         </div>
       </div>
     </section>
@@ -608,13 +607,13 @@ export default function OwnerProfilePage() {
           <h1 className="text-xl font-semibold sm:text-2xl">{store?.name || "Setup Your Store"}</h1>
         </div>
 
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-2 self-start rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5] sm:self-auto sm:px-6 dark:bg-cyan-600 dark:hover:bg-cyan-700"
-        >
-          <Square className="h-4 w-4" />
-          {store?.status === "active" ? "Live" : "Pending Approval"}
-        </button>
+        <span className={`inline-flex items-center self-start rounded-full border px-4 py-1.5 text-sm font-semibold sm:self-auto ${
+          store?.status === "active"
+            ? "border-green-500 text-green-600 dark:border-green-400 dark:text-green-400"
+            : "border-red-400 text-red-500 dark:border-red-400 dark:text-red-400"
+        }`}>
+          {store?.status === "active" ? "Active" : "Pending Approval"}
+        </span>
       </section>
 
       <section className="mt-4">
