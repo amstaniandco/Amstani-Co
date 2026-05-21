@@ -16,6 +16,7 @@ export type StoreInfo = {
   productsCount?: number;
   settings?: {
     languages?: string[];
+    musicUrl?: string;
   };
 };
 
