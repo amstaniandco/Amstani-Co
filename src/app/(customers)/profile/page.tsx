@@ -7,6 +7,7 @@ import CardsSection from "./components/CardsSection";
 import OrderHistorySection from "./components/OrderHistorySection";
 import AccountActions from "./components/AccountActions";
 import { Address, PaymentMethod, User } from "../../../models/user";
+import { useToast } from "../../../components/global/ToastProvider";
 
 const readError = async (res: Response, fallback: string) => {
   const data = await res.json().catch(() => null);
@@ -17,12 +18,15 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
-  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const toast = useToast();
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
-    setToastMessage({ type, message });
-    setTimeout(() => setToastMessage(null), 3000);
-  }, []);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
+  }, [toast]);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -207,18 +211,6 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 dark:bg-slate-950 sm:px-6 lg:px-8">
-      {toastMessage && (
-        <div
-          className={`mb-6 p-4 rounded-lg font-semibold ${
-            toastMessage.type === "success"
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-          }`}
-        >
-          {toastMessage.message}
-        </div>
-      )}
-
       <section className="grid gap-6 md:grid-cols-12">
         <ProfileSummary user={user} onSave={handleSaveProfile} onAvatarUpload={handleAvatarUpload} />
         <ShippingSection

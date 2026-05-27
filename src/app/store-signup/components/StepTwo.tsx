@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { StoreSignupFormData } from "../page";
+import { useToast } from "../../../components/global/ToastProvider";
 
 type StepProps = {
   formData: StoreSignupFormData;
@@ -11,6 +12,7 @@ type StepProps = {
 
 export default function StepTwo({ formData, updateFormData, onNext, onBack }: StepProps) {
   const router = useRouter();
+  const toast = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -20,6 +22,19 @@ export default function StepTwo({ formData, updateFormData, onNext, onBack }: St
   const passwordMismatch = Boolean(formData.password || formData.confirmPassword) && formData.password !== formData.confirmPassword;
   const passwordTooShort = Boolean(formData.password) && formData.password.length < 6;
   const canContinue = !passwordMismatch && !passwordTooShort;
+
+  const handleNext = () => {
+    if (passwordMismatch) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    if (passwordTooShort) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
+    onNext();
+  };
 
   return (
     <div className="text-black dark:text-slate-100">
@@ -65,14 +80,11 @@ export default function StepTwo({ formData, updateFormData, onNext, onBack }: St
 
         {/* Next Button */}
         <button
-          onClick={onNext}
-          disabled={!canContinue}
-          className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={handleNext}
+          className={`mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] ${canContinue ? "" : "opacity-80"}`}
         >
           Next
         </button>
-        {passwordMismatch && <p className="text-sm text-red-600">Passwords do not match.</p>}
-        {passwordTooShort && <p className="text-sm text-red-600">Password must be at least 6 characters.</p>}
       </div>
 
       <p className="mt-12 text-center text-[15px] text-gray-500 dark:text-slate-400">

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Upload, ArrowLeft, Loader } from "lucide-react";
 import type { StoreSignupFormData } from "../page";
+import { useToast } from "../../../components/global/ToastProvider";
 
 type StepProps = {
   formData: StoreSignupFormData;
@@ -13,9 +14,9 @@ type StepProps = {
 
 export default function StepThree({ formData, updateFormData, onBack }: StepProps) {
   const router = useRouter();
+  const toast = useToast();
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
   const [fileNames, setFileNames] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -27,7 +28,6 @@ export default function StepThree({ formData, updateFormData, onBack }: StepProp
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setError("");
     setFileNames((prev) => ({ ...prev, [fieldName]: file.name }));
 
     const uploadData = new FormData();
@@ -40,17 +40,17 @@ export default function StepThree({ formData, updateFormData, onBack }: StepProp
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Image upload failed");
+        toast.error(data.error || "Image upload failed");
         return;
       }
+      toast.success("Image uploaded successfully.");
       updateFormData({ [fieldName]: data.url } as Partial<StoreSignupFormData>);
     } catch {
-      setError("Image upload failed");
+      toast.error("Image upload failed");
     }
   };
 
   const handleCreate = async () => {
-    setError("");
     setIsSubmitting(true);
 
     try {
@@ -61,12 +61,13 @@ export default function StepThree({ formData, updateFormData, onBack }: StepProp
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Could not submit signup request");
+        toast.error(data.error || "Could not submit signup request");
         return;
       }
+      toast.success("Signup request submitted successfully.");
       setIsVerifying(true);
     } catch {
-      setError("Could not submit signup request");
+      toast.error("Could not submit signup request");
     } finally {
       setIsSubmitting(false);
     }
@@ -198,8 +199,6 @@ export default function StepThree({ formData, updateFormData, onBack }: StepProp
           </label>
         </div>
 
-        {/* Create Button */}
-        {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           onClick={handleCreate}
           disabled={!canCreate}

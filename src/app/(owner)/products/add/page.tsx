@@ -2,6 +2,7 @@
 
 import { Minus, Plus, Store } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useToast } from "../../../../components/global/ToastProvider";
 
 type Status = "pending" | "approved" | "rejected";
 
@@ -27,6 +28,7 @@ const statusClass: Record<Status, string> = {
 };
 
 export default function AddNewProductsPage() {
+  const toast = useToast();
   const [form, setForm] = useState({
     orderId: "",
     orderDate: "",
@@ -34,7 +36,6 @@ export default function AddNewProductsPage() {
     items: [{ productId: "", quantity: "" }] as ProductEntry[],
   });
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
   const [requests, setRequests] = useState<HistoryRequest[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
@@ -82,9 +83,8 @@ export default function AddNewProductsPage() {
   }
 
   async function handleSubmit() {
-    setSubmitError("");
-    if (!form.orderId || !form.orderDate) { setSubmitError("Order ID and date are required."); return; }
-    if (form.items.some((i) => !i.productId || !i.quantity)) { setSubmitError("Fill in all product IDs and quantities."); return; }
+    if (!form.orderId || !form.orderDate) { toast.error("Order ID and date are required."); return; }
+    if (form.items.some((i) => !i.productId || !i.quantity)) { toast.error("Fill in all product IDs and quantities."); return; }
 
     setSubmitting(true);
     try {
@@ -98,7 +98,9 @@ export default function AddNewProductsPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setSubmitError(data.error || "Failed to submit request"); return; }
+      if (!res.ok) { toast.error(data.error || "Failed to submit request"); return; }
+
+      toast.success("Request submitted successfully.");
 
       // Refresh history
       const histRes = await fetch("/api/owner/listing-requests");
@@ -107,7 +109,7 @@ export default function AddNewProductsPage() {
 
       setForm({ orderId: "", orderDate: "", numberOfProducts: 1, items: [{ productId: "", quantity: "" }] });
     } catch {
-      setSubmitError("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -127,10 +129,6 @@ export default function AddNewProductsPage() {
           <p className="text-base text-gray-500 italic mb-7">
             Product Must be ordered from Official Amstani Wholesale Website
           </p>
-
-          {submitError && (
-            <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</div>
-          )}
 
           {/* Row 1 */}
           <div className="grid grid-cols-3 gap-5 mb-5">

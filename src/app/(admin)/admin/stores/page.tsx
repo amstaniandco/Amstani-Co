@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, AlertCircle, TriangleAlert } from "lucide-react";
+import { useToast } from "../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import CustomerOwnerChatsPanel from "../../../../components/admin/CustomerOwnerChatsPanel";
@@ -46,6 +47,7 @@ function convertStoreToRow(store: StoreData): StoreRow {
 
 export default function AdminStoresPage() {
   const router = useRouter();
+  const toast = useToast();
   const [selectedStore, setSelectedStore] = useState<StoreRow | null>(null);
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,7 +115,7 @@ export default function AdminStoresPage() {
           setSelectedStore(convertedStores[0]);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch stores");
+        toast.error(err instanceof Error ? err.message : "Failed to fetch stores");
         console.error("Error loading stores:", err);
       } finally {
         setIsLoading(false);
@@ -170,7 +172,7 @@ export default function AdminStoresPage() {
       }
     } catch (err) {
       console.error("Error updating store status:", err);
-      alert("Failed to update store status");
+      toast.error("Failed to update store status");
     } finally {
       setIsUpdating(false);
     }
@@ -271,16 +273,6 @@ export default function AdminStoresPage() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </section>
-          )}
-
-          {error && (
-            <section className="mt-4 flex items-center gap-3 rounded-[22px] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 sm:p-5">
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Error loading stores</p>
-                <p className="text-xs text-rose-600">{error}</p>
               </div>
             </section>
           )}

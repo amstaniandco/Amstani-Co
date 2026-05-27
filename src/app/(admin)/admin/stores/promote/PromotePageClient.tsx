@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Pencil, Slash, Upload, X, Check } from "lucide-react";
+import { useToast } from "../../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
 
@@ -19,6 +20,7 @@ type Promotion = {
 
 export default function PromotePageClient() {
   const searchParams = useSearchParams();
+  const toast = useToast();
   const storeId = searchParams.get("storeId") ?? "";
 
   const [storeName, setStoreName] = useState("Store");
@@ -27,8 +29,6 @@ export default function PromotePageClient() {
   const [uploading, setUploading] = useState(false);
   const [endDate, setEndDate] = useState("");
   const [promoting, setPromoting] = useState(false);
-  const [promoteError, setPromoteError] = useState("");
-  const [promoteSuccess, setPromoteSuccess] = useState(false);
 
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [promoLoading, setPromoLoading] = useState(true);
@@ -68,17 +68,16 @@ export default function PromotePageClient() {
     if (!file) return;
 
     setUploading(true);
-    setPromoteError("");
     try {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (!res.ok) { setPromoteError(data.error || "Image upload failed"); return; }
+      if (!res.ok) { toast.error(data.error || "Image upload failed"); return; }
       setImageUrl(data.url);
       setImagePreview(data.url);
     } catch {
-      setPromoteError("Image upload failed. Please try again.");
+      toast.error("Image upload failed. Please try again.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -86,10 +85,8 @@ export default function PromotePageClient() {
   }
 
   async function handlePromote() {
-    setPromoteError("");
-    setPromoteSuccess(false);
-    if (!storeId) { setPromoteError("No store selected."); return; }
-    if (!endDate) { setPromoteError("Please set an end date."); return; }
+    if (!storeId) { toast.error("No store selected."); return; }
+    if (!endDate) { toast.error("Please set an end date."); return; }
 
     setPromoting(true);
     try {
@@ -99,14 +96,14 @@ export default function PromotePageClient() {
         body: JSON.stringify({ imageUrl, endDate }),
       });
       const data = await res.json();
-      if (!res.ok) { setPromoteError(data.error || "Failed to promote store"); return; }
-      setPromoteSuccess(true);
+      if (!res.ok) { toast.error(data.error || "Failed to promote store"); return; }
+      toast.success("Store promoted successfully.");
       setImageUrl(null);
       setImagePreview(null);
       setEndDate("");
       fetchPromotions();
     } catch {
-      setPromoteError("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setPromoting(false);
     }
@@ -151,15 +148,6 @@ export default function PromotePageClient() {
             <div className="mb-6">
               <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{storeName}</h1>
             </div>
-
-            {promoteError && (
-              <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{promoteError}</div>
-            )}
-            {promoteSuccess && (
-              <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                Store promoted successfully.
-              </div>
-            )}
 
             <div className="grid gap-6 lg:grid-cols-[1.7fr_1fr] lg:items-start">
               {/* Image upload */}

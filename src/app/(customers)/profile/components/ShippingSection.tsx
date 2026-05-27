@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Address } from "../../../../models/user";
 import ProfileLocationMap from "./ProfileLocationMap";
+import { useToast } from "../../../../components/global/ToastProvider";
 
 type AddressSelection = {
   street?: string;
@@ -25,6 +26,7 @@ export default function ShippingSection({
   onDeleteAddress,
   onSetDefaultAddress,
 }: ShippingSectionProps) {
+  const toast = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [pendingAddressId, setPendingAddressId] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function ShippingSection({
 
   const handleSaveAddress = async () => {
     if (!newAddress.recipientName || !newAddress.street || !newAddress.city || !newAddress.state || !newAddress.zip) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -62,7 +64,6 @@ export default function ShippingSection({
       setShowAddForm(false);
     } catch (error) {
       console.error("Error adding address:", error);
-      alert("Error adding address");
     } finally {
       setIsSaving(false);
     }

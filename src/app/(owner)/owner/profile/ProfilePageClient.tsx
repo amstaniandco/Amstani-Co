@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PenLine, Store, Loader2 } from "lucide-react";
+import { useToast } from "../../../../components/global/ToastProvider";
 
 type StoreApplication = {
   id: string;
@@ -222,10 +223,10 @@ function EarnReferralCard({
   prefillEmail?: string;
   forwardApplicationId?: string;
 }) {
+  const toast = useToast();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     if (prefillName) setFullName(prefillName);
@@ -233,13 +234,12 @@ function EarnReferralCard({
   }, [prefillName, prefillEmail]);
 
   const handleSubmit = async () => {
-    setNotice(null);
     if (!forwardApplicationId) {
-      setNotice({ type: "error", message: "Open an application and click Forward To Admin first." });
+      toast.error("Open an application and click Forward To Admin first.");
       return;
     }
     if (!fullName.trim() || !email.trim()) {
-      setNotice({ type: "error", message: "Please enter name and email." });
+      toast.error("Please enter name and email.");
       return;
     }
 
@@ -254,13 +254,13 @@ function EarnReferralCard({
         throw new Error(data?.error || "Failed to submit application");
       }
 
-      setNotice({ type: "success", message: "Application forwarded to admin successfully." });
+      toast.success("Application forwarded to admin successfully.");
       setFullName("");
       setEmail("");
       onSubmitted?.();
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Failed to submit application";
-      setNotice({ type: "error", message: msg });
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -270,17 +270,6 @@ function EarnReferralCard({
     <section className="rounded-[26px] bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
       <h3 className="text-center text-[1.55rem] font-bold text-slate-900 dark:text-slate-100 sm:text-[2rem]">Earn $100</h3>
       <p className="mt-2 text-center text-[15px] text-slate-500 dark:text-slate-400">Register applicant details directly</p>
-      {notice && (
-        <div
-          className={`mt-3 rounded-lg px-3 py-2 text-sm ${
-            notice.type === "success"
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-          }`}
-        >
-          {notice.message}
-        </div>
-      )}
       <div className="mt-4 space-y-3">
         <input 
           type="text" 
@@ -310,6 +299,7 @@ function EarnReferralCard({
 }
 
 function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any; onSave: (data: any) => void }) {
+  const toast = useToast();
   const [storeName, setStoreName] = useState(store?.name || "");
   const [storeDescription, setStoreDescription] = useState(store?.description || "");
   const [ownerName, setOwnerName] = useState(user?.name || "");
@@ -334,8 +324,6 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
     setOwnerPhone(user?.phone || "");
   }, [user]);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const availableLanguages = ["English", "Urdu", "Arabic", "Spanish", "French", "German", "Chinese", "Turkish"];
 
@@ -345,32 +333,29 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
 
   const validateForm = () => {
     if (!storeName.trim()) {
-      setError("Store name is required");
+      toast.error("Store name is required");
       return false;
     }
     if (!ownerName.trim()) {
-      setError("Owner name is required");
+      toast.error("Owner name is required");
       return false;
     }
     if (!ownerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) {
-      setError("Valid email is required");
+      toast.error("Valid email is required");
       return false;
     }
     if (ownerPhone && !/^\+?[\d\s\-\(\)]{10,}$/.test(ownerPhone)) {
-      setError("Invalid phone number format");
+      toast.error("Invalid phone number format");
       return false;
     }
     if (languages.length === 0) {
-      setError("Select at least one language");
+      toast.error("Select at least one language");
       return false;
     }
     return true;
   };
 
   const handleSave = async () => {
-    setError(null);
-    setSuccess(false);
-    
     if (!validateForm()) return;
 
     setIsSaving(true);
@@ -391,15 +376,14 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
       });
 
       if (response.ok) {
-        setSuccess(true);
         await onSave({ storeName, storeDescription, ownerName, ownerEmail, ownerPhone, languages, logoUrl, bannerUrl });
-        setTimeout(() => setSuccess(false), 3000);
+        toast.success("Store updated successfully!");
       } else {
-        setError("Failed to save changes. Please try again.");
+        toast.error("Failed to save changes. Please try again.");
       }
     } catch (e) {
       console.error("Error saving store:", e);
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -409,18 +393,6 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
     <section className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] dark:border dark:border-slate-700 dark:bg-slate-800 sm:p-6">
       <h3 className="text-[1.2rem] font-bold text-slate-900 dark:text-slate-100 sm:text-[1.45rem]">Store Customization</h3>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Update store name, description, photos and owner contact details.</p>
-
-      {error && (
-        <div className="mt-4 p-3 rounded-lg bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mt-4 p-3 rounded-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm">
-          ✓ Store updated successfully!
-        </div>
-      )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
@@ -523,7 +495,15 @@ export default function ProfilePageClient() {
   const [productCount, setProductCount] = useState(0);
   const [applications, setApplications] = useState<StoreApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const toast = useToast();
+
+  const showToast = (type: "success" | "error", message: string) => {
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -565,15 +545,9 @@ export default function ProfilePageClient() {
     fetchProfile();
   }, []);
 
-  const showToast = (type: "success" | "error", message: string) => {
-    setToastMessage({ type, message });
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
   const handleSaveStore = async (data: any) => {
     try {
       await fetchProfile();
-      showToast("success", "Store profile updated successfully!");
     } catch (e) {
       console.error("Error saving store:", e);
       showToast("error", "Error saving store profile");
@@ -593,18 +567,6 @@ export default function ProfilePageClient() {
 
   return (
     <div className="dark:bg-slate-950">
-      {toastMessage && (
-        <div
-          className={`mb-6 p-4 rounded-lg font-semibold ${
-            toastMessage.type === "success"
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-          }`}
-        >
-          {toastMessage.message}
-        </div>
-      )}
-
       <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
           <Store className="h-5 w-5 text-[#65bbc5]" />

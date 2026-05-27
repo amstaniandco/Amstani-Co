@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { useToast } from "../../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
 
@@ -39,9 +40,9 @@ type SignupRequestResponse = {
 };
 
 export default function AdminStoreSignupRequestsPage() {
+  const toast = useToast();
   const [signupRequests, setSignupRequests] = useState<SignupRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -53,7 +54,7 @@ export default function AdminStoreSignupRequestsPage() {
         if (!mounted) return;
 
         if (!res.ok) {
-          setError(data.error || "Failed to load signup requests");
+          toast.error(data.error || "Failed to load signup requests");
           return;
         }
 
@@ -70,12 +71,12 @@ export default function AdminStoreSignupRequestsPage() {
 
         setSignupRequests(mapped);
       } catch {
-        if (mounted) setError("Failed to load signup requests");
+        if (mounted) toast.error("Failed to load signup requests");
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-
+        if (mounted) toast.error("Failed to load signup requests");
     return () => {
       mounted = false;
     };
@@ -90,9 +91,11 @@ export default function AdminStoreSignupRequestsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to update signup request");
+        toast.error(data.error || "Failed to update signup request");
         return;
       }
+
+      toast.success(action === "approve" ? "Signup request approved." : "Signup request denied.");
 
       setSignupRequests((prev) =>
         prev.map((request) =>
@@ -102,7 +105,7 @@ export default function AdminStoreSignupRequestsPage() {
         )
       );
     } catch {
-      setError("Failed to update signup request");
+      toast.error("Failed to update signup request");
     }
   };
 
@@ -150,7 +153,6 @@ export default function AdminStoreSignupRequestsPage() {
           </section>
 
           <section className="mt-4">
-            {error && <div className="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
             <div className="overflow-hidden rounded-[28px] border border-[#e5ecf1] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse text-left text-sm">

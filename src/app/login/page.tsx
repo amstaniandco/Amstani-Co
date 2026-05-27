@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useToast } from "../../components/global/ToastProvider";
 
 const GoogleIcon = () => (
   <svg
@@ -74,14 +75,13 @@ const DuckDuckGoIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
@@ -94,7 +94,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Login failed");
+        toast.error(data.error || "Login failed");
         return;
       }
 
@@ -109,7 +109,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -207,12 +207,6 @@ export default function LoginPage() {
               {loading ? "Logging in..." : "Log in"}
             </button>
           </form>
-
-          {error && (
-            <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
-              {error}
-            </p>
-          )}
 
           <p className="mt-8 text-center text-[15px] text-black/80 dark:text-slate-300">
             Don't have an account?{" "}

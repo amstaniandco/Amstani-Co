@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import CheckoutForm from "./components/CheckoutForm";
 import type { Address } from "../../../models/user";
+import { useToast } from "../../../components/global/ToastProvider";
 
 type CartItem = {
   productId: string;
@@ -18,12 +19,12 @@ type CartItem = {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const toast = useToast();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState("");
   const [placing, setPlacing] = useState(false);
-  const [error, setError] = useState("");
   const [form, setForm] = useState({ fullName: "", phone: "", street: "", city: "", state: "", zip: "" });
 
   useEffect(() => {
@@ -72,9 +73,8 @@ export default function CheckoutPage() {
   };
 
   async function handlePlaceOrder() {
-    setError("");
     if (!form.fullName || !form.street || !form.city || !form.state) {
-      setError("Please fill in your full name, street, city, and state.");
+      toast.error("Please fill in your full name, street, city, and state.");
       return;
     }
     setPlacing(true);
@@ -95,10 +95,14 @@ export default function CheckoutPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to place order"); return; }
+      if (!res.ok) {
+        toast.error(data.error || "Failed to place order");
+        return;
+      }
+      toast.success("Order placed successfully.");
       router.push("/profile");
     } catch {
-      setError("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setPlacing(false);
     }
@@ -156,8 +160,6 @@ export default function CheckoutPage() {
               </div>
             </div>
           )}
-
-          {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
           <button
             onClick={handlePlaceOrder}

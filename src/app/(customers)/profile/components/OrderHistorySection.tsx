@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useToast } from "../../../../components/global/ToastProvider";
 
 type RawOrderItem = {
   price?: number;
@@ -58,9 +59,9 @@ function getOrderTotal(order: RawOrder) {
 }
 
 export default function OrderHistorySection() {
+  const toast = useToast();
   const [orders, setOrders] = useState<RawOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch("/api/orders")
@@ -70,9 +71,12 @@ export default function OrderHistorySection() {
         return data;
       })
       .then((data) => setOrders(data.orders ?? []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load orders"))
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load orders");
+        setOrders([]);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [toast]);
 
   const rows = useMemo(
     () =>
@@ -92,10 +96,6 @@ export default function OrderHistorySection() {
         {loading ? (
           <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
             Loading orders...
-          </p>
-        ) : error ? (
-          <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-6 text-center text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
-            {error}
           </p>
         ) : rows.length === 0 ? (
           <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">

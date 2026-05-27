@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
+import { useToast } from "../../../../../../components/global/ToastProvider";
 
 type CatalogProduct = {
   _id: string;
@@ -19,12 +20,12 @@ type Props = {
 };
 
 export default function AddNewProduct({ storeId, onAdded }: Props) {
+  const toast = useToast();
   const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, number>>({}); // productId → quantity
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -59,10 +60,9 @@ export default function AddNewProduct({ storeId, onAdded }: Props) {
 
   const handleSubmit = async () => {
     const items = Object.entries(selected).map(([productId, quantity]) => ({ productId, quantity }));
-    if (items.length === 0) { setError("Select at least one product."); return; }
+    if (items.length === 0) { toast.error("Select at least one product."); return; }
 
     setSaving(true);
-    setError("");
     try {
       const res = await fetch(`/api/admin/stores/${storeId}/products`, {
         method: "POST",
@@ -70,11 +70,12 @@ export default function AddNewProduct({ storeId, onAdded }: Props) {
         body: JSON.stringify({ items }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to add products"); return; }
+      if (!res.ok) { toast.error(data.error || "Failed to add products"); return; }
+      toast.success("Products added to store successfully.");
       setSelected({});
       onAdded();
     } catch {
-      setError("Network error");
+      toast.error("Network error");
     } finally {
       setSaving(false);
     }
@@ -108,8 +109,6 @@ export default function AddNewProduct({ storeId, onAdded }: Props) {
           </button>
         </div>
       </div>
-
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p>}
 
       {loading ? (
         <div className="py-12 text-center text-sm text-slate-400">Loading catalog…</div>

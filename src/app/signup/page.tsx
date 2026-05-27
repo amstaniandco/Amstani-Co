@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "../../components/global/ToastProvider";
 import SignupLayout from "./components/SignupLayout";
 import StepOne from "./components/StepOne";
 import StepTwo from "./components/StepTwo";
@@ -9,9 +10,9 @@ import StepThree from "./components/StepThree";
 
 export default function SignupPage() {
   const router = useRouter();
+  const toast = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,26 +26,24 @@ export default function SignupPage() {
     
     // Validate
     if (!updatedFormData.name || !updatedFormData.email || !updatedFormData.password) {
-      setError("All fields are required");
+      toast.error("All fields are required");
       return;
     }
     if (updatedFormData.password !== updatedFormData.confirmPassword) {
-      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
     if (updatedFormData.password.length < 6) {
-      setError("Password must be at least 6 characters");
+      toast.error("Password must be at least 6 characters");
       return;
     }
     
-    setError("");
     setCurrentStep(3);
   };
 
   const handleStepThreeSubmit = async (state: string) => {
     setFormData((prev) => ({ ...prev, state }));
     setLoading(true);
-    setError("");
 
     try {
       const response = await fetch("/api/auth/signup", {
@@ -62,15 +61,16 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Signup failed");
-        setLoading(false);
+        toast.error(data.error || "Signup failed");
         return;
       }
 
-      router.push("/login?message=Signup successful! Please login.");
+      toast.success("Signup successful! Please login.");
+      router.push("/login");
     } catch (err) {
       console.error("Signup error:", err);
-      setError("An error occurred during signup");
+      toast.error("An error occurred during signup");
+    } finally {
       setLoading(false);
     }
   };
@@ -84,7 +84,6 @@ export default function SignupPage() {
         <StepTwo 
           onNext={handleStepTwoSubmit}
           onBack={() => setCurrentStep(1)}
-          error={error}
           formData={formData}
           setFormData={setFormData}
         />
@@ -94,7 +93,6 @@ export default function SignupPage() {
           onBack={() => setCurrentStep(2)}
           onSubmit={handleStepThreeSubmit}
           loading={loading}
-          error={error}
         />
       )}
     </SignupLayout>

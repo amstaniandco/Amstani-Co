@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import SignupUsMap from "./SignupUsMap";
+import { useToast } from "../../../components/global/ToastProvider";
 
 type StepProps = {
   onBack: () => void;
   onSubmit: (state: string) => void;
   loading: boolean;
-  error: string;
 };
 
 type UsStatesGeoJson = {
@@ -20,8 +20,9 @@ type UsStatesGeoJson = {
   }>;
 };
 
-export default function StepThree({ onBack, onSubmit, loading, error }: StepProps) {
+export default function StepThree({ onBack, onSubmit, loading }: StepProps) {
   const router = useRouter();
+  const toast = useToast();
   const [selectedState, setSelectedState] = useState("");
   const [states, setStates] = useState<string[]>([]);
 
@@ -60,7 +61,7 @@ export default function StepThree({ onBack, onSubmit, loading, error }: StepProp
 
   const handleSubmit = () => {
     if (!selectedState) {
-      alert("Please select a state");
+      toast.error("Please select a state");
       return;
     }
     onSubmit(selectedState);
@@ -78,12 +79,6 @@ export default function StepThree({ onBack, onSubmit, loading, error }: StepProp
       </button>
 
       <h2 className="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-slate-100">Create Account</h2>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
 
       <div className="mb-4">
         <label className="text-sm text-gray-600 dark:text-slate-300">State</label>

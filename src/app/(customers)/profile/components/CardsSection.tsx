@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PaymentMethod } from "../../../../models/user";
+import { useToast } from "../../../../components/global/ToastProvider";
 
 interface CardsSectionProps {
   cards: PaymentMethod[];
@@ -10,34 +11,33 @@ interface CardsSectionProps {
 }
 
 export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSectionProps) {
+  const toast = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [newCard, setNewCard] = useState({ number: "", name: "", expiry: "", cvc: "" });
-  const [error, setError] = useState<string | null>(null);
 
   const validateCard = () => {
     if (!/^\d{13,19}$/.test(newCard.number)) {
-      setError("Card number must be at least 13 digits");
+      toast.error("Card number must be at least 13 digits");
       return false;
     }
     if (!newCard.name) {
-      setError("Name on card is required");
+      toast.error("Name on card is required");
       return false;
     }
     if (!newCard.expiry || !/^\d{2}\/\d{2}$/.test(newCard.expiry)) {
-      setError("Expiry date must be in MM/YY format");
+      toast.error("Expiry date must be in MM/YY format");
       return false;
     }
     if (!/^\d{3,4}$/.test(newCard.cvc)) {
-      setError("CVC must be 3 or 4 digits");
+      toast.error("CVC must be 3 or 4 digits");
       return false;
     }
     return true;
   };
 
   const handleAddCard = async () => {
-    setError(null);
     if (!validateCard()) return;
 
     setIsSaving(true);
@@ -62,7 +62,6 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
       setNewCard({ number: "", name: "", expiry: "", cvc: "" });
       setShowAddForm(false);
     } catch (err) {
-      setError("Failed to add card. Please try again.");
       console.error("Error adding card:", err);
     } finally {
       setIsSaving(false);
@@ -76,7 +75,6 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
     try {
       await onDeleteCard(cardId);
     } catch (err) {
-      setError("Failed to delete card. Please try again.");
       console.error("Error deleting card:", err);
     } finally {
       setDeletingId(null);
@@ -86,7 +84,6 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
   const handleCancel = () => {
     setNewCard({ number: "", name: "", expiry: "", cvc: "" });
     setShowAddForm(false);
-    setError(null);
   };
 
   const getProviderLabel = (provider: string) => {
@@ -104,12 +101,6 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
           {cards.length === 0 ? "No cards saved" : `${cards.length} card${cards.length > 1 ? "s" : ""}`}
         </p>
       </div>
-
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-sm">
-          {error}
-        </div>
-      )}
 
       {cards.length === 0 && !showAddForm && (
         <div className="text-center py-6">

@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "../../../components/global/ToastProvider";
 
 type FormData = {
   name: string;
@@ -12,16 +13,28 @@ type FormData = {
 type StepProps = {
   onNext: (formData: FormData) => void;
   onBack: () => void;
-  error: string;
   formData: FormData;
   setFormData: (data: FormData) => void;
 };
 
-export default function StepTwo({ onNext, onBack, error, formData, setFormData }: StepProps) {
+export default function StepTwo({ onNext, onBack, formData, setFormData }: StepProps) {
   const router = useRouter();
+  const toast = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name || !formData.email || !formData.password) {
+      toast.error("All fields are required");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
     onNext(formData);
   };
 
@@ -37,12 +50,6 @@ export default function StepTwo({ onNext, onBack, error, formData, setFormData }
       </button>
 
       <h2 className="mb-6 text-center text-xl font-bold text-black dark:text-slate-100">Create Account</h2>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

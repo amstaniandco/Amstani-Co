@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useToast } from "../../../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../../components/admin/AdminSidebar";
 
@@ -35,6 +36,7 @@ type ProductDetail = {
 };
 
 export default function AdminProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const toast = useToast();
   const [productId, setProductId] = useState("");
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,12 +56,12 @@ export default function AdminProductDetailPage({ params }: { params: Promise<{ i
         if (!mounted) return;
 
         if (!res.ok) {
-          setError(data.error || "Failed to load product");
+          toast.error(data.error || "Failed to load product");
           return;
         }
         setProduct(data.product as ProductDetail);
       } catch {
-        if (mounted) setError("Failed to load product");
+        if (mounted) toast.error("Failed to load product");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -85,8 +87,6 @@ export default function AdminProductDetailPage({ params }: { params: Promise<{ i
             </Link>
 
             {loading && <div className="text-sm text-slate-600">Loading product...</div>}
-            {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-
             {product && (
               <div className="space-y-6">
                 <div className="grid gap-6 lg:grid-cols-[360px_1fr]">

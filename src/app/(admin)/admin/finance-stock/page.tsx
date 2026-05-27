@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Download, ChevronDown } from "lucide-react";
+import { useToast } from "../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 
@@ -44,6 +45,7 @@ function statusClass(status: InventoryRow["status"]) {
 const PAGE_SIZE = 20;
 
 export default function AdminFinanceStockPage() {
+  const toast = useToast();
   const [rows, setRows] = useState<InventoryRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -55,21 +57,20 @@ export default function AdminFinanceStockPage() {
 
   useEffect(() => {
     setLoading(true);
-    setError("");
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
     if (query) params.set("q", query);
 
     fetch(`/api/admin/finance-stock/inventory?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data.error) { setError(data.error); return; }
+        if (data.error) { toast.error(data.error); setRows([]); return; }
         setRows(data.rows ?? []);
         setTotal(data.total ?? 0);
         setLastSync(new Date().toLocaleTimeString());
       })
-      .catch(() => setError("Failed to load inventory"))
+      .catch(() => toast.error("Failed to load inventory"))
       .finally(() => setLoading(false));
-  }, [page, query]);
+  }, [page, query, toast]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -181,10 +182,6 @@ export default function AdminFinanceStockPage() {
                   </button>
                 )}
               </form>
-
-              {error && (
-                <div className="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-              )}
 
               {loading ? (
                 <div className="py-12 text-center text-sm text-slate-400">Loading inventory…</div>
