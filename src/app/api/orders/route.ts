@@ -20,6 +20,25 @@ type CartItem = {
   quantity: number;
 };
 
+export async function GET() {
+  const user = await getUserFromToken();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!ObjectId.isValid(user.id)) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+
+  const client = await clientPromise;
+  const db = client.db(DB_NAME);
+  const userObjectId = new ObjectId(user.id);
+
+  const orders = await db
+    .collection("orders")
+    .find({ $or: [{ customerId: user.id }, { customerId: userObjectId }] })
+    .sort({ createdAt: -1 })
+    .project({ customerEmail: 0 })
+    .toArray();
+
+  return NextResponse.json({ orders });
+}
+
 export async function POST(req: Request) {
   const user = await getUserFromToken();
   if (!user) return NextResponse.json({ error: "Sign in to place an order" }, { status: 401 });

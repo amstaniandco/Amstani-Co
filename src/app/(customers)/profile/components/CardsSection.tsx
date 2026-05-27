@@ -17,7 +17,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
   const [error, setError] = useState<string | null>(null);
 
   const validateCard = () => {
-    if (!newCard.number || newCard.number.length < 13) {
+    if (!/^\d{13,19}$/.test(newCard.number)) {
       setError("Card number must be at least 13 digits");
       return false;
     }
@@ -29,8 +29,8 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
       setError("Expiry date must be in MM/YY format");
       return false;
     }
-    if (!newCard.cvc || newCard.cvc.length < 3) {
-      setError("CVC must be at least 3 digits");
+    if (!/^\d{3,4}$/.test(newCard.cvc)) {
+      setError("CVC must be 3 or 4 digits");
       return false;
     }
     return true;
@@ -42,12 +42,17 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
 
     setIsSaving(true);
     try {
-      const provider = newCard.number.startsWith("4") ? "Visa" : "Mastercard";
+      const provider = newCard.number.startsWith("4")
+        ? "Visa"
+        : newCard.number.startsWith("3")
+          ? "Amex"
+          : newCard.number.startsWith("6")
+            ? "Discover"
+            : "Mastercard";
       const last4 = newCard.number.slice(-4);
-      const cardId = Math.random().toString(36).substring(7);
 
       const cardPayload: PaymentMethod = {
-        id: cardId,
+        id: crypto.randomUUID(),
         provider,
         last4,
         expiry: newCard.expiry,
@@ -116,7 +121,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
                 {card.provider === "Mastercard" ? "MC" : "VS"}
               </div>
               <div className="flex-1">
-                <span className="text-sm font-semibold dark:text-slate-100">•••• •••• •••• {card.last4}</span>
+                <span className="text-sm font-semibold dark:text-slate-100">**** **** **** {card.last4}</span>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{card.provider}</p>
               </div>
             </div>
@@ -126,7 +131,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
               disabled={deletingId === card.id}
               className="text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-300 transition disabled:opacity-50"
             >
-              {deletingId === card.id ? "..." : "🗑"}
+              {deletingId === card.id ? "..." : "Delete"}
             </button>
           </div>
         ))}
@@ -152,7 +157,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
             <input
               type="text"
               value={newCard.number}
-              onChange={(e) => setNewCard((prev) => ({ ...prev, number: e.target.value.replace(/\s/g, "") }))}
+              onChange={(e) => setNewCard((prev) => ({ ...prev, number: e.target.value.replace(/\D/g, "") }))}
               placeholder="1234 5678 9012 3456"
               className="ui-input w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
             />
@@ -192,7 +197,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
               <input
                 type="text"
                 value={newCard.cvc}
-                onChange={(e) => setNewCard((prev) => ({ ...prev, cvc: e.target.value }))}
+                onChange={(e) => setNewCard((prev) => ({ ...prev, cvc: e.target.value.replace(/\D/g, "") }))}
                 placeholder="123"
                 maxLength={4}
                 className="ui-input w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"

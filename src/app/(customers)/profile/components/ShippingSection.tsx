@@ -3,9 +3,22 @@
 import { useState } from "react";
 import { Address } from "../../../../models/user";
 
-export default function ShippingSection({ addresses, onAddAddress }: { addresses: Address[]; onAddAddress?: (address: Address) => Promise<void> }) {
+type ShippingSectionProps = {
+  addresses: Address[];
+  onAddAddress?: (address: Address) => Promise<void>;
+  onDeleteAddress?: (addressId: string) => Promise<void>;
+  onSetDefaultAddress?: (addressId: string) => Promise<void>;
+};
+
+export default function ShippingSection({
+  addresses,
+  onAddAddress,
+  onDeleteAddress,
+  onSetDefaultAddress,
+}: ShippingSectionProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingAddressId, setPendingAddressId] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState({
     recipientName: "",
     street: "",
@@ -29,9 +42,8 @@ export default function ShippingSection({ addresses, onAddAddress }: { addresses
 
     setIsSaving(true);
     try {
-      const addressId = Math.random().toString(36).substring(7);
       const address: Address = {
-        id: addressId,
+        id: crypto.randomUUID(),
         ...newAddress,
         isDefault: addresses.length === 0,
       };
@@ -50,6 +62,25 @@ export default function ShippingSection({ addresses, onAddAddress }: { addresses
   const handleCancel = () => {
     setNewAddress({ recipientName: "", street: "", city: "", state: "", zip: "", country: "USA", type: "shipping" });
     setShowAddForm(false);
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+    if (!confirm("Delete this saved address?")) return;
+    setPendingAddressId(addressId);
+    try {
+      await onDeleteAddress?.(addressId);
+    } finally {
+      setPendingAddressId(null);
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId: string) => {
+    setPendingAddressId(addressId);
+    try {
+      await onSetDefaultAddress?.(addressId);
+    } finally {
+      setPendingAddressId(null);
+    }
   };
 
   return (
@@ -92,6 +123,26 @@ export default function ShippingSection({ addresses, onAddAddress }: { addresses
               <p className={`text-sm ${address.isDefault ? "text-cyan-800 dark:text-cyan-300" : "text-slate-600 dark:text-slate-300"}`}>
                 {address.city}, {address.state} {address.zip}
               </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {!address.isDefault && (
+                  <button
+                    type="button"
+                    onClick={() => handleSetDefaultAddress(address.id)}
+                    disabled={pendingAddressId === address.id}
+                    className="rounded-lg border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-50 disabled:opacity-50 dark:border-cyan-500/40 dark:text-cyan-200 dark:hover:bg-cyan-900/20"
+                  >
+                    Make Default
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteAddress(address.id)}
+                  disabled={pendingAddressId === address.id}
+                  className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-900/20"
+                >
+                  {pendingAddressId === address.id ? "Working..." : "Delete"}
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -101,7 +152,7 @@ export default function ShippingSection({ addresses, onAddAddress }: { addresses
         {!showAddForm ? (
           <>
             <div className="h-32 w-full rounded-lg bg-gray-300 dark:bg-slate-700 flex items-center justify-center text-slate-500 text-sm mb-4">
-              📍 Map View Placeholder
+              Map View Placeholder
             </div>
             <div className="flex justify-center">
               <button

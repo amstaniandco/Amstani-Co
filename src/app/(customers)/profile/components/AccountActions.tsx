@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-export default function AccountActions() {
+export default function AccountActions({ onDeleteAccount }: { onDeleteAccount: () => Promise<void> }) {
   const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -12,6 +14,21 @@ export default function AccountActions() {
       document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       router.push("/login");
       router.refresh();
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!confirm("Delete your account? This will remove your saved profile details, cards, addresses, cart, and wishlist.")) return;
+
+    setDeleting(true);
+    try {
+      await onDeleteAccount();
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      router.push("/signup");
+      router.refresh();
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      setDeleting(false);
     }
   };
 
@@ -25,8 +42,13 @@ export default function AccountActions() {
         >
           Logout
         </button>
-        <button type="button" className="w-full rounded-lg border border-red-500 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 dark:border-rose-400/60 dark:text-rose-300 dark:hover:bg-rose-900/20">
-          Delete Account
+        <button
+          type="button"
+          onClick={handleDeleteAccount}
+          disabled={deleting}
+          className="w-full rounded-lg border border-red-500 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 disabled:opacity-50 dark:border-rose-400/60 dark:text-rose-300 dark:hover:bg-rose-900/20"
+        >
+          {deleting ? "Deleting..." : "Delete Account"}
         </button>
       </div>
     </section>

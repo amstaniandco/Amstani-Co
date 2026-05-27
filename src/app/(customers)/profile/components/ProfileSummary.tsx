@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { User } from "../../../../models/user";
 
-export default function ProfileSummary({ user, onSave }: { user: User | null; onSave: (data: any) => Promise<void> }) {
+type ProfileFormData = Pick<User, "name" | "email" | "phone" | "state">;
+
+export default function ProfileSummary({ user, onSave }: { user: User | null; onSave: (data: ProfileFormData) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -68,7 +70,7 @@ export default function ProfileSummary({ user, onSave }: { user: User | null; on
               <span className="text-2xl font-bold text-slate-500 dark:text-slate-400">{avatarFallback}</span>
             )}
             <div className="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400 text-xs font-bold text-white shadow-md cursor-pointer hover:bg-cyan-500">
-              ✎
+              E
             </div>
           </div>
           <div className="min-w-0">
