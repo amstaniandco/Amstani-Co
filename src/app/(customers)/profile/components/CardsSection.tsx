@@ -89,6 +89,13 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
     setError(null);
   };
 
+  const getProviderLabel = (provider: string) => {
+    if (provider === "Mastercard") return "MC";
+    if (provider === "Amex") return "AX";
+    if (provider === "Discover") return "DS";
+    return "VS";
+  };
+
   return (
     <section className="ui-panel mt-6 rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-4 flex items-center justify-between">
@@ -118,7 +125,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
           >
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-6 bg-gradient-to-r from-slate-300 to-slate-400 rounded flex items-center justify-center text-xs font-bold text-white">
-                {card.provider === "Mastercard" ? "MC" : "VS"}
+                {getProviderLabel(card.provider)}
               </div>
               <div className="flex-1">
                 <span className="text-sm font-semibold dark:text-slate-100">**** **** **** {card.last4}</span>

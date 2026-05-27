@@ -1,7 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Address } from "../../../../models/user";
+import ProfileLocationMap from "./ProfileLocationMap";
+
+type AddressSelection = {
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+};
 
 type ShippingSectionProps = {
   addresses: Address[];
@@ -63,6 +72,18 @@ export default function ShippingSection({
     setNewAddress({ recipientName: "", street: "", city: "", state: "", zip: "", country: "USA", type: "shipping" });
     setShowAddForm(false);
   };
+
+  const handleMapAddressSelect = useCallback((selection: AddressSelection) => {
+    setNewAddress((prev) => ({
+      ...prev,
+      street: selection.street || prev.street,
+      city: selection.city || prev.city,
+      state: selection.state || prev.state,
+      zip: selection.zip || prev.zip,
+      country: selection.country || prev.country,
+    }));
+    setShowAddForm(true);
+  }, []);
 
   const handleDeleteAddress = async (addressId: string) => {
     if (!confirm("Delete this saved address?")) return;
@@ -151,8 +172,8 @@ export default function ShippingSection({
       <div className="ui-subpanel mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900">
         {!showAddForm ? (
           <>
-            <div className="h-32 w-full rounded-lg bg-gray-300 dark:bg-slate-700 flex items-center justify-center text-slate-500 text-sm mb-4">
-              Map View Placeholder
+            <div className="mb-4">
+              <ProfileLocationMap onSelectAddress={handleMapAddressSelect} />
             </div>
             <div className="flex justify-center">
               <button

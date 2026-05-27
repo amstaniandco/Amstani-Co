@@ -1,13 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Pencil } from "lucide-react";
 import { User } from "../../../../models/user";
 
-type ProfileFormData = Pick<User, "name" | "email" | "phone" | "state">;
+type ProfileFormData = Pick<User, "name" | "email" | "phone" | "state"> | Pick<User, "avatarUrl">;
 
-export default function ProfileSummary({ user, onSave }: { user: User | null; onSave: (data: ProfileFormData) => Promise<void> }) {
+export default function ProfileSummary({
+  user,
+  onSave,
+  onAvatarUpload,
+}: {
+  user: User | null;
+  onSave: (data: ProfileFormData) => Promise<void>;
+  onAvatarUpload: (file: File) => Promise<void>;
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     state: "",
@@ -45,6 +56,21 @@ export default function ProfileSummary({ user, onSave }: { user: User | null; on
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    try {
+      await onAvatarUpload(file);
+    } catch (error) {
+      console.error("Error uploading profile photo:", error);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleCancel = () => {
     setFormData({
       name: user?.name || "",
@@ -59,19 +85,34 @@ export default function ProfileSummary({ user, onSave }: { user: User | null; on
     <aside className="ui-panel rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800 md:col-span-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4 flex-1">
-          <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-white shadow-md bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-            {user?.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="text-2xl font-bold text-slate-500 dark:text-slate-400">{avatarFallback}</span>
-            )}
-            <div className="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400 text-xs font-bold text-white shadow-md cursor-pointer hover:bg-cyan-500">
-              E
+          <div className="relative h-24 w-24 flex-shrink-0">
+            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 shadow-md dark:bg-slate-700 flex items-center justify-center">
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl font-bold text-slate-500 dark:text-slate-400">{avatarFallback}</span>
+              )}
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleAvatarChange}
+              className="sr-only"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+              aria-label="Upload profile photo"
+              className="absolute left-14 top-14 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:opacity-60"
+            >
+              {isUploadingAvatar ? "..." : <Pencil className="h-4 w-4" aria-hidden="true" />}
+            </button>
           </div>
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">{formData.name || "User"}</h1>

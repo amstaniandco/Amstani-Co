@@ -139,7 +139,7 @@ export async function DELETE() {
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
-    await db.collection("users").updateOne(
+    const result = await db.collection("users").updateOne(
       { _id: userId },
       {
         $set: {
@@ -155,6 +155,10 @@ export async function DELETE() {
         $unset: { password: "" },
       }
     );
+
+    if (!result.matchedCount) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     await Promise.all([
       db.collection("carts").deleteMany({ $or: [{ userId: tokenUser.id }, { userId }] }),

@@ -48,7 +48,10 @@ export default function ProfilePage() {
     fetchProfile();
   }, [fetchProfile]);
 
-  const handleSaveProfile = async (updatedData: Pick<User, "name" | "email" | "phone" | "state">) => {
+  const handleSaveProfile = async (
+    updatedData: Pick<User, "name" | "email" | "phone" | "state"> | Pick<User, "avatarUrl">,
+    options: { showSuccessToast?: boolean } = {},
+  ) => {
     try {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
@@ -57,7 +60,9 @@ export default function ProfilePage() {
       });
       if (res.ok) {
         await fetchProfile();
-        showToast("success", "Profile updated successfully!");
+        if (options.showSuccessToast !== false) {
+          showToast("success", "Profile updated successfully!");
+        }
       } else {
         const message = await readError(res, "Failed to save profile");
         showToast("error", message);
@@ -68,6 +73,31 @@ export default function ProfilePage() {
       if (!(error instanceof Error)) showToast("error", "Error saving profile");
       throw error;
     }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const uploadRes = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!uploadRes.ok) {
+      const message = await readError(uploadRes, "Failed to upload profile photo");
+      showToast("error", message);
+      throw new Error(message);
+    }
+
+    const data = await uploadRes.json();
+    if (!data.url) {
+      showToast("error", "Upload did not return an image URL");
+      throw new Error("Upload did not return an image URL");
+    }
+
+    await handleSaveProfile({ avatarUrl: data.url }, { showSuccessToast: false });
+    showToast("success", "Profile photo updated!");
   };
 
   const saveAddresses = async (addresses: Address[], successMessage: string) => {
@@ -191,7 +221,7 @@ export default function ProfilePage() {
       )}
 
       <section className="grid gap-6 md:grid-cols-12">
-        <ProfileSummary user={user} onSave={handleSaveProfile} />
+        <ProfileSummary user={user} onSave={handleSaveProfile} onAvatarUpload={handleAvatarUpload} />
         <ShippingSection
           addresses={user?.addresses || []}
           onAddAddress={handleAddAddress}
