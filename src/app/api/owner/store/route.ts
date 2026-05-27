@@ -25,10 +25,15 @@ export async function GET() {
     let followerCount = 0;
     let productCount = 0;
     if (store) {
-      [followerCount, productCount] = await Promise.all([
+      const storeId = store._id.toString();
+      const [followers, storeProducts, legacyProducts] = await Promise.all([
         db.collection("storeFollowers").countDocuments({ storeId: store._id }),
+        db.collection("store_products").countDocuments({ storeId }),
         db.collection("products").countDocuments({ storeId: store._id }),
       ]);
+
+      followerCount = followers;
+      productCount = storeProducts > 0 ? storeProducts : legacyProducts;
     }
 
     return NextResponse.json(

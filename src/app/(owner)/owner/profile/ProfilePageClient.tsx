@@ -107,7 +107,7 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
   };
 
   return (
-    <section className="overflow-hidden rounded-[26px] bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-5">
+    <section className="overflow-visible rounded-[26px] bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-5">
       {/* Hidden file inputs */}
       <input
         ref={logoInputRef}
@@ -156,11 +156,11 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="relative h-[66px] w-[66px] shrink-0 rounded-full bg-[#9a9a9a] overflow-hidden">
-            {store?.logoUrl ? (
-              <img src={store.logoUrl} alt="Logo" className="h-full w-full object-cover" />
-            ) : null}
-            <div className="absolute -right-1 -bottom-1 z-10">
+          <div className="relative h-[66px] w-[66px] shrink-0 overflow-visible">
+            <div className="h-full w-full overflow-hidden rounded-full bg-[#9a9a9a]">
+              {store?.logoUrl ? <img src={store.logoUrl} alt="Logo" className="h-full w-full object-cover" /> : null}
+            </div>
+            <div className="absolute -right-2 -bottom-2 z-20">
               <EditBadge onClick={() => logoInputRef.current?.click()} loading={uploadingLogo} />
             </div>
           </div>
