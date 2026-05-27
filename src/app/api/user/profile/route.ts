@@ -14,7 +14,7 @@ function cleanString(value: unknown) {
   return typeof value === "string" ? value.trim() : undefined;
 }
 
-function normalizeAddress(address: Partial<Address>, index: number): Address | null {
+function normalizeAddress(address: Partial<Address>): Address | null {
   const recipientName = cleanString(address.recipientName);
   const street = cleanString(address.street);
   const city = cleanString(address.city);
@@ -34,7 +34,7 @@ function normalizeAddress(address: Partial<Address>, index: number): Address | n
     state,
     zip,
     country,
-    isDefault: Boolean(address.isDefault || index === 0),
+    isDefault: Boolean(address.isDefault),
   };
 }
 
@@ -93,7 +93,7 @@ export async function PUT(req: Request) {
         return NextResponse.json({ error: "Addresses must be an array" }, { status: 400 });
       }
 
-      const addresses = body.addresses.map((address, index) => normalizeAddress(address as Partial<Address>, index));
+      const addresses = body.addresses.map((address) => normalizeAddress(address as Partial<Address>));
       if (addresses.some((address) => address === null)) {
         return NextResponse.json({ error: "Each address must include recipient, street, city, state, and ZIP" }, { status: 400 });
       }

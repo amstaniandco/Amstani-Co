@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { User } from "../../../../models/user";
 
-type ProfileFormData = Pick<User, "name" | "email" | "phone" | "state"> | Pick<User, "avatarUrl">;
+type ProfileFormData = Pick<User, "name" | "email" | "phone" | "state"> & Partial<Pick<User, "avatarUrl">>;
 
 export default function ProfileSummary({
   user,
@@ -13,11 +13,13 @@ export default function ProfileSummary({
 }: {
   user: User | null;
   onSave: (data: ProfileFormData) => Promise<void>;
-  onAvatarUpload: (file: File) => Promise<void>;
+  onAvatarUpload: (file: File) => Promise<string>;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -44,14 +46,30 @@ export default function ProfileSummary({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSave(formData);
+      let avatarUrl = user?.avatarUrl || "";
+      if (pendingAvatarFile) {
+        setIsUploadingAvatar(true);
+        avatarUrl = await onAvatarUpload(pendingAvatarFile);
+      }
+
+      await onSave(avatarUrl ? { ...formData, avatarUrl } : formData);
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl("");
+      setPendingAvatarFile(null);
       setIsEditing(false);
     } catch (error) {
       console.error("Error saving profile:", error);
     } finally {
+      setIsUploadingAvatar(false);
       setIsSaving(false);
     }
   };
@@ -61,14 +79,13 @@ export default function ProfileSummary({
     e.target.value = "";
     if (!file) return;
 
-    setIsUploadingAvatar(true);
-    try {
-      await onAvatarUpload(file);
-    } catch (error) {
-      console.error("Error uploading profile photo:", error);
-    } finally {
-      setIsUploadingAvatar(false);
+    if (!isEditing) return;
+
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
     }
+    setPendingAvatarFile(file);
+    setAvatarPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleCancel = () => {
@@ -78,8 +95,13 @@ export default function ProfileSummary({
       email: user?.email || "",
       phone: user?.phone || "",
     });
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setPendingAvatarFile(null);
+    setAvatarPreviewUrl("");
     setIsEditing(false);
   };
+
+  const displayedAvatarUrl = avatarPreviewUrl || user?.avatarUrl || "";
 
   return (
     <aside className="ui-panel rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800 md:col-span-4">
@@ -87,9 +109,9 @@ export default function ProfileSummary({
         <div className="flex items-center gap-4 flex-1">
           <div className="relative h-24 w-24 flex-shrink-0">
             <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 shadow-md dark:bg-slate-700 flex items-center justify-center">
-              {user?.avatarUrl ? (
+              {displayedAvatarUrl ? (
                 <img
-                  src={user.avatarUrl}
+                  src={displayedAvatarUrl}
                   alt="Profile"
                   className="h-full w-full object-cover"
                 />
@@ -107,9 +129,10 @@ export default function ProfileSummary({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingAvatar}
+              disabled={!isEditing || isUploadingAvatar || isSaving}
               aria-label="Upload profile photo"
-              className="absolute left-14 top-14 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:opacity-60"
+              title={isEditing ? "Choose profile photo" : "Click Edit to change photo"}
+              className="absolute left-14 top-14 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isUploadingAvatar ? "..." : <Pencil className="h-4 w-4" aria-hidden="true" />}
             </button>
@@ -214,10 +237,10 @@ export default function ProfileSummary({
           </button>
           <button
             onClick={handleSave}
-            disabled={isSaving || !formData.name || !formData.email}
+            disabled={isSaving || isUploadingAvatar || !formData.name || !formData.email}
             className="px-4 py-2 rounded-lg bg-cyan-400 text-white font-semibold hover:bg-cyan-500 transition disabled:opacity-50"
           >
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isUploadingAvatar ? "Uploading..." : isSaving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       )}

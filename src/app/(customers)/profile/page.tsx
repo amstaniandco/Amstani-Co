@@ -49,7 +49,7 @@ export default function ProfilePage() {
   }, [fetchProfile]);
 
   const handleSaveProfile = async (
-    updatedData: Pick<User, "name" | "email" | "phone" | "state"> | Pick<User, "avatarUrl">,
+    updatedData: Pick<User, "name" | "email" | "phone" | "state"> & Partial<Pick<User, "avatarUrl">>,
     options: { showSuccessToast?: boolean } = {},
   ) => {
     try {
@@ -96,8 +96,7 @@ export default function ProfilePage() {
       throw new Error("Upload did not return an image URL");
     }
 
-    await handleSaveProfile({ avatarUrl: data.url }, { showSuccessToast: false });
-    showToast("success", "Profile photo updated!");
+    return data.url as string;
   };
 
   const saveAddresses = async (addresses: Address[], successMessage: string) => {
