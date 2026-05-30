@@ -7,6 +7,7 @@ import {
   Bell,
   Boxes,
   ChartLine,
+  CreditCard,
   LogOut,
   Menu,
   MessageCircle,
@@ -36,6 +37,7 @@ const sidebarItems: SidebarItem[] = [
   { label: "Claims", href: "/owner/claims", icon: TriangleAlert },
   { label: "Music", href: "/music", icon: Music2 },
   { label: "Profile", href: "/owner/profile", icon: UserRound },
+  { label: "Payouts", href: "/owner/stripe", icon: CreditCard },
 ];
 
 function getActiveLabel(pathname: string) {
