@@ -8,6 +8,8 @@ import {
   useMapContext,
 } from "react-simple-maps";
 import { ChevronDown } from "lucide-react";
+import { useToast } from "./global/ToastProvider";
+import { getSelectedState, setSelectedState } from "../lib/state-preference";
 
 type Position = [number, number];
 
@@ -263,6 +265,7 @@ export default function AmericaMap() {
   const [hoveredState, setHoveredState] = useState<string | null>(null);
   const [selectedState, setSelectedState] = useState<string>("");
   const [geoData, setGeoData] = useState<object | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     let active = true;
@@ -283,6 +286,38 @@ export default function AmericaMap() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    const initialState = getSelectedState();
+    if (initialState) {
+      setSelectedState(initialState);
+    }
+  }, []);
+
+  const handleExplore = async () => {
+    if (!selectedState) {
+      toast.error("Select a state first.");
+      return;
+    }
+
+    setSelectedState(selectedState);
+
+    try {
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: selectedState }),
+      });
+
+      if (!response.ok && response.status !== 401) {
+        throw new Error("Failed to save state");
+      }
+
+      toast.success(`Showing stores in ${selectedState}.`);
+    } catch {
+      toast.error("Could not save your selected state.");
+    }
+  };
 
   return (
     <section className="mx-auto w-full max-w-[1500px] rounded-3xl bg-[#1d1b14] px-6 py-8 text-slate-100 sm:px-8 sm:py-10">
@@ -375,6 +410,7 @@ export default function AmericaMap() {
 
             <button
               type="button"
+              onClick={handleExplore}
               className="rounded-lg bg-[#75c8d4] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#68bdc9]"
             >
               Explore

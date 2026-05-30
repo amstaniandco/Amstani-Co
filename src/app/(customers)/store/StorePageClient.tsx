@@ -11,20 +11,35 @@ import LiveStreamsSection from "./components/LiveStreamsSection";
 import ProductGrid from "./components/ProductGrid";
 import StoreRatingSection from "./components/StoreRatingSection";
 import { StoreProvider, type StoreInfo } from "../../../context/StoreContext";
+import { getSelectedState, subscribeSelectedState } from "../../../lib/state-preference";
 
 export default function StorePageClient() {
   const searchParams = useSearchParams();
   const storeId = searchParams.get("storeId");
   const [isMusicMuted, setIsMusicMuted] = useState(false);
   const [store, setStore] = useState<StoreInfo | null>(null);
+  const [selectedState, setSelectedState] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const initialState = getSelectedState();
+    setSelectedState(initialState);
+
+    return subscribeSelectedState((state) => {
+      setSelectedState(state);
+    });
+  }, []);
 
   // Load store data
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const endpoint = storeId ? `/api/stores?storeId=${storeId}` : "/api/stores";
+        const endpoint = storeId
+          ? `/api/stores?storeId=${storeId}`
+          : selectedState
+            ? `/api/stores?state=${encodeURIComponent(selectedState)}`
+            : "/api/stores";
         const res = await fetch(endpoint);
         if (!res.ok) return;
         const data = await res.json();
@@ -36,7 +51,7 @@ export default function StorePageClient() {
       }
     })();
     return () => { mounted = false; };
-  }, [storeId]);
+  }, [storeId, selectedState]);
 
   // Track visits
   useEffect(() => {

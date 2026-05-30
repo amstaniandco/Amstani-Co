@@ -12,7 +12,18 @@ type CartItem = {
   price: number;
   mainImage?: string | null;
   quantity: number;
+  selectedVariants?: Record<string, string>;
 };
+
+function variantLabel(selectedVariants?: Record<string, string>) {
+  if (!selectedVariants) return "";
+  return Object.values(selectedVariants).join(" / ");
+}
+
+function variantKey(selectedVariants?: Record<string, string>) {
+  const entries = Object.entries(selectedVariants ?? {}).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey));
+  return JSON.stringify(entries);
+}
 
 export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -29,25 +40,29 @@ export default function CartPage() {
   useEffect(() => { fetchCart(); }, [fetchCart]);
 
   async function updateQty(productId: string, storeId: string, quantity: number) {
+    const item = items.find((entry) => entry.productId === productId && entry.storeId === storeId);
+    const key = variantKey(item?.selectedVariants);
     await fetch("/api/cart", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, storeId, quantity }),
+      body: JSON.stringify({ productId, storeId, quantity, selectedVariants: item?.selectedVariants }),
     });
     setItems((prev) =>
       quantity <= 0
-        ? prev.filter((i) => !(i.productId === productId && i.storeId === storeId))
-        : prev.map((i) => i.productId === productId && i.storeId === storeId ? { ...i, quantity } : i)
+        ? prev.filter((i) => !(i.productId === productId && i.storeId === storeId && variantKey(i.selectedVariants) === key))
+        : prev.map((i) => i.productId === productId && i.storeId === storeId && variantKey(i.selectedVariants) === key ? { ...i, quantity } : i)
     );
   }
 
   async function removeItem(productId: string, storeId: string) {
+    const item = items.find((entry) => entry.productId === productId && entry.storeId === storeId);
+    const key = variantKey(item?.selectedVariants);
     await fetch("/api/cart", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, storeId }),
+      body: JSON.stringify({ productId, storeId, selectedVariants: item?.selectedVariants }),
     });
-    setItems((prev) => prev.filter((i) => !(i.productId === productId && i.storeId === storeId)));
+    setItems((prev) => prev.filter((i) => !(i.productId === productId && i.storeId === storeId && variantKey(i.selectedVariants) === key)));
   }
 
   async function clearCart() {
@@ -95,6 +110,11 @@ export default function CartPage() {
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-[#0f9488] sm:text-xs">{item.storeName}</p>
                       <p className="mt-0.5 text-sm font-semibold text-slate-900 line-clamp-2 sm:text-base">{item.name}</p>
                       {item.sku && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">SKU: {item.sku}</p>}
+                      {variantLabel(item.selectedVariants) && (
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {variantLabel(item.selectedVariants)}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end sm:gap-3">
                       <div className="ui-subpanel flex items-center rounded-lg border border-[#d8e5ea] bg-white dark:border-slate-600 dark:bg-slate-800">

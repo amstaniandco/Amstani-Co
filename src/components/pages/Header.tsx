@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { useToast } from "../global/ToastProvider";
+import { getSelectedState, setSelectedState, subscribeSelectedState } from "../../lib/state-preference";
+import { US_STATES } from "../../lib/us-states";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -194,20 +197,156 @@ function hasActiveSession(): boolean {
 
 export default function Header() {
   const pathname = usePathname();
-  const [city, setCity] = useState("New York");
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [userState, setUserState] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [stateMenuOpen, setStateMenuOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const searchTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
+  const toast = useToast();
 
   // Check authentication status on route change
   useEffect(() => {
     setIsLoggedIn(hasActiveSession());
   }, [pathname]);
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUserState("");
+      setAvatarUrl("");
+      setStateMenuOpen(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProfile() {
+      try {
+        const response = await fetch("/api/user/profile");
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (cancelled) return;
+
+        const profileState = typeof data?.user?.state === "string" ? data.user.state : "";
+        const profileAvatar = typeof data?.user?.avatarUrl === "string" ? data.user.avatarUrl : "";
+
+        setUserState(profileState);
+        setAvatarUrl(profileAvatar);
+
+        if (profileState) {
+          setSelectedState(profileState);
+        } else if (!getSelectedState()) {
+          setSelectedState("");
+        }
+      } catch {
+        if (!cancelled) setAvatarUrl("");
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn]);
+
+  useEffect(() => subscribeSelectedState((state) => setUserState(state)), []);
+
+  useEffect(() => {
+    setStateMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setCartCount(0);
+      setWishlistCount(0);
+      setNotificationCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCounts() {
+      try {
+        const [cartResponse, wishlistResponse, notificationResponse] = await Promise.all([
+          fetch("/api/cart"),
+          fetch("/api/wishlist"),
+          fetch("/api/notifications"),
+        ]);
+        const [cartData, wishlistData, notificationData] = await Promise.all([
+          cartResponse.json(),
+          wishlistResponse.json(),
+          notificationResponse.json(),
+        ]);
+
+        if (cancelled) return;
+
+        setCartCount(Array.isArray(cartData.items) ? cartData.items.length : 0);
+        setWishlistCount(Array.isArray(wishlistData.items) ? wishlistData.items.length : 0);
+        setNotificationCount(
+          Array.isArray(notificationData.notifications)
+            ? notificationData.notifications.filter((item: { isRead?: boolean }) => !item.isRead).length
+            : 0,
+        );
+      } catch {
+        if (!cancelled) {
+          setCartCount(0);
+          setWishlistCount(0);
+          setNotificationCount(0);
+        }
+      }
+    }
+
+    loadCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, pathname]);
+
   const showAuthenticatedNavbar = isLoggedIn;
+
+  const Badge = ({ count }: { count: number }) => {
+    if (!count) return null;
+
+    return (
+      <span className="absolute -right-2 -top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-[#4DB8B8] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-md ring-2 ring-[#151C1D]">
+        {count > 99 ? "99+" : count}
+      </span>
+    );
+  };
+
+  const currentAvatar = avatarUrl || "https://i.pravatar.cc/64?img=47";
+
+  const handleStateChange = async (nextState: string) => {
+    setUserState(nextState);
+    setSelectedState(nextState);
+
+    if (!isLoggedIn) return;
+
+    try {
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: nextState }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update state");
+      }
+
+      toast.success("State updated.");
+    } catch {
+      toast.error("Could not update your state.");
+    }
+  };
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -352,18 +491,55 @@ export default function Header() {
             {showAuthenticatedNavbar ? (
               <>
                 {/* Location Selector */}
-                <div className="flex items-center border border-white/35 rounded-full overflow-hidden text-sm shrink-0">
-                  <span className="px-4 py-2 text-white text-sm">{city}</span>
+                <div className="relative shrink-0">
                   <button
-                    onClick={() =>
-                      setCity((prev) =>
-                        prev === "New York" ? "Los Angeles" : "New York",
-                      )
-                    }
-                    className="bg-[#4DB8B8] text-white text-sm font-semibold px-4 py-2 hover:bg-[#3aa3a3] transition-colors duration-200"
+                    type="button"
+                    onClick={() => setStateMenuOpen((prev) => !prev)}
+                    className="inline-flex h-9 items-stretch overflow-hidden rounded-full border border-white/35 text-sm leading-none"
+                    aria-expanded={stateMenuOpen}
+                    aria-label="Select state"
                   >
-                    Change
+                    <span className="flex min-w-[132px] items-center px-3 text-sm text-white">
+                      {userState || "Select state"}
+                    </span>
+                    <span className="flex items-center bg-[#4DB8B8] px-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#3aa3a3]">
+                      Change
+                    </span>
                   </button>
+
+                  {stateMenuOpen && (
+                    <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-2xl border border-white/10 bg-[#151C1D] p-2 shadow-2xl">
+                      <div className="max-h-72 overflow-y-auto pr-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleStateChange("");
+                            setStateMenuOpen(false);
+                          }}
+                          className="mb-1 w-full rounded-xl px-3 py-2 text-left text-sm text-gray-200 transition hover:bg-white/5 hover:text-white"
+                        >
+                          Clear state filter
+                        </button>
+                        {US_STATES.map((state) => (
+                          <button
+                            key={state}
+                            type="button"
+                            onClick={() => {
+                              handleStateChange(state);
+                              setStateMenuOpen(false);
+                            }}
+                            className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
+                              userState === state
+                                ? "bg-[#4DB8B8]/20 text-white"
+                                : "text-gray-200 hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            {state}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Icon Actions */}
@@ -371,9 +547,10 @@ export default function Header() {
                   <Link
                     href="/wishlist"
                     aria-label="Wishlist"
-                    className="hover:text-white transition-colors duration-200"
+                    className="relative hover:text-white transition-colors duration-200"
                   >
                     <HeartIcon />
+                    <Badge count={wishlistCount} />
                   </Link>
 
                   <Link
@@ -382,14 +559,16 @@ export default function Header() {
                     className="hover:text-white transition-colors duration-200 relative"
                   >
                     <CartIcon />
+                    <Badge count={cartCount} />
                   </Link>
 
                   <Link
                     href="/notifications"
                     aria-label="Notifications"
-                    className="hover:text-white transition-colors duration-200"
+                    className="relative hover:text-white transition-colors duration-200"
                   >
                     <BellIcon />
+                    <Badge count={notificationCount} />
                   </Link>
 
                   {/* Avatar */}
@@ -399,7 +578,7 @@ export default function Header() {
                     className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
                   >
                     <Image
-                      src="https://i.pravatar.cc/64?img=47"
+                      src={currentAvatar}
                       alt="User Avatar"
                       fill
                       sizes="32px"
@@ -481,20 +660,55 @@ export default function Header() {
                 </nav>
 
                 {/* Mobile Location Selector */}
-                <div className="flex items-center border border-white/30 rounded-lg overflow-hidden text-sm">
-                  <span className="px-3 py-2 text-gray-100 text-sm flex-1">
-                    {city}
-                  </span>
+                <div className="relative">
                   <button
-                    onClick={() =>
-                      setCity((prev) =>
-                        prev === "New York" ? "Los Angeles" : "New York",
-                      )
-                    }
-                    className="bg-[#4DB8B8] text-white text-sm font-semibold px-3 py-2 hover:bg-[#3aa3a3] transition-colors duration-200 whitespace-nowrap"
+                    type="button"
+                    onClick={() => setStateMenuOpen((prev) => !prev)}
+                    className="inline-flex h-9 w-full items-stretch overflow-hidden rounded-lg border border-white/30 text-sm leading-none"
+                    aria-expanded={stateMenuOpen}
+                    aria-label="Select state"
                   >
-                    Change
+                    <span className="flex flex-1 items-center px-3 text-left text-sm text-gray-100">
+                      {userState || "Select state"}
+                    </span>
+                    <span className="flex items-center whitespace-nowrap bg-[#4DB8B8] px-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#3aa3a3]">
+                      Change
+                    </span>
                   </button>
+
+                  {stateMenuOpen && (
+                    <div className="absolute left-0 top-full z-20 mt-2 w-full rounded-2xl border border-white/10 bg-[#151C1D] p-2 shadow-2xl">
+                      <div className="max-h-64 overflow-y-auto pr-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleStateChange("");
+                            setStateMenuOpen(false);
+                          }}
+                          className="mb-1 w-full rounded-xl px-3 py-2 text-left text-sm text-gray-200 transition hover:bg-white/5 hover:text-white"
+                        >
+                          Clear state filter
+                        </button>
+                        {US_STATES.map((state) => (
+                          <button
+                            key={state}
+                            type="button"
+                            onClick={() => {
+                              handleStateChange(state);
+                              setStateMenuOpen(false);
+                            }}
+                            className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
+                              userState === state
+                                ? "bg-[#4DB8B8]/20 text-white"
+                                : "text-gray-200 hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            {state}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Mobile Icon Actions - Horizontal Layout */}
@@ -503,9 +717,10 @@ export default function Header() {
                     href="/wishlist"
                     onClick={handleMobileNavClick}
                     aria-label="Wishlist"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
+                    className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
                   >
                     <HeartIcon />
+                    <Badge count={wishlistCount} />
                     <span className="text-xs">Wishlist</span>
                   </Link>
 
@@ -513,9 +728,10 @@ export default function Header() {
                     href="/cart"
                     onClick={handleMobileNavClick}
                     aria-label="Cart"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
+                    className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
                   >
                     <CartIcon />
+                    <Badge count={cartCount} />
                     <span className="text-xs">Cart</span>
                   </Link>
 
@@ -523,9 +739,10 @@ export default function Header() {
                     href="/notifications"
                     onClick={handleMobileNavClick}
                     aria-label="Notifications"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
+                    className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
                   >
                     <BellIcon />
+                    <Badge count={notificationCount} />
                     <span className="text-xs">Notify</span>
                   </Link>
 
@@ -537,7 +754,7 @@ export default function Header() {
                   >
                     <div className="relative w-6 h-6 rounded-full overflow-hidden border border-[#4DB8B8]/50">
                       <Image
-                        src="https://i.pravatar.cc/64?img=47"
+                        src={currentAvatar}
                         alt="User Avatar"
                         fill
                         sizes="24px"

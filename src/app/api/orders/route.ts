@@ -18,7 +18,16 @@ type CartItem = {
   price?: number;
   mainImage?: string | null;
   quantity: number;
+  selectedVariants?: Record<string, string>;
 };
+
+function normalizeSelectedVariants(selectedVariants?: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(selectedVariants ?? {})
+      .map(([key, value]) => [key.trim().toLowerCase(), value.trim()] as const)
+      .filter(([key, value]) => key && value)
+  ) as Record<string, string>;
+}
 
 export async function GET() {
   const user = await getUserFromToken();
@@ -84,15 +93,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "A cart item is no longer available." }, { status: 400 });
     }
 
+    const selectedVariants = normalizeSelectedVariants(item.selectedVariants);
+    const matchedVariant = (product.variants ?? []).find((variant) => {
+      const selectedSize = selectedVariants.size?.toLowerCase();
+      const selectedColor = selectedVariants.color?.toLowerCase();
+      const variantSize = variant.size?.trim().toLowerCase() ?? "";
+      const variantColor = variant.color?.trim().toLowerCase() ?? "";
+
+      if (selectedSize && selectedSize !== variantSize) return false;
+      if (selectedColor && selectedColor !== variantColor) return false;
+      return true;
+    });
+
     const normalizedItem: CartItem = {
       productId: item.productId,
       storeId: item.storeId,
       storeName: store.name ?? item.storeName ?? "Store",
       name: product.name ?? item.name ?? "Product",
-      sku: product.sku ?? item.sku ?? "",
-      price: Number(product.price ?? item.price ?? 0),
+      sku: matchedVariant?.skuVariant ?? matchedVariant?.sku ?? product.sku ?? item.sku ?? "",
+      price: Number(matchedVariant?.priceOverride ?? product.price ?? item.price ?? 0),
       mainImage: product.mainImage ?? item.mainImage ?? product.images?.[0]?.url ?? product.images?.[0] ?? null,
       quantity: Math.max(1, Number(item.quantity) || 1),
+      selectedVariants,
     };
 
     if (!storeMap.has(item.storeId)) {
@@ -120,6 +142,7 @@ export async function POST(req: Request) {
         price: i.price,
         mainImage: i.mainImage ?? null,
         quantity: i.quantity,
+        selectedVariants: i.selectedVariants,
       })),
       subtotal,
       shippingFee: 0,

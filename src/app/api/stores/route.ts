@@ -6,6 +6,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const storeId = searchParams.get("storeId");
+    const stateFilter = searchParams.get("state")?.trim() ?? "";
 
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DBNAME || "amstani");
@@ -25,12 +26,42 @@ export async function GET(req: Request) {
       return NextResponse.json({ stores: store ? [store] : [] }, { status: 200 });
     }
 
-    const stores = await db
-      .collection("stores")
-      .find({ status: "active" })
-      .project({ _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, isLive: 1, liveLink: 1, rating: 1, settings: 1 })
-      .limit(40)
-      .toArray();
+    const pipeline: object[] = [
+      { $match: { status: "active" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "ownerId",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+    ];
+
+    if (stateFilter) {
+      pipeline.push({ $match: { "owner.state": stateFilter } });
+    }
+
+    pipeline.push(
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          logoUrl: 1,
+          bannerUrl: 1,
+          description: 1,
+          isLive: 1,
+          liveLink: 1,
+          rating: 1,
+          settings: 1,
+          "owner.state": 1,
+        },
+      },
+      { $limit: 40 },
+    );
+
+    const stores = await db.collection("stores").aggregate(pipeline).toArray();
 
     return NextResponse.json({ stores }, { status: 200 });
   } catch (error) {

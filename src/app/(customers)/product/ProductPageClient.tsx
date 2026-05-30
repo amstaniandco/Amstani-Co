@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useToast } from "../../../components/global/ToastProvider";
 
 type Review = {
   _id: string;
@@ -15,6 +16,7 @@ type ProductImage = string | { url?: string; imageUrl?: string };
 
 type ProductVariant = {
   size?: string | number;
+  color?: string;
 };
 
 type ProductDetail = {
@@ -63,6 +65,7 @@ export default function ProductPageClient() {
   const searchParams = useSearchParams();
   const productId = searchParams.get("productId") ?? "";
   const storeId = searchParams.get("storeId") ?? "";
+  const toast = useToast();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [productLoading, setProductLoading] = useState(true);
@@ -73,6 +76,7 @@ export default function ProductPageClient() {
   const [reviewBreakdown, setReviewBreakdown] = useState<Record<number, number>>({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
 
   const [selectedSize, setSelectedSize] = useState<string | number | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -123,6 +127,10 @@ export default function ProductPageClient() {
     ? [...new Set(product.variants.map((v) => v.size).filter(Boolean))] as (string | number)[]
     : [];
 
+  const colors: string[] = product?.variants
+    ? [...new Set(product.variants.map((v) => v.color).filter(Boolean).map((color) => String(color)))]
+    : [];
+
   async function handleAddToCart() {
     if (!product || !storeId) { setCartMsg("Cannot add to cart."); return; }
     const res = await fetch("/api/cart", {
@@ -136,10 +144,22 @@ export default function ProductPageClient() {
         price: product.price,
         mainImage: images[0] ?? null,
         quantity: 1,
+        selectedVariants:
+          selectedSize == null && !selectedColor
+            ? undefined
+            : {
+                ...(selectedSize == null ? {} : { size: String(selectedSize) }),
+                ...(selectedColor ? { color: selectedColor } : {}),
+              },
       }),
     });
-    setCartMsg(res.ok ? "Added to cart!" : "Sign in to add to cart.");
-    setTimeout(() => setCartMsg(""), 2500);
+    if (res.ok) {
+      setCartMsg("");
+      toast.success("Added to cart!");
+    } else {
+      setCartMsg("");
+      toast.error("Sign in to add to cart.");
+    }
   }
 
   async function handleWishlist() {
@@ -158,11 +178,12 @@ export default function ProductPageClient() {
     });
     if (res.ok) {
       const d = await res.json();
-      setWishlistMsg(d.action === "added" ? "Added to wishlist!" : "Removed from wishlist.");
+      setWishlistMsg("");
+      toast.success(d.action === "added" ? "Added to wishlist!" : "Removed from wishlist.");
     } else {
-      setWishlistMsg("Sign in to use wishlist.");
+      setWishlistMsg("");
+      toast.error("Sign in to use wishlist.");
     }
-    setTimeout(() => setWishlistMsg(""), 2500);
   }
 
   async function handleSubmitReview() {
@@ -261,6 +282,23 @@ export default function ProductPageClient() {
                     <button key={String(size)} onClick={() => setSelectedSize(size)}
                       className={`w-10 h-10 rounded-full text-xs font-semibold border-2 transition-all ${selectedSize === size ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
                       {String(size)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {colors.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Select Color</p>
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`rounded-full border-2 px-3 py-2 text-xs font-semibold transition-all ${selectedColor === color ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}
+                    >
+                      {color}
                     </button>
                   ))}
                 </div>
@@ -366,6 +404,23 @@ export default function ProductPageClient() {
                       <button key={String(size)} onClick={() => setSelectedSize(size)}
                         className={`w-11 h-11 rounded-full text-sm font-semibold border-2 transition-all ${selectedSize === size ? "border-gray-800 bg-gray-800 text-white" : "border-gray-300 text-gray-700 bg-white hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"}`}>
                         {String(size)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {colors.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Select Color</p>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={`rounded-full border-2 px-4 py-2 text-sm font-semibold transition-all ${selectedColor === color ? "border-gray-800 bg-gray-800 text-white" : "border-gray-300 text-gray-700 bg-white hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"}`}
+                      >
+                        {color}
                       </button>
                     ))}
                   </div>

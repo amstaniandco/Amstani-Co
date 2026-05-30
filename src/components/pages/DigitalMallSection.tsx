@@ -1,104 +1,80 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Star, Store } from "lucide-react";
+import { MapPin, Star, Store } from "lucide-react";
+import { getSelectedState, subscribeSelectedState } from "../../lib/state-preference";
 
-type MallCard = {
-  id: number;
+type StoreCard = {
+  id: string;
   image: string;
-  badge: string;
   title: string;
   description: string;
   state: string;
   rating: string;
+  live: boolean;
+  liveLink?: string | null;
 };
 
-const digitalMallCards: MallCard[] = [
-  {
-    id: 1,
-    image:
-      "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80",
-    badge: "Ranked #1",
-    title: "Name of the store",
-    description: "Description of the store can be written here",
-    state: "Name of State",
-    rating: "4.9",
-  },
-  {
-    id: 2,
-    image:
-      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
-    badge: "Ranked #1",
-    title: "Name of the store",
-    description: "Description of the store can be written here",
-    state: "Name of State",
-    rating: "4.9",
-  },
-  {
-    id: 3,
-    image:
-      "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=80",
-    badge: "Ranked #1",
-    title: "Name of the store",
-    description: "Description of the store can be written here",
-    state: "Name of State",
-    rating: "4.9",
-  },
-  {
-    id: 4,
-    image:
-      "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80",
-    badge: "Ranked #2",
-    title: "Name of the store",
-    description: "Description of the store can be written here",
-    state: "Name of State",
-    rating: "4.8",
-  },
-  {
-    id: 5,
-    image:
-      "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80",
-    badge: "Ranked #3",
-    title: "Name of the store",
-    description: "Description of the store can be written here",
-    state: "Name of State",
-    rating: "4.8",
-  },
-];
-
-function getCardsPerView(width: number) {
-  if (width >= 1024) return 3;
-  if (width >= 768) return 3;
-  return 2;
-}
-
 export default function DigitalMallSection() {
-  const [cardsPerView, setCardsPerView] = useState<number>(2);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-
-  const visibleCards = useMemo(() => digitalMallCards.slice(0, 3), []);
+  const [stores, setStores] = useState<StoreCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedState, setSelectedState] = useState("");
 
   useEffect(() => {
-    const handleResize = () => {
-      setCardsPerView(getCardsPerView(window.innerWidth));
+    let mounted = true;
+
+    const loadStores = async (state: string) => {
+      try {
+        setLoading(true);
+        const response = await fetch(state ? `/api/stores/browse?state=${encodeURIComponent(state)}` : "/api/stores/browse");
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (!mounted) return;
+
+        const mapped: StoreCard[] = (data.stores ?? []).map((store: Record<string, any>) => {
+          const imageSource = (store.bannerUrl || store.logoUrl || "").trim();
+          const image = imageSource.startsWith("https://") ? imageSource : "/assets/placeholder-store.svg";
+
+          return {
+            id: String(store._id),
+            image,
+            title: store.name || "Store",
+            description: store.description || "Explore this verified store on Amstani & Co.",
+            state: store.owner?.state || "",
+            rating: store.rating ? String(store.rating) : "4.9",
+            live: Boolean(store.isLive),
+            liveLink: store.liveLink ?? null,
+          };
+        });
+
+        setStores(mapped);
+      } catch {
+        if (mounted) setStores([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const initialState = getSelectedState();
+    setSelectedState(initialState);
+    loadStores(initialState);
+
+    const unsubscribe = subscribeSelectedState((state) => {
+      setSelectedState(state);
+      loadStores(state);
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
-  const maxIndex = useMemo(
-    () => Math.max(visibleCards.length - cardsPerView, 0),
-    [cardsPerView, visibleCards]
-  );
-
-  useEffect(() => {
-    setCurrentIndex((prev) => Math.min(prev, maxIndex));
-  }, [maxIndex]);
-
-  const canGoPrev = currentIndex > 0;
-  const canGoNext = currentIndex < maxIndex;
+  const storeCountLabel = useMemo(() => {
+    if (loading) return "Loading stores…";
+    return `${stores.length} live stores`;
+  }, [loading, stores.length]);
 
   return (
     <section className="bg-[#f5f6f8] pb-8 pt-4 dark:bg-slate-900 sm:pb-10">
@@ -110,99 +86,69 @@ export default function DigitalMallSection() {
               The Digital Mall
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Curated luxury boutiques from across the nation.
+              Real stores from across the platform.
             </p>
-          </div>
-
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Previous"
-              disabled={!canGoPrev}
-              onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-500 bg-slate-200 text-slate-800 transition hover:border-slate-700 hover:bg-slate-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next"
-              disabled={!canGoNext}
-              onClick={() =>
-                setCurrentIndex((prev) => Math.min(prev + 1, maxIndex))
-              }
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-500 bg-slate-200 text-slate-800 transition hover:border-slate-700 hover:bg-slate-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#56aebb] dark:text-[#7fd3df]">
+              {selectedState ? `${selectedState} • ${storeCountLabel}` : storeCountLabel}
+            </p>
           </div>
         </div>
 
-        <div className="overflow-hidden">
-          <div
-            className="-mx-2 flex transition-transform duration-300 ease-out"
-            style={{
-              transform: `translateX(-${(currentIndex * 100) / cardsPerView}%)`,
-            }}
-          >
-            {visibleCards.map((card, index) => (
-              <div
-                key={card.id}
-                className="w-1/2 flex-none px-2 md:w-1/3 lg:w-1/3 xl:w-1/3"
+        {loading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+            Loading real stores…
+          </div>
+        ) : stores.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+            No active stores found.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {stores.map((store) => (
+              <article
+                key={store.id}
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-800"
               >
-                <article
-                  className="group relative h-[340px] overflow-hidden rounded-2xl sm:h-[390px]"
+                <div
+                  className="relative h-[280px] overflow-hidden"
                   style={{
-                    backgroundImage: `url(${card.image})`,
+                    backgroundImage: `url(${store.image})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-b from-slate-900/10 via-slate-900/25 to-black/80" />
-
-                  <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-                    {index === 1 ? "Live" : card.badge}
+                  <div className="absolute inset-0 bg-gradient-to-b from-slate-900/5 via-slate-900/25 to-black/85" />
+                  <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
+                    {store.live ? "Live" : "Store"}
+                  </div>
+                  <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-[#56aebb] px-2.5 py-1 text-[10px] font-semibold text-white">
+                    <Star className="h-3 w-3 fill-white text-white" />
+                    {store.rating}
                   </div>
 
-                  <div className="absolute right-3 top-3 rounded-full bg-[#7acbd6] px-2 py-0.5 text-[10px] font-semibold text-white">
-                    {card.badge}
-                  </div>
-
-                  <div className="absolute inset-x-0 bottom-0 p-3 text-white sm:p-4">
-                    <div className="mb-1 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-semibold sm:text-base">
-                        {card.title}
-                      </h3>
-                      <div className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                        <Star className="h-3 w-3 fill-white text-white" />
-                        {card.rating}
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-white/90 sm:text-xs">
-                      {card.description}
-                    </p>
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <h3 className="text-lg font-semibold leading-tight">{store.title}</h3>
+                    <p className="mt-1 line-clamp-2 text-xs text-white/85">{store.description}</p>
 
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-1 text-xs text-white/90">
-                        <MapPin className="h-3 w-3" />
-                        {card.state}
+                        <MapPin className="h-3.5 w-3.5" />
+                        {store.state || "Nationwide"}
                       </span>
 
-                      <button
-                        type="button"
-                        aria-label="Open Store"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#7acbd6] text-white transition hover:bg-[#69bdc9]"
+                      <a
+                        href={`/store?storeId=${store.id}`}
+                        className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold text-slate-900 transition hover:bg-slate-100"
                       >
-                        <Store className="h-4 w-4" />
-                      </button>
+                        Open Store
+                      </a>
                     </div>
                   </div>
-                </article>
-              </div>
+                </div>
+              </article>
             ))}
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

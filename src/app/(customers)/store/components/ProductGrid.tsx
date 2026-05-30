@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useToast } from "../../../../components/global/ToastProvider";
 
 type StoreProduct = {
   productId: string;
@@ -15,7 +16,7 @@ type StoreProduct = {
 export default function ProductGrid({ storeId, storeName = "" }: { storeId?: string | null; storeName?: string }) {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(Boolean(storeId));
-  const [cartMessage, setCartMessage] = useState("");
+  const toast = useToast();
 
   useEffect(() => {
     if (!storeId) return;
@@ -44,8 +45,11 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
       }),
     });
 
-    setCartMessage(response.ok ? "Added to cart." : "Sign in to add items to cart.");
-    setTimeout(() => setCartMessage(""), 2500);
+    if (response.ok) {
+      toast.success("Added to cart.");
+    } else {
+      toast.error("Sign in to add items to cart.");
+    }
   }
 
   if (loading) {
@@ -74,12 +78,6 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
         <span className="text-[#5fb9c3]">📦</span>
         <h3 className="text-base font-semibold text-[#68B8C1]">Our Products</h3>
       </div>
-      {cartMessage && (
-        <p className="mb-4 rounded-lg bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-200">
-          {cartMessage}
-        </p>
-      )}
-
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <div key={product.productId} className="overflow-hidden rounded-3xl border border-gray-100 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
