@@ -86,7 +86,7 @@ function ProductTable({ products, loading }: { products: ProductRow[]; loading: 
                   </div>
                   <div className="font-semibold text-slate-700">{product.name}</div>
                   <div className="font-mono text-xs text-slate-500">{product.sku || "—"}</div>
-                  <div className="text-slate-500">Rs {Number(product.price).toLocaleString()}</div>
+                  <div className="text-slate-500">${Number(product.price).toLocaleString()}</div>
                   <div className="text-slate-700">{product.quantity}</div>
                   <div className="flex justify-end">
                     <button

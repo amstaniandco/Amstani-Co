@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import stripe, { PLATFORM_FEE_PERCENT, STRIPE_CURRENCY } from "../../../../lib/stripe";
+import stripe, { STRIPE_CURRENCY } from "../../../../lib/stripe";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
 
@@ -22,13 +22,6 @@ type CartItem = {
   selectedVariants?: Record<string, string>;
 };
 
-type StoreBreakdownEntry = {
-  storeId: string;
-  orderId: string;
-  stripeAccountId: string | null;
-  transferAmount: number; // in cents (80% of store subtotal)
-};
-
 function normalizeVariants(selectedVariants?: Record<string, string>) {
   return Object.fromEntries(
     Object.entries(selectedVariants ?? {})
@@ -40,12 +33,9 @@ function normalizeVariants(selectedVariants?: Record<string, string>) {
 // POST /api/stripe/checkout
 // 1. Validates the cart
 // 2. Creates one MongoDB order per store (paymentStatus: "Pending")
-// 3. Creates a Stripe PaymentIntent on the platform account
+// 3. Creates a Stripe PaymentIntent for the full cart total
 // 4. Clears the cart
 // 5. Returns { clientSecret, orderIds, total }
-//
-// The actual 80/20 split happens in the webhook (payment_intent.succeeded)
-// via Stripe Transfers to each store's connected account.
 export async function POST(req: Request) {
   const user = await getUserFromToken();
   if (!user) return NextResponse.json({ error: "Sign in to checkout" }, { status: 401 });
@@ -85,7 +75,7 @@ export async function POST(req: Request) {
   const storeById = new Map(stores.map((s) => [s._id.toString(), s]));
 
   // Group items by store
-  const storeMap = new Map<string, { storeName: string; stripeAccountId: string | null; items: CartItem[] }>();
+  const storeMap = new Map<string, { storeName: string; items: CartItem[] }>();
   for (const item of cartItems) {
     const store = storeById.get(item.storeId);
     const product = productById.get(item.productId);
@@ -113,22 +103,19 @@ export async function POST(req: Request) {
     };
 
     if (!storeMap.has(item.storeId)) {
-      storeMap.set(item.storeId, {
-        storeName: resolvedItem.storeName || "Store",
-        stripeAccountId: (store.stripeAccountId as string) || null,
-        items: [],
-      });
+      storeMap.set(item.storeId, { storeName: resolvedItem.storeName || "Store", items: [] });
     }
     storeMap.get(item.storeId)!.items.push(resolvedItem);
   }
 
   const now = new Date();
   const orderIds: string[] = [];
-  const storeBreakdown: StoreBreakdownEntry[] = [];
+  let totalCents = 0;
 
   // Insert one order per store, all paymentStatus: "Pending"
-  for (const [storeId, { storeName, stripeAccountId, items }] of storeMap) {
+  for (const [storeId, { storeName, items }] of storeMap) {
     const subtotal = items.reduce((s, i) => s + Number(i.price ?? 0) * i.quantity, 0);
+    totalCents += Math.round(subtotal * 100);
 
     const result = await db.collection("orders").insertOne({
       orderNumber: orderNumber(),
@@ -161,37 +148,31 @@ export async function POST(req: Request) {
       updatedAt: now,
     });
 
-    const orderId = result.insertedId.toString();
-    orderIds.push(orderId);
-
-    // 80% of this store's subtotal in cents goes to the store owner via Transfer
-    storeBreakdown.push({
-      storeId,
-      orderId,
-      stripeAccountId,
-      transferAmount: Math.round(subtotal * 100 * (1 - PLATFORM_FEE_PERCENT)),
-    });
+    orderIds.push(result.insertedId.toString());
   }
 
-  // Total cart value in cents
-  const totalCents = storeBreakdown.reduce((s, e) => {
-    const storeSubtotal = Math.round(e.transferAmount / (1 - PLATFORM_FEE_PERCENT));
-    return s + storeSubtotal;
-  }, 0);
+  if (totalCents < 50) {
+    return NextResponse.json(
+      { error: `Order total is too low (Rs ${(totalCents / 100).toFixed(0)}). Make sure your products have prices set.` },
+      { status: 400 }
+    );
+  }
 
-  // Create PaymentIntent on the platform account.
-  // Transfers to each store happen in the webhook after payment succeeds.
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: totalCents,
-    currency: STRIPE_CURRENCY,
-    automatic_payment_methods: { enabled: true },
-    metadata: {
-      customerId: user.id,
-      orderIds: JSON.stringify(orderIds),
-      // storeBreakdown is stored so the webhook knows how much to transfer to each store
-      storeBreakdown: JSON.stringify(storeBreakdown),
-    },
-  });
+  let paymentIntent;
+  try {
+    paymentIntent = await stripe.paymentIntents.create({
+      amount: totalCents,
+      currency: STRIPE_CURRENCY,
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        customerId: user.id,
+        orderIds: JSON.stringify(orderIds),
+      },
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Payment setup failed";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 
   // Clear cart now that orders are created
   await db.collection("carts").updateOne(

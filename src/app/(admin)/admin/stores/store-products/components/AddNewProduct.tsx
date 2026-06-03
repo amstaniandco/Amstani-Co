@@ -152,7 +152,7 @@ export default function AddNewProduct({ storeId, onAdded }: Props) {
                       {product.sku || "—"}
                     </td>
                     <td className="px-4 py-4 text-slate-700" onClick={() => toggle(product._id)}>
-                      Rs {Number(product.price).toLocaleString()}
+                      ${Number(product.price).toLocaleString()}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">

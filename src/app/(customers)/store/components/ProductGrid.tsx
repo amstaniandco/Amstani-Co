@@ -110,7 +110,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
 
               <div className="flex items-center justify-between gap-4">
                 <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  Rs {Number(product.price).toLocaleString()}
+                  ${Number(product.price).toLocaleString()}
                 </p>
 
                 <div className="flex items-center gap-2">

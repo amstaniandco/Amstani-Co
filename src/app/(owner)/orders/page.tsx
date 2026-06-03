@@ -300,9 +300,16 @@ export default function OwnerOrdersPage() {
                 <div>
                   <p className="font-semibold text-slate-900">Payment</p>
                   <p>{selectedOrder.paymentMethod}</p>
-                  <p className="text-xs text-slate-500">
-                    {selectedOrder.paymentStatus} - {selectedOrder.transactionId}
+                  <p className={`text-xs font-medium ${
+                    selectedOrder.paymentStatus === "Paid" ? "text-emerald-600" :
+                    selectedOrder.paymentStatus === "Failed" ? "text-red-500" :
+                    "text-amber-600"
+                  }`}>
+                    {selectedOrder.paymentStatus}
                   </p>
+                  {selectedOrder.transactionId !== "-" && (
+                    <p className="text-xs text-slate-400 font-mono break-all">{selectedOrder.transactionId}</p>
+                  )}
                 </div>
               </div>
 
@@ -365,8 +372,8 @@ export default function OwnerOrdersPage() {
                   Items
                 </p>
                 <div className="space-y-2">
-                  {selectedOrder.items.map((item) => (
-                    <div key={`${selectedOrder.id}-${item.sku}`} className="flex items-start justify-between rounded-xl border border-slate-200 px-3 py-2">
+                  {selectedOrder.items.map((item, idx) => (
+                    <div key={`${selectedOrder.id}-${item.sku}-${idx}`} className="flex items-start justify-between rounded-xl border border-slate-200 px-3 py-2">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{item.name}</p>
                         <p className="text-xs text-slate-500">

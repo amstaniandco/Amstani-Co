@@ -81,8 +81,8 @@ export default function WishlistPage() {
         <div className="py-12 text-center text-sm text-slate-400">Your wishlist is empty.</div>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => (
-            <div key={`${item.productId}-${item.storeId}`}
+          {items.map((item, idx) => (
+            <div key={`${item.productId}-${item.storeId}-${idx}`}
               className="flex items-center justify-between gap-3 p-4 border border-gray-200 rounded-xl">
               <div className="flex items-center gap-3 min-w-0">
                 {item.mainImage ? (
@@ -98,7 +98,7 @@ export default function WishlistPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="text-xl font-bold">Rs {Number(item.price).toLocaleString()}</div>
+                <div className="text-xl font-bold">${Number(item.price).toLocaleString()}</div>
                 <button onClick={() => moveToCart(item)}
                   className="rounded-lg bg-[#68B8C1] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4f9ea7] transition">
                   Add to Cart

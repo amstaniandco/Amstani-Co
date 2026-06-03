@@ -54,7 +54,7 @@ export default function ListedProducts({ products, loading, onRemove }: Props) {
             </td>
             <td className="px-4 py-4 font-semibold text-slate-900">{product.name}</td>
             <td className="px-4 py-4 font-mono text-xs text-slate-500">{product.sku || "—"}</td>
-            <td className="px-4 py-4 text-slate-700">Rs {Number(product.price).toLocaleString()}</td>
+            <td className="px-4 py-4 text-slate-700">${Number(product.price).toLocaleString()}</td>
             <td className="px-4 py-4 text-slate-700">{product.quantity}</td>
             <td className="px-4 py-4 text-right">
               <button

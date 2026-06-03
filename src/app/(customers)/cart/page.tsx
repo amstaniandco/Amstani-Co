@@ -99,7 +99,7 @@ export default function CartPage() {
             ) : (
               <div className="space-y-3 sm:space-y-4">
                 {items.map((item) => (
-                  <div key={`${item.productId}-${item.storeId}`}
+                  <div key={`${item.productId}-${item.storeId}-${variantKey(item.selectedVariants)}`}
                     className="ui-subpanel flex flex-col gap-3 rounded-lg border border-[#e5edf1] bg-[#f9fbfc] p-3 transition hover:border-[#d0dce5] dark:border-slate-700 dark:bg-slate-900 sm:rounded-xl sm:p-4 sm:flex-row sm:items-center sm:gap-4">
                     {item.mainImage ? (
                       <img src={item.mainImage} alt={item.name} className="h-16 w-16 rounded-lg object-cover sm:h-20 sm:w-20" />
@@ -126,7 +126,7 @@ export default function CartPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">
-                          Rs {(item.price * item.quantity).toLocaleString()}
+                          ${(item.price * item.quantity).toLocaleString()}
                         </span>
                         <button onClick={() => removeItem(item.productId, item.storeId)}
                           className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-[#fee2e2] hover:text-[#dc2626] dark:text-slate-500 dark:hover:bg-rose-900/20 dark:hover:text-rose-300">×</button>

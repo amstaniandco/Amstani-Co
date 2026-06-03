@@ -202,10 +202,10 @@ export default function CheckoutPage() {
                 <div key={store}>
                   <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 mb-2">{store}</p>
                   {items.map((item) => (
-                    <div key={item.productId} className="flex justify-between mb-1">
+                    <div key={`${item.productId}-${item.storeId}-${item.sku}`} className="flex justify-between mb-1">
                       <span className="truncate max-w-[200px]">{item.name} ×{item.quantity}</span>
                       <span className="font-medium text-black dark:text-slate-100">
-                        Rs {(item.price * item.quantity).toLocaleString()}
+                        ${(item.price * item.quantity).toLocaleString()}
                       </span>
                     </div>
                   ))}
@@ -216,7 +216,7 @@ export default function CheckoutPage() {
               <div className="flex items-center justify-between border-t-2 border-gray-900 pt-4 dark:border-slate-600">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-gray-900 dark:text-slate-100">Total</span>
                 <span className="text-2xl font-bold text-gray-900 dark:text-slate-100">
-                  Rs {subtotal.toLocaleString()}
+                  ${subtotal.toLocaleString()}
                 </span>
               </div>
             </div>

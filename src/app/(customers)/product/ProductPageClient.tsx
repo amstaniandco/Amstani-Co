@@ -267,7 +267,7 @@ export default function ProductPageClient() {
             <h1 className="mb-1 text-lg font-bold text-[#68B8C1]">{product.name}</h1>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl font-extrabold text-gray-900 dark:text-slate-100">
-                Rs {Number(product.price).toLocaleString()}
+                ${Number(product.price).toLocaleString()}
               </span>
             </div>
             {product.description && (
@@ -383,7 +383,7 @@ export default function ProductPageClient() {
               <h1 className="mb-3 text-4xl font-extrabold uppercase tracking-tight text-[#68B8C1]">{product.name}</h1>
               <div className="flex items-baseline gap-3 mb-2">
                 <span className="text-3xl font-extrabold text-gray-900 dark:text-slate-100">
-                  Rs {Number(product.price).toLocaleString()}
+                  ${Number(product.price).toLocaleString()}
                 </span>
               </div>
               {product.brand?.name && (

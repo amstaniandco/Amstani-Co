@@ -42,7 +42,7 @@ export type OrderRow = {
   total: string;
   status: OrderStatus;
   statusTone: StatusTone;
-  paymentStatus: "Paid" | "Pending";
+  paymentStatus: "Paid" | "Pending" | "Failed";
   paymentMethod: string;
   transactionId: string;
   shippingMethod: string;
@@ -85,8 +85,9 @@ type RawOrder = {
   };
   status?: string;
   paymentMethod?: string;
-  paymentStatus?: "Paid" | "Pending" | "paid" | "pending";
+  paymentStatus?: "Paid" | "Pending" | "Failed" | "paid" | "pending" | "failed";
   transactionId?: string;
+  paymentIntentId?: string;
   shippingMethod?: string;
   carrier?: string;
   trackingNumber?: string;
@@ -134,8 +135,11 @@ function formatDateTime(value?: string | Date) {
   });
 }
 
-function normalizePaymentStatus(status?: RawOrder["paymentStatus"]): "Paid" | "Pending" {
-  return status?.toLowerCase() === "paid" ? "Paid" : "Pending";
+function normalizePaymentStatus(status?: RawOrder["paymentStatus"]): "Paid" | "Pending" | "Failed" {
+  const s = status?.toLowerCase();
+  if (s === "paid") return "Paid";
+  if (s === "failed") return "Failed";
+  return "Pending";
 }
 
 function normalizeOrderStatus(status?: string): OrderStatus {
@@ -186,7 +190,7 @@ export function mapOrderToRow(order: RawOrder): OrderRow {
     statusTone: getStatusTone(status),
     paymentMethod: order.paymentMethod ?? "Cash on Delivery",
     paymentStatus,
-    transactionId: order.transactionId ?? "-",
+    transactionId: order.transactionId ?? order.paymentIntentId ?? "-",
     shippingMethod: order.shippingMethod ?? "Standard",
     carrier: order.carrier ?? "-",
     trackingNumber: order.trackingNumber ?? "-",
