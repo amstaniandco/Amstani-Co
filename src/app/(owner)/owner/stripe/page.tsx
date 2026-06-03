@@ -24,6 +24,8 @@ function StripePageInner() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkAccountId, setLinkAccountId] = useState("");
 
   const didReturn = searchParams.get("success") === "true";
   const didRefresh = searchParams.get("refresh") === "true";
@@ -57,14 +59,55 @@ function StripePageInner() {
   async function handleOpenDashboard() {
     setActionLoading(true);
     setMessage("");
+    // Open blank tab immediately on click — browsers block window.open after async calls
+    const newTab = window.open("", "_blank");
     try {
       const res = await fetch("/api/stripe/connect/dashboard", { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
+        newTab?.close();
         setMessage(data.error || "Could not open dashboard.");
         return;
       }
-      window.open(data.url, "_blank");
+      if (newTab) {
+        newTab.location.href = data.url;
+      } else {
+        window.location.href = data.url;
+      }
+    } catch {
+      newTab?.close();
+      setMessage("Network error. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleLinkAccount() {
+    if (!linkAccountId.startsWith("acct_")) {
+      setMessage("Account ID must start with acct_");
+      return;
+    }
+    setActionLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/stripe/connect/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stripeAccountId: linkAccountId.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Could not link account.");
+        return;
+      }
+      setShowLinkInput(false);
+      setLinkAccountId("");
+      // Refresh status
+      setLoading(true);
+      const statusRes = await fetch("/api/stripe/connect/status");
+      const statusData = await statusRes.json();
+      setStatus(statusData);
+      setLoading(false);
     } catch {
       setMessage("Network error. Please try again.");
     } finally {
@@ -146,6 +189,37 @@ function StripePageInner() {
                   >
                     {actionLoading ? "Redirecting to Stripe…" : "Connect with Stripe"}
                   </button>
+
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowLinkInput((v) => !v)}
+                      className="text-xs text-slate-400 hover:text-slate-600 underline"
+                    >
+                      Already have an existing Stripe account ID?
+                    </button>
+                    {showLinkInput && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-slate-500">
+                          Paste your account ID from Stripe Dashboard → Connect → Accounts (starts with <span className="font-mono">acct_</span>)
+                        </p>
+                        <input
+                          type="text"
+                          value={linkAccountId}
+                          onChange={(e) => setLinkAccountId(e.target.value)}
+                          placeholder="acct_xxxxxxxxxxxxxxxx"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm text-slate-800 outline-none focus:border-[#635BFF] focus:ring-2 focus:ring-[#635BFF]/20 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                        />
+                        <button
+                          onClick={handleLinkAccount}
+                          disabled={actionLoading || !linkAccountId.startsWith("acct_")}
+                          className="w-full rounded-xl bg-slate-800 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-600"
+                        >
+                          {actionLoading ? "Linking…" : "Link This Account"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div>
