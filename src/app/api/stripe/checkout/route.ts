@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   const storeById = new Map(stores.map((s) => [s._id.toString(), s]));
 
   // Group items by store
-  const storeMap = new Map<string, { storeName: string; items: CartItem[] }>();
+  const storeMap = new Map<string, { storeName: string; stripeAccountId: string | null; items: CartItem[] }>();
   for (const item of cartItems) {
     const store = storeById.get(item.storeId);
     const product = productById.get(item.productId);
@@ -103,19 +103,25 @@ export async function POST(req: Request) {
     };
 
     if (!storeMap.has(item.storeId)) {
-      storeMap.set(item.storeId, { storeName: resolvedItem.storeName || "Store", items: [] });
+      storeMap.set(item.storeId, {
+        storeName: resolvedItem.storeName || "Store",
+        stripeAccountId: (store.stripeAccountId as string) || null,
+        items: [],
+      });
     }
     storeMap.get(item.storeId)!.items.push(resolvedItem);
   }
 
   const now = new Date();
   const orderIds: string[] = [];
+  const storeBreakdown: { storeId: string; orderId: string; stripeAccountId: string | null; transferAmount: number }[] = [];
   let totalCents = 0;
 
   // Insert one order per store, all paymentStatus: "Pending"
-  for (const [storeId, { storeName, items }] of storeMap) {
+  for (const [storeId, { storeName, stripeAccountId, items }] of storeMap) {
     const subtotal = items.reduce((s, i) => s + Number(i.price ?? 0) * i.quantity, 0);
-    totalCents += Math.round(subtotal * 100);
+    const storeCents = Math.round(subtotal * 100);
+    totalCents += storeCents;
 
     const result = await db.collection("orders").insertOne({
       orderNumber: orderNumber(),
@@ -148,7 +154,9 @@ export async function POST(req: Request) {
       updatedAt: now,
     });
 
-    orderIds.push(result.insertedId.toString());
+    const orderId = result.insertedId.toString();
+    orderIds.push(orderId);
+    storeBreakdown.push({ storeId, orderId, stripeAccountId, transferAmount: storeCents });
   }
 
   if (totalCents < 50) {
@@ -167,6 +175,7 @@ export async function POST(req: Request) {
       metadata: {
         customerId: user.id,
         orderIds: JSON.stringify(orderIds),
+        storeBreakdown: JSON.stringify(storeBreakdown),
       },
     });
   } catch (err: unknown) {
