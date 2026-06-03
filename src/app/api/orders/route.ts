@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     }
 
     const selectedVariants = normalizeSelectedVariants(item.selectedVariants);
-    const matchedVariant = (product.variants ?? []).find((variant) => {
+    const matchedVariant = (product.variants ?? []).find((variant: Record<string, string>) => {
       const selectedSize = selectedVariants.size?.toLowerCase();
       const selectedColor = selectedVariants.color?.toLowerCase();
       const variantSize = variant.size?.trim().toLowerCase() ?? "";

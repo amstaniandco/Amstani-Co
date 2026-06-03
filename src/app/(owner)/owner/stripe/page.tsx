@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type AccountStatus = {
@@ -11,6 +11,14 @@ type AccountStatus = {
 };
 
 export default function OwnerStripePage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-sm text-slate-400">Loading…</div>}>
+      <StripePageInner />
+    </Suspense>
+  );
+}
+
+function StripePageInner() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<AccountStatus | null>(null);
   const [loading, setLoading] = useState(true);
