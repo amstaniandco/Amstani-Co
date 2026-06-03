@@ -4,78 +4,77 @@ import * as jose from "jose";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development";
 
-// Define role-based protected paths
-const ADMIN_PATHS = ["/admin"];
-const OWNER_PATHS = [
-  "/orders",
-  "/performance",
-  "/products",
-  "/timings",
-  "/owner",
+// Only customers (role: "user") can access these
+const CUSTOMER_ONLY = [
+  "/home", "/cart", "/checkout", "/profile", "/wishlist",
+  "/product", "/our-products", "/new-arrivals", "/sale",
+  "/notifications", "/claims", "/form", "/store",
 ];
-const AUTHENTICATED_PATHS = ["/store-signup"];
-const USER_PATHS = ["/home", "/cart", "/wishlist", "/profile"];
+
+// Only owners (role: "owner") can access these
+const OWNER_ONLY = [
+  "/orders", "/products", "/performance", "/timings",
+  "/communications", "/music", "/owner", "/chats",
+  "/store/chats", "/store/apply", "/store/stripe",
+];
+
+// Only admins (role: "admin") can access these
+const ADMIN_ONLY = ["/admin"];
+
+function matchPath(pathname: string, paths: string[]) {
+  return paths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
+async function getRole(req: NextRequest): Promise<string | null> {
+  const token = req.cookies.get("token")?.value;
+  if (!token) return null;
+  try {
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jose.jwtVerify(token, secret);
+    return payload.role as string;
+  } catch {
+    return null;
+  }
+}
 
 export async function proxy(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
-  const path = req.nextUrl.pathname;
+  const { pathname } = req.nextUrl;
 
-  // Determine if the current path requires protection
-  const isAdminPath = ADMIN_PATHS.some((p) => path.startsWith(p));
-  const isOwnerPath = OWNER_PATHS.some((p) => path.startsWith(p));
-  const isAuthenticatedPath = AUTHENTICATED_PATHS.some((p) => path.startsWith(p));
-  const isUserPath = USER_PATHS.some((p) => path.startsWith(p));
+  const isCustomerOnly = matchPath(pathname, CUSTOMER_ONLY);
+  const isOwnerOnly    = matchPath(pathname, OWNER_ONLY);
+  const isAdminOnly    = matchPath(pathname, ADMIN_ONLY);
+  const isProtected    = isCustomerOnly || isOwnerOnly || isAdminOnly;
 
-  const isProtectedPath = isAdminPath || isOwnerPath || isUserPath || isAuthenticatedPath;
+  // Not logged in — redirect to login for any protected route
+  if (isProtected) {
+    const role = await getRole(req);
 
-  if (isProtectedPath) {
-    if (!token) {
-      // Not authenticated, redirect to login
-      const url = new URL("/login", req.url);
-      url.searchParams.set("message", "Please log in to continue");
-      return NextResponse.redirect(url);
+    if (!role) {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    try {
-      // Verify token using jose (Edge compatible)
-      const secret = new TextEncoder().encode(JWT_SECRET);
-      const { payload } = await jose.jwtVerify(token, secret);
-      const role = payload.role as string;
+    // OWNER blocked from customer + admin pages → owner dashboard
+    if (role === "owner" && (isCustomerOnly || isAdminOnly)) {
+      return NextResponse.redirect(new URL("/orders", req.url));
+    }
 
-      // Role checks
-      if (isAdminPath && role !== "admin") {
-        return NextResponse.redirect(new URL("/login", req.url));
-      }
+    // ADMIN blocked from customer + owner pages → admin dashboard
+    if (role === "admin" && (isCustomerOnly || isOwnerOnly)) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
 
-      if (isOwnerPath && role !== "owner") {
-        return NextResponse.redirect(new URL("/login", req.url));
-      }
-    } catch {
-      // Invalid token, clear cookie and redirect
-      const response = NextResponse.redirect(new URL("/login", req.url));
-      response.cookies.delete("token");
-      return response;
+    // CUSTOMER blocked from owner + admin pages → customer home
+    if (role === "user" && (isOwnerOnly || isAdminOnly)) {
+      return NextResponse.redirect(new URL("/home", req.url));
     }
   }
 
-  // Redirect authenticated users away from login/signup
-  if (
-    token &&
-    (path === "/login" || path === "/signup")
-  ) {
-    try {
-      const secret = new TextEncoder().encode(JWT_SECRET);
-      const { payload } = await jose.jwtVerify(token, secret);
-      const role = payload.role as string;
-
-      if (role === "admin")
-        return NextResponse.redirect(new URL("/admin", req.url));
-      if (role === "owner")
-        return NextResponse.redirect(new URL("/store/chats", req.url));
-      return NextResponse.redirect(new URL("/home", req.url));
-    } catch {
-      // Token invalid, let them stay on login
-    }
+  // Already logged in — redirect away from login/signup to correct dashboard
+  if (pathname === "/login" || pathname === "/signup") {
+    const role = await getRole(req);
+    if (role === "admin") return NextResponse.redirect(new URL("/admin", req.url));
+    if (role === "owner") return NextResponse.redirect(new URL("/orders", req.url));
+    if (role === "user")  return NextResponse.redirect(new URL("/home", req.url));
   }
 
   return NextResponse.next();
@@ -83,14 +82,6 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - assets (public assets)
-     */
     "/((?!api|_next/static|_next/image|favicon.ico|assets|us-states.json).*)",
   ],
 };

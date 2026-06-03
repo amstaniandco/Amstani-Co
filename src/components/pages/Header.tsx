@@ -166,15 +166,29 @@ const Logo = () => (
   </Link>
 );
 
-// ── Nav links config ──────────────────────────────────────────────────────────
+// ── Nav links config by role ──────────────────────────────────────────────────
 
-const NAV_LINKS = [
+const CUSTOMER_NAV = [
   { label: "Home", href: "/home" },
   { label: "Sale", href: "/sale" },
   { label: "New Arrivals", href: "/new-arrivals" },
 ];
 
-// ── Helper function ────────────────────────────────────────────────────────
+const OWNER_NAV = [
+  { label: "Orders", href: "/orders" },
+  { label: "Products", href: "/products" },
+  { label: "Performance", href: "/performance" },
+  { label: "Payouts", href: "/owner/stripe" },
+];
+
+const ADMIN_NAV = [
+  { label: "Dashboard", href: "/admin" },
+  { label: "Users", href: "/admin/users" },
+  { label: "Stores", href: "/admin/stores" },
+  { label: "Finance", href: "/admin/finance-stock" },
+];
+
+// ── Helper functions ──────────────────────────────────────────────────────────
 
 function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -193,12 +207,24 @@ function hasActiveSession(): boolean {
   return Boolean(getCookieValue("token"));
 }
 
+function getRoleFromToken(): "user" | "owner" | "admin" | null {
+  const token = getCookieValue("token");
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Header ───────────────────────────────────────────────────────────────────
 
 export default function Header() {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [role, setRole] = useState<"user" | "owner" | "admin" | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -211,9 +237,11 @@ export default function Header() {
   const router = useRouter();
   const toast = useToast();
 
-  // Check authentication status on route change
+  // Check authentication status and role on route change
   useEffect(() => {
-    setIsLoggedIn(hasActiveSession());
+    const loggedIn = hasActiveSession();
+    setIsLoggedIn(loggedIn);
+    setRole(loggedIn ? getRoleFromToken() : null);
   }, [pathname]);
 
   useEffect(() => {
@@ -312,6 +340,8 @@ export default function Header() {
   }, [isLoggedIn, pathname]);
 
   const showAuthenticatedNavbar = isLoggedIn;
+  const isCustomer = !role || role === "user";
+  const navLinks = role === "owner" ? OWNER_NAV : role === "admin" ? ADMIN_NAV : CUSTOMER_NAV;
 
   const Badge = ({ count }: { count: number }) => {
     if (!count) return null;
@@ -445,7 +475,7 @@ export default function Header() {
             <>
               {/* Desktop Nav Links */}
               <nav className="hidden md:flex items-center gap-5 ml-4">
-                {NAV_LINKS.map(({ label, href }) => (
+                {navLinks.map(({ label, href }) => (
                   <Link
                     key={href}
                     href={href}
@@ -460,8 +490,8 @@ export default function Header() {
                 ))}
               </nav>
 
-              {/* Desktop Search Bar */}
-              <form
+              {/* Desktop Search Bar — customers only */}
+              {isCustomer && <form
                 onSubmit={handleSearch}
                 className="hidden md:flex flex-1 mx-4"
               >
@@ -482,7 +512,7 @@ export default function Header() {
                     <SearchIcon />
                   </button>
                 </div>
-              </form>
+              </form>}
             </>
           )}
 
@@ -490,8 +520,8 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-4">
             {showAuthenticatedNavbar ? (
               <>
-                {/* Location Selector */}
-                <div className="relative shrink-0">
+                {/* Location Selector — customers only */}
+                {isCustomer && <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={() => setStateMenuOpen((prev) => !prev)}
@@ -540,52 +570,43 @@ export default function Header() {
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
 
-                {/* Icon Actions */}
-                <div className="flex items-center gap-4 text-gray-200 shrink-0">
-                  <Link
-                    href="/wishlist"
-                    aria-label="Wishlist"
-                    className="relative hover:text-white transition-colors duration-200"
-                  >
-                    <HeartIcon />
-                    <Badge count={wishlistCount} />
-                  </Link>
+                {/* Customer icon actions */}
+                {isCustomer && (
+                  <div className="flex items-center gap-4 text-gray-200 shrink-0">
+                    <Link href="/wishlist" aria-label="Wishlist" className="relative hover:text-white transition-colors duration-200">
+                      <HeartIcon />
+                      <Badge count={wishlistCount} />
+                    </Link>
+                    <Link href="/cart" aria-label="Cart" className="hover:text-white transition-colors duration-200 relative">
+                      <CartIcon />
+                      <Badge count={cartCount} />
+                    </Link>
+                    <Link href="/notifications" aria-label="Notifications" className="relative hover:text-white transition-colors duration-200">
+                      <BellIcon />
+                      <Badge count={notificationCount} />
+                    </Link>
+                    <Link href="/profile" aria-label="Profile" className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200">
+                      <Image src={currentAvatar} alt="User Avatar" fill sizes="32px" className="object-cover" />
+                    </Link>
+                  </div>
+                )}
 
-                  <Link
-                    href="/cart"
-                    aria-label="Cart"
-                    className="hover:text-white transition-colors duration-200 relative"
-                  >
-                    <CartIcon />
-                    <Badge count={cartCount} />
-                  </Link>
-
-                  <Link
-                    href="/notifications"
-                    aria-label="Notifications"
-                    className="relative hover:text-white transition-colors duration-200"
-                  >
-                    <BellIcon />
-                    <Badge count={notificationCount} />
-                  </Link>
-
-                  {/* Avatar */}
-                  <Link
-                    href="/profile"
-                    aria-label="Profile"
-                    className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200"
-                  >
-                    <Image
-                      src={currentAvatar}
-                      alt="User Avatar"
-                      fill
-                      sizes="32px"
-                      className="object-cover"
-                    />
-                  </Link>
-                </div>
+                {/* Owner / Admin — role badge + avatar + logout */}
+                {!isCustomer && (
+                  <div className="flex items-center gap-3 text-gray-200 shrink-0">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-[#4DB8B8]">
+                      {role === "owner" ? "Store Owner" : "Admin"}
+                    </span>
+                    <Link href={role === "owner" ? "/owner/profile" : "/admin"} aria-label="Profile" className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200">
+                      <Image src={currentAvatar} alt="Avatar" fill sizes="32px" className="object-cover" />
+                    </Link>
+                    <button onClick={handleLogout} className="text-gray-400 hover:text-red-400 transition-colors duration-200" aria-label="Logout">
+                      <LogoutIcon />
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex items-center gap-3 shrink-0">
@@ -620,30 +641,28 @@ export default function Header() {
           <div className="md:hidden mt-3 pt-3 border-t border-white/10 max-w-full overflow-x-hidden">
             {showAuthenticatedNavbar ? (
               <div className="space-y-3">
-                {/* Mobile Search Bar */}
-                <form onSubmit={handleSearch}>
-                  <div className="relative w-full">
-                    <input
-                      ref={searchRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      placeholder="Search Products"
-                      className="w-full bg-transparent border border-white/30 rounded-full px-4 py-2 pr-10 text-sm text-gray-100 placeholder-gray-300 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
-                    />
-                    <button
-                      type="submit"
-                      aria-label="Search"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-200 hover:text-[#4DB8B8] transition-colors duration-200"
-                    >
-                      <SearchIcon />
-                    </button>
-                  </div>
-                </form>
+                {/* Mobile Search Bar — customers only */}
+                {isCustomer && (
+                  <form onSubmit={handleSearch}>
+                    <div className="relative w-full">
+                      <input
+                        ref={searchRef}
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        placeholder="Search Products"
+                        className="w-full bg-transparent border border-white/30 rounded-full px-4 py-2 pr-10 text-sm text-gray-100 placeholder-gray-300 outline-none focus:border-[#4DB8B8]/60 transition-colors duration-200"
+                      />
+                      <button type="submit" aria-label="Search" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-200 hover:text-[#4DB8B8] transition-colors duration-200">
+                        <SearchIcon />
+                      </button>
+                    </div>
+                  </form>
+                )}
 
                 {/* Mobile Nav Links */}
                 <nav className="flex flex-col gap-1 bg-white/5 rounded-lg p-2">
-                  {NAV_LINKS.map(({ label, href }) => (
+                  {navLinks.map(({ label, href }) => (
                     <Link
                       key={href}
                       href={href}
@@ -659,8 +678,8 @@ export default function Header() {
                   ))}
                 </nav>
 
-                {/* Mobile Location Selector */}
-                <div className="relative">
+                {/* Mobile Location Selector — customers only */}
+                {isCustomer && <div className="relative">
                   <button
                     type="button"
                     onClick={() => setStateMenuOpen((prev) => !prev)}
@@ -709,61 +728,46 @@ export default function Header() {
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
 
-                {/* Mobile Icon Actions - Horizontal Layout */}
-                <div className="bg-white/5 rounded-lg p-2 flex gap-1 overflow-x-auto">
-                  <Link
-                    href="/wishlist"
-                    onClick={handleMobileNavClick}
-                    aria-label="Wishlist"
-                    className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
-                  >
-                    <HeartIcon />
-                    <Badge count={wishlistCount} />
-                    <span className="text-xs">Wishlist</span>
-                  </Link>
+                {/* Mobile icon actions — customers only */}
+                {isCustomer && (
+                  <div className="bg-white/5 rounded-lg p-2 flex gap-1 overflow-x-auto">
+                    <Link href="/wishlist" onClick={handleMobileNavClick} aria-label="Wishlist" className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
+                      <HeartIcon />
+                      <Badge count={wishlistCount} />
+                      <span className="text-xs">Wishlist</span>
+                    </Link>
+                    <Link href="/cart" onClick={handleMobileNavClick} aria-label="Cart" className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
+                      <CartIcon />
+                      <Badge count={cartCount} />
+                      <span className="text-xs">Cart</span>
+                    </Link>
+                    <Link href="/notifications" onClick={handleMobileNavClick} aria-label="Notifications" className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
+                      <BellIcon />
+                      <Badge count={notificationCount} />
+                      <span className="text-xs">Notify</span>
+                    </Link>
+                    <Link href="/profile" onClick={handleMobileNavClick} aria-label="Profile" className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
+                      <div className="relative w-6 h-6 rounded-full overflow-hidden border border-[#4DB8B8]/50">
+                        <Image src={currentAvatar} alt="User Avatar" fill sizes="24px" className="object-cover" />
+                      </div>
+                      <span className="text-xs">Profile</span>
+                    </Link>
+                  </div>
+                )}
 
-                  <Link
-                    href="/cart"
-                    onClick={handleMobileNavClick}
-                    aria-label="Cart"
-                    className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
-                  >
-                    <CartIcon />
-                    <Badge count={cartCount} />
-                    <span className="text-xs">Cart</span>
-                  </Link>
-
-                  <Link
-                    href="/notifications"
-                    onClick={handleMobileNavClick}
-                    aria-label="Notifications"
-                    className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
-                  >
-                    <BellIcon />
-                    <Badge count={notificationCount} />
-                    <span className="text-xs">Notify</span>
-                  </Link>
-
-                  <Link
-                    href="/profile"
-                    onClick={handleMobileNavClick}
-                    aria-label="Profile"
-                    className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit"
-                  >
-                    <div className="relative w-6 h-6 rounded-full overflow-hidden border border-[#4DB8B8]/50">
-                      <Image
-                        src={currentAvatar}
-                        alt="User Avatar"
-                        fill
-                        sizes="24px"
-                        className="object-cover"
-                      />
-                    </div>
-                    <span className="text-xs">Profile</span>
-                  </Link>
-                </div>
+                {/* Mobile owner/admin role badge */}
+                {!isCustomer && (
+                  <div className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-[#4DB8B8]">
+                      {role === "owner" ? "Store Owner" : "Admin"}
+                    </span>
+                    <Link href={role === "owner" ? "/owner/profile" : "/admin"} onClick={handleMobileNavClick} className="relative w-8 h-8 rounded-full overflow-hidden border border-[#4DB8B8]/50">
+                      <Image src={currentAvatar} alt="Avatar" fill sizes="32px" className="object-cover" />
+                    </Link>
+                  </div>
+                )}
 
                 {/* Logout Button */}
                 <button
