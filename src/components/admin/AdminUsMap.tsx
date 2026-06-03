@@ -21,9 +21,12 @@ type StateFeature = {
   };
 };
 
+type StateRevenueEntry = { revenue: number; formatted: string; orderCount: number };
+
 type AdminUsMapProps = {
   selectedState?: string;
   onStateSelect?: (state: string) => void;
+  stateRevenueMap?: Record<string, StateRevenueEntry>;
 };
 
 const GEO_URL = "/us-states.json";
@@ -157,6 +160,7 @@ function StateLabel({
 export default function AdminUsMap({
   selectedState,
   onStateSelect,
+  stateRevenueMap = {},
 }: AdminUsMapProps = {}) {
   const [geoData, setGeoData] = useState<object | null>(null);
   const [hoveredState, setHoveredState] = useState<string | null>(null);
@@ -240,13 +244,31 @@ export default function AdminUsMap({
           <div className="h-[230px] w-full animate-pulse rounded-lg bg-cyan-800/30 sm:h-[290px]" />
         )}
 
-        <div className="mt-3 inline-flex rounded-lg bg-white px-3 py-2 shadow-md">
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.1em] text-slate-400">Total revenue in state</p>
-            <p className="text-xs font-semibold text-slate-700">{hoveredState || selectedState || "Name of the state"}</p>
-            <p className="text-2xl font-extrabold text-slate-900">$450,230</p>
-          </div>
-        </div>
+        {/* Tooltip — shows hovered state revenue, falls back to selected state */}
+        {(() => {
+          const displayState = hoveredState || selectedState;
+          const entry = displayState ? stateRevenueMap[displayState] : null;
+          return (
+            <div className="mt-3 inline-flex rounded-lg bg-white px-3 py-2 shadow-md min-w-[160px]">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.1em] text-slate-400">
+                  {displayState ? "Revenue · paid orders" : "Hover or click a state"}
+                </p>
+                <p className="text-xs font-semibold text-slate-700">
+                  {displayState || "No state selected"}
+                </p>
+                <p className="text-2xl font-extrabold text-slate-900">
+                  {entry ? entry.formatted : displayState ? "$0.00" : "—"}
+                </p>
+                {entry && (
+                  <p className="text-[10px] text-slate-400">
+                    {entry.orderCount} {entry.orderCount === 1 ? "order" : "orders"}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

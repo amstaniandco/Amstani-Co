@@ -35,11 +35,14 @@ type LatestStore = {
   owner?: { name: string; email: string };
 };
 
+type StateRevenueEntry = { revenue: number; formatted: string; orderCount: number };
+
 type DashboardData = {
   metrics: Metric[];
   storeMetrics: StoreMetric[];
   leaderboard: LeaderboardRow[];
   latestStores: LatestStore[];
+  stateRevenueMap: Record<string, StateRevenueEntry>;
 };
 
 const statusColors: Record<string, string> = {
@@ -57,6 +60,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedState, setSelectedState] = useState<string>("");
+  const stateRevenueMap = data?.stateRevenueMap ?? {};
+
   useEffect(() => {
     fetch("/api/admin/dashboard")
       .then(async (r) => {
@@ -70,6 +76,10 @@ export default function AdminDashboardPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  function handleStateSelect(state: string) {
+    setSelectedState((prev) => prev === state ? "" : state);
+  }
 
   const metrics = data?.metrics ?? [];
   const storeMetrics = data?.storeMetrics ?? [];
@@ -133,9 +143,23 @@ export default function AdminDashboardPage() {
             {/* Map + Store Revenue */}
             <section className="mt-6 grid gap-4 xl:grid-cols-[2fr_1fr]">
               <article className="rounded-xl border border-[#dbe6ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.04)] sm:p-5">
-                <h2 className="text-xl font-bold text-slate-800">Regional Revenue Distribution</h2>
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-xl font-bold text-slate-800">Regional Revenue Distribution</h2>
+                  {selectedState && (
+                    <button
+                      onClick={() => setSelectedState("")}
+                      className="text-xs text-slate-400 hover:text-slate-600 underline"
+                    >
+                      Clear · {selectedState}
+                    </button>
+                  )}
+                </div>
                 <div className="mt-4">
-                  <AdminUsMap />
+                  <AdminUsMap
+                    selectedState={selectedState}
+                    onStateSelect={handleStateSelect}
+                    stateRevenueMap={stateRevenueMap}
+                  />
                 </div>
               </article>
 
