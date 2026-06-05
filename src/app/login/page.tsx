@@ -101,7 +101,7 @@ export default function LoginPage() {
       // Redirect based on role
       const role = data.user.role;
       if (role === "admin") {
-        router.push("/admin");
+        router.push("/admin/dashboard");
       } else if (role === "owner") {
         router.push("/chats");
       } else {

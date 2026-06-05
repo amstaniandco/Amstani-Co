@@ -15,6 +15,7 @@ type AdminSidebarProps = {
   activePath?: string;
   items?: AdminSidebarItem[];
   variant?: "dark" | "light";
+  className?: string;
 };
 
 const defaultItems: AdminSidebarItem[] = [
@@ -31,6 +32,7 @@ export default function AdminSidebar({
   activePath,
   items = defaultItems,
   variant = "dark",
+  className = "",
 }: AdminSidebarProps) {
   const router = useRouter();
   const isLight = variant === "light";
@@ -49,11 +51,11 @@ export default function AdminSidebar({
 
   return (
     <aside
-      className={`relative overflow-hidden rounded-[28px] p-5 ${
+      className={`relative flex flex-col overflow-hidden rounded-[28px] p-5 ${
         isLight
           ? "border border-[#d8e0e6] bg-[#f7fafc] text-slate-700"
           : "border border-[#2b3950] bg-[#101a2f] text-slate-100"
-      }`}
+      } ${className}`}
     >
       {isLight ? (
         <>
@@ -86,7 +88,7 @@ export default function AdminSidebar({
         </p>
       </div>
 
-      <nav className="relative space-y-2">
+      <nav className="relative flex-1 space-y-2 overflow-y-auto pr-1">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = activePath === item.href;
@@ -127,7 +129,7 @@ export default function AdminSidebar({
       <button
         type="button"
         onClick={handleLogout}
-        className={`relative mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+        className={`relative mt-8 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
           isLight
             ? "border border-[#e0e7ec] bg-white text-slate-700 hover:bg-slate-50"
             : "border border-white/20 bg-white/5 text-slate-200 hover:bg-white/10"

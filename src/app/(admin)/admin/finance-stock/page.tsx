@@ -99,11 +99,11 @@ export default function AdminFinanceStockPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-2 py-2 text-slate-900 sm:px-4 sm:py-4 md:px-6 md:py-6">
-      <div className="mx-auto grid min-h-screen max-w-[1500px] grid-cols-1 gap-3 md:gap-4 lg:grid-cols-[280px_1fr]">
-        <AdminSidebar activePath="/admin/finance-stock" />
+    <div className="admin-page-shell">
+      <div className="admin-page-grid">
+        <AdminSidebar activePath="/admin/finance-stock" className="admin-sidebar-flush" />
 
-        <main className="rounded-xl border border-[#d8e0e6] bg-[#f7fafc] p-2 shadow-[0_10px_30px_rgba(15,23,42,0.04)] md:rounded-[28px] sm:p-3 md:p-4">
+        <main className="admin-main-panel">
           <AdminNavbar searchPlaceholder="Search financials or stock..." />
 
           <section className="mt-3 rounded-xl bg-white px-3 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.04)] md:rounded-[26px] sm:px-4 sm:py-4 md:px-5 md:py-5">

@@ -87,11 +87,14 @@ export default function AdminDashboardPage() {
   const latestStores = data?.latestStores ?? [];
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-4 py-4 text-slate-900 sm:px-6 sm:py-6">
-      <div className="mx-auto grid min-h-screen max-w-[1500px] grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-        <AdminSidebar activePath="/admin/dashboard" />
+    <div className="admin-page-shell">
+      <div className="admin-page-grid">
+        <AdminSidebar
+          activePath="/admin/dashboard"
+          className="admin-sidebar-flush"
+        />
 
-        <main>
+        <main className="admin-main-scroll">
           <AdminNavbar />
 
           <div className="mt-4 rounded-3xl border border-[#dbe5eb] bg-white/75 p-4 shadow-[0_16px_30px_rgba(15,23,42,0.07)] sm:p-6">

@@ -4,11 +4,11 @@ import UserManagementTable from "../../../../components/admin/UserManagementTabl
 
 export default function UserManagementPage() {
   return (
-    <div className="min-h-screen bg-[linear-gradient(155deg,#eef3f7_0%,#e8f1f5_42%,#f6fafb_100%)] px-4 py-4 text-slate-900 sm:px-6 sm:py-6">
-      <div className="mx-auto grid min-h-screen max-w-[1500px] grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-        <AdminSidebar activePath="/admin/users" />
+    <div className="admin-page-shell">
+      <div className="admin-page-grid">
+        <AdminSidebar activePath="/admin/users" className="admin-sidebar-flush" />
 
-        <main className="flex flex-col gap-4">
+        <main className="admin-main-scroll flex flex-col gap-4">
           <AdminNavbar searchPlaceholder="Search users by name or email..." />
 
           <div>

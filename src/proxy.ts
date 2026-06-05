@@ -60,7 +60,7 @@ export async function proxy(req: NextRequest) {
 
     // ADMIN blocked from customer + owner pages → admin dashboard
     if (role === "admin" && (isCustomerOnly || isOwnerOnly)) {
-      return NextResponse.redirect(new URL("/admin", req.url));
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
 
     // CUSTOMER blocked from owner + admin pages → customer home
@@ -72,7 +72,7 @@ export async function proxy(req: NextRequest) {
   // Already logged in — redirect away from login/signup to correct dashboard
   if (pathname === "/login" || pathname === "/signup") {
     const role = await getRole(req);
-    if (role === "admin") return NextResponse.redirect(new URL("/admin", req.url));
+    if (role === "admin") return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     if (role === "owner") return NextResponse.redirect(new URL("/orders", req.url));
     if (role === "user")  return NextResponse.redirect(new URL("/home", req.url));
   }
