@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ClaimItemSelector from "./components/ClaimItemSelector";
 import ClaimForm from "./components/ClaimForm";
@@ -43,7 +43,7 @@ type Claim = {
   storeId?: string;
 };
 
-export default function ClaimPage() {
+function ClaimPageContent() {
   const searchParams = useSearchParams();
   const targetOrderId = searchParams.get("orderId");
 
@@ -245,5 +245,21 @@ export default function ClaimPage() {
 
       <ClaimsTable claims={claims} />
     </div>
+  );
+}
+
+export default function ClaimPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen px-4 py-6 flex flex-col items-center gap-5 text-base">
+          <div className="bg-white rounded-2xl p-6 w-full shadow-sm text-center text-sm text-gray-400">
+            Loading your claims...
+          </div>
+        </div>
+      }
+    >
+      <ClaimPageContent />
+    </Suspense>
   );
 }

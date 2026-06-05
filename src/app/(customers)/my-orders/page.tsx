@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Package } from "lucide-react";
@@ -62,7 +62,7 @@ function statusBadge(status?: string) {
   return "bg-amber-100 text-amber-700";
 }
 
-export default function OrdersPage() {
+function OrdersPageContent() {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("orderId");
 
@@ -224,5 +224,21 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen px-4 py-6 max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl p-6 shadow-sm text-sm text-slate-400 text-center">
+            Loading orders...
+          </div>
+        </div>
+      }
+    >
+      <OrdersPageContent />
+    </Suspense>
   );
 }
