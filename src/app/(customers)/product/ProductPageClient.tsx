@@ -131,8 +131,22 @@ export default function ProductPageClient() {
     ? [...new Set(product.variants.map((v) => v.color).filter(Boolean).map((color) => String(color)))]
     : [];
 
+  const canAddToCart =
+    (!sizes.length || selectedSize !== null) &&
+    (!colors.length || selectedColor !== null);
+
+  const missingVariant = sizes.length > 0 && selectedSize === null
+    ? "size"
+    : colors.length > 0 && selectedColor === null
+    ? "color"
+    : null;
+
   async function handleAddToCart() {
     if (!product || !storeId) { setCartMsg("Cannot add to cart."); return; }
+    if (missingVariant) {
+      toast.error(`Please select a ${missingVariant} before adding to cart.`);
+      return;
+    }
     const res = await fetch("/api/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -276,7 +290,10 @@ export default function ProductPageClient() {
 
             {sizes.length > 0 && (
               <div className="mb-3">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Select Size</p>
+                <p className="text-sm font-semibold text-gray-700 mb-2">
+                  Select Size
+                  {selectedSize === null && <span className="ml-1 text-xs font-normal text-red-400">— required</span>}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {sizes.map((size) => (
                     <button key={String(size)} onClick={() => setSelectedSize(size)}
@@ -290,7 +307,10 @@ export default function ProductPageClient() {
 
             {colors.length > 0 && (
               <div className="mb-3">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Select Color</p>
+                <p className="text-sm font-semibold text-gray-700 mb-2">
+                  Select Color
+                  {selectedColor === null && <span className="ml-1 text-xs font-normal text-red-400">— required</span>}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {colors.map((color) => (
                     <button

@@ -1,15 +1,62 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getSelectedState, subscribeSelectedState } from "../../../../lib/state-preference";
+
+function resolveStateCode(state: string): string {
+  if (!state) return "";
+  const s = state.trim();
+  if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  const paren = s.match(/\(([A-Za-z]{2})\)/);
+  if (paren) return paren[1].toUpperCase();
+  const NAMES: Record<string, string> = {
+    alabama:"AL",alaska:"AK",arizona:"AZ",arkansas:"AR",california:"CA",colorado:"CO",
+    connecticut:"CT",delaware:"DE",florida:"FL",georgia:"GA",hawaii:"HI",idaho:"ID",
+    illinois:"IL",indiana:"IN",iowa:"IA",kansas:"KS",kentucky:"KY",louisiana:"LA",
+    maine:"ME",maryland:"MD",massachusetts:"MA",michigan:"MI",minnesota:"MN",
+    mississippi:"MS",missouri:"MO",montana:"MT",nebraska:"NE",nevada:"NV",
+    "new hampshire":"NH","new jersey":"NJ","new mexico":"NM","new york":"NY",
+    "north carolina":"NC","north dakota":"ND",ohio:"OH",oklahoma:"OK",oregon:"OR",
+    pennsylvania:"PA","rhode island":"RI","south carolina":"SC","south dakota":"SD",
+    tennessee:"TN",texas:"TX",utah:"UT",vermont:"VT",virginia:"VA",washington:"WA",
+    "west virginia":"WV",wisconsin:"WI",wyoming:"WY","washington d.c.":"DC",
+  };
+  return NAMES[s.toLowerCase()] ?? "";
+}
 
 interface CartSummaryProps {
   subtotal: number;
 }
 
 export default function CartSummary({ subtotal }: CartSummaryProps) {
+  const [selectedState, setSelectedState] = useState("");
+  const [taxRates, setTaxRates] = useState<Record<string, { name: string; rate: number }>>({});
+
+  // Read state from localStorage and subscribe to changes
+  useEffect(() => {
+    setSelectedState(getSelectedState());
+    const unsub = subscribeSelectedState((s) => setSelectedState(s));
+    return unsub;
+  }, []);
+
+  // Fetch tax rates once
+  useEffect(() => {
+    fetch("/api/admin/pricing-rules")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.taxRates) setTaxRates(data.taxRates); })
+      .catch(() => {});
+  }, []);
+
+  const stateCode = resolveStateCode(selectedState);
+  const taxRate = taxRates[stateCode]?.rate ?? 0;
+  const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100;
+  const total = subtotal + taxAmount;
+
   return (
     <aside className="ui-panel h-fit w-full rounded-lg border border-[#e5edf1] bg-white p-3 shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-6">
       <div className="mb-4 sm:mb-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100 sm:text-sm">Promo Code</p>
-
         <div className="ui-subpanel mt-2 flex flex-col gap-2 rounded-lg border border-[#d8e5ea] bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-900 sm:mt-3 sm:flex-row sm:items-center sm:rounded-full sm:px-4 sm:py-3">
           <input
             type="text"
@@ -31,13 +78,15 @@ export default function CartSummary({ subtotal }: CartSummaryProps) {
         </div>
 
         <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
-          <span>Discount</span>
-          <span className="font-medium text-slate-900 dark:text-slate-100">$0.00</span>
+          <span>Tax</span>
+          <span className="font-medium text-slate-900 dark:text-slate-100">
+            {stateCode ? `$${taxAmount.toFixed(2)}` : "—"}
+          </span>
         </div>
 
         <div className="flex justify-between text-xs font-semibold text-slate-900 dark:text-slate-100 sm:text-base">
           <span>Total</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <span>${total.toFixed(2)}</span>
         </div>
       </div>
 

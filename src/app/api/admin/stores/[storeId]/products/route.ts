@@ -56,6 +56,7 @@ export async function POST(req: Request, { params }: Ctx) {
     .map((item: { productId: string; quantity: number }) => {
       const product = productMap.get(item.productId);
       if (!product) return null;
+      const originalPrice = Number(product.price ?? 0);
       return {
         updateOne: {
           filter: { storeId, productId: item.productId },
@@ -65,12 +66,20 @@ export async function POST(req: Request, { params }: Ctx) {
               productId: item.productId,
               name: product.name,
               sku: product.sku ?? "",
-              price: product.price,
+              originalPrice,
+              price: originalPrice,        // kept for backwards compat
               mainImage: product.mainImage ?? null,
               quantity: Number(item.quantity) || 1,
               updatedAt: now,
             },
-            $setOnInsert: { listedAt: now },
+            // Only set these on first insert (owner can change them later)
+            $setOnInsert: {
+              listedAt: now,
+              sellingPrice: originalPrice,
+              discountPercent: 0,
+              isOnSale: false,
+              isNewArrival: false,
+            },
           },
           upsert: true,
         },

@@ -4,6 +4,29 @@ import stripe, { STRIPE_CURRENCY } from "../../../../lib/stripe";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
 
+const CONFIG_ID = "pricing_config";
+
+function resolveStateCode(state?: string): string {
+  if (!state) return "";
+  const s = state.trim();
+  if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  const paren = s.match(/\(([A-Za-z]{2})\)/);
+  if (paren) return paren[1].toUpperCase();
+  const NAMES: Record<string, string> = {
+    alabama:"AL",alaska:"AK",arizona:"AZ",arkansas:"AR",california:"CA",colorado:"CO",
+    connecticut:"CT",delaware:"DE",florida:"FL",georgia:"GA",hawaii:"HI",idaho:"ID",
+    illinois:"IL",indiana:"IN",iowa:"IA",kansas:"KS",kentucky:"KY",louisiana:"LA",
+    maine:"ME",maryland:"MD",massachusetts:"MA",michigan:"MI",minnesota:"MN",
+    mississippi:"MS",missouri:"MO",montana:"MT",nebraska:"NE",nevada:"NV",
+    "new hampshire":"NH","new jersey":"NJ","new mexico":"NM","new york":"NY",
+    "north carolina":"NC","north dakota":"ND",ohio:"OH",oklahoma:"OK",oregon:"OR",
+    pennsylvania:"PA","rhode island":"RI","south carolina":"SC","south dakota":"SD",
+    tennessee:"TN",texas:"TX",utah:"UT",vermont:"VT",virginia:"VA",washington:"WA",
+    "west virginia":"WV",wisconsin:"WI",wyoming:"WY","washington d.c.":"DC",
+  };
+  return NAMES[s.toLowerCase()] ?? "";
+}
+
 function orderNumber() {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -65,17 +88,27 @@ export async function POST(req: Request) {
 
   const productIds = [...new Set(cartItems.map((i) => i.productId))].map((id) => new ObjectId(id));
   const storeIds = [...new Set(cartItems.map((i) => i.storeId))].map((id) => new ObjectId(id));
+  const stateCode = resolveStateCode(shippingAddress.state);
 
-  const [products, stores] = await Promise.all([
+  const [products, stores, storeProductRows, pricingConfig] = await Promise.all([
     db.collection("products").find({ _id: { $in: productIds } }).toArray(),
     db.collection("stores").find({ _id: { $in: storeIds } }).toArray(),
+    db.collection("store_products").find({
+      $or: cartItems.map((i) => ({ storeId: i.storeId, productId: i.productId })),
+    }).toArray(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    db.collection("pricing_config").findOne({ _id: CONFIG_ID as any }),
   ]);
 
   const productById = new Map(products.map((p) => [p._id.toString(), p]));
   const storeById = new Map(stores.map((s) => [s._id.toString(), s]));
+  const storeProductByKey = new Map(storeProductRows.map((sp) => [`${sp.storeId}:${sp.productId}`, sp]));
+  const taxRate: number = pricingConfig?.taxRates?.[stateCode]?.rate ?? 0;
+
+  type ResolvedItem = CartItem & { effectivePrice: number; discountAmount: number };
 
   // Group items by store
-  const storeMap = new Map<string, { storeName: string; stripeAccountId: string | null; items: CartItem[] }>();
+  const storeMap = new Map<string, { storeName: string; stripeAccountId: string | null; items: ResolvedItem[] }>();
   for (const item of cartItems) {
     const store = storeById.get(item.storeId);
     const product = productById.get(item.productId);
@@ -90,16 +123,31 @@ export async function POST(req: Request) {
       return true;
     });
 
-    const resolvedItem: CartItem = {
+    const storeProd = storeProductByKey.get(`${item.storeId}:${item.productId}`);
+    const basePrice = Number(
+      matchedVariant?.priceOverride ??
+      storeProd?.sellingPrice ??
+      storeProd?.price ??
+      product.price ??
+      item.price ?? 0
+    );
+    const discountPct: number =
+      storeProd?.isOnSale && (storeProd?.discountPercent ?? 0) > 0 ? storeProd.discountPercent : 0;
+    const effectivePrice = Math.round(basePrice * (1 - discountPct / 100) * 100) / 100;
+    const qty = Math.max(1, Number(item.quantity) || 1);
+
+    const resolvedItem: ResolvedItem = {
       productId: item.productId,
       storeId: item.storeId,
       storeName: store.name ?? item.storeName ?? "Store",
       name: product.name ?? item.name ?? "Product",
       sku: matchedVariant?.skuVariant ?? matchedVariant?.sku ?? product.sku ?? item.sku ?? "",
-      price: Number(matchedVariant?.priceOverride ?? product.price ?? item.price ?? 0),
+      price: effectivePrice,
       mainImage: product.mainImage ?? item.mainImage ?? null,
-      quantity: Math.max(1, Number(item.quantity) || 1),
+      quantity: qty,
       selectedVariants,
+      effectivePrice,
+      discountAmount: Math.round((basePrice - effectivePrice) * qty * 100) / 100,
     };
 
     if (!storeMap.has(item.storeId)) {
@@ -116,12 +164,21 @@ export async function POST(req: Request) {
   const orderIds: string[] = [];
   const storeBreakdown: { storeId: string; orderId: string; stripeAccountId: string | null; transferAmount: number }[] = [];
   let totalCents = 0;
+  let totalSubtotalCents = 0;
+  let totalTaxCents = 0;
+  let totalDiscountCents = 0;
 
   // Insert one order per store, all paymentStatus: "Pending"
   for (const [storeId, { storeName, stripeAccountId, items }] of storeMap) {
-    const subtotal = items.reduce((s, i) => s + Number(i.price ?? 0) * i.quantity, 0);
-    const storeCents = Math.round(subtotal * 100);
+    const subtotal = items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0);
+    const totalDiscount = items.reduce((s, i) => s + i.discountAmount, 0);
+    const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100;
+    const storeTotal = subtotal + taxAmount;
+    const storeCents = Math.round(storeTotal * 100);
     totalCents += storeCents;
+    totalSubtotalCents += Math.round(subtotal * 100);
+    totalTaxCents += Math.round(taxAmount * 100);
+    totalDiscountCents += Math.round(totalDiscount * 100);
 
     const result = await db.collection("orders").insertOne({
       orderNumber: orderNumber(),
@@ -134,16 +191,18 @@ export async function POST(req: Request) {
         productId: i.productId,
         name: i.name,
         sku: i.sku,
-        price: i.price,
+        price: i.effectivePrice,
         mainImage: i.mainImage ?? null,
         quantity: i.quantity,
         selectedVariants: i.selectedVariants,
       })),
       subtotal,
       shippingFee: 0,
-      taxAmount: 0,
-      discountAmount: 0,
-      total: subtotal,
+      taxAmount,
+      taxRate,
+      taxStateCode: stateCode || null,
+      discountAmount: totalDiscount,
+      total: storeTotal,
       status: "Incoming",
       paymentStatus: "Pending",
       paymentMethod: "Card",
@@ -193,6 +252,11 @@ export async function POST(req: Request) {
     clientSecret: paymentIntent.client_secret,
     orderIds,
     total: totalCents / 100,
+    subtotal: totalSubtotalCents / 100,
+    taxAmount: totalTaxCents / 100,
+    discountAmount: totalDiscountCents / 100,
+    taxRate,
+    taxStateCode: stateCode || null,
     currency: STRIPE_CURRENCY,
   });
 }

@@ -8,8 +8,8 @@ import CheckoutForm from "./components/CheckoutForm";
 import StripePaymentForm from "./components/StripePaymentForm";
 import type { Address } from "../../../models/user";
 import { useToast } from "../../../components/global/ToastProvider";
+import { getSelectedState } from "../../../lib/state-preference";
 
-// Stripe publishable key — safe to expose on the client
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type CartItem = {
@@ -23,9 +23,28 @@ type CartItem = {
   quantity: number;
 };
 
-// Step 1 — customer fills in shipping address
-// Step 2 — Stripe payment form (after PaymentIntent is created server-side)
 type Step = "address" | "payment";
+
+// Resolve a state string to a 2-letter code for client-side tax preview
+function resolveStateCode(state: string): string {
+  const s = state.trim();
+  if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  const paren = s.match(/\(([A-Za-z]{2})\)/);
+  if (paren) return paren[1].toUpperCase();
+  const NAMES: Record<string, string> = {
+    alabama:"AL",alaska:"AK",arizona:"AZ",arkansas:"AR",california:"CA",colorado:"CO",
+    connecticut:"CT",delaware:"DE",florida:"FL",georgia:"GA",hawaii:"HI",idaho:"ID",
+    illinois:"IL",indiana:"IN",iowa:"IA",kansas:"KS",kentucky:"KY",louisiana:"LA",
+    maine:"ME",maryland:"MD",massachusetts:"MA",michigan:"MI",minnesota:"MN",
+    mississippi:"MS",missouri:"MO",montana:"MT",nebraska:"NE",nevada:"NV",
+    "new hampshire":"NH","new jersey":"NJ","new mexico":"NM","new york":"NY",
+    "north carolina":"NC","north dakota":"ND",ohio:"OH",oklahoma:"OK",oregon:"OR",
+    pennsylvania:"PA","rhode island":"RI","south carolina":"SC","south dakota":"SD",
+    tennessee:"TN",texas:"TX",utah:"UT",vermont:"VT",virginia:"VA",washington:"WA",
+    "west virginia":"WV",wisconsin:"WI",wyoming:"WY","washington d.c.":"DC",
+  };
+  return NAMES[s.toLowerCase()] ?? "";
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -37,10 +56,18 @@ export default function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState("");
   const [form, setForm] = useState({ fullName: "", phone: "", street: "", city: "", state: "", zip: "" });
 
+  // Tax rates fetched from admin config for live preview
+  const [taxRates, setTaxRates] = useState<Record<string, { name: string; rate: number }>>({});
+
   const [step, setStep] = useState<Step>("address");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentTotal, setPaymentTotal] = useState(0);
   const [paymentCurrency, setPaymentCurrency] = useState("usd");
+  // Authoritative breakdown returned by the API after PaymentIntent is created
+  const [serverSubtotal, setServerSubtotal] = useState<number | null>(null);
+  const [serverTaxAmount, setServerTaxAmount] = useState<number | null>(null);
+  const [serverDiscountAmount, setServerDiscountAmount] = useState<number | null>(null);
+  const [serverTaxRate, setServerTaxRate] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -49,6 +76,18 @@ export default function CheckoutPage() {
       .then((d) => setCartItems(d.items ?? []))
       .catch(() => {})
       .finally(() => setCartLoading(false));
+
+    // Fetch tax rates for live preview
+    fetch("/api/admin/pricing-rules")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.taxRates) setTaxRates(data.taxRates); })
+      .catch(() => {});
+
+    // Pre-fill state from the header's selected state
+    const headerState = getSelectedState();
+    if (headerState) {
+      setForm((prev) => (prev.state ? prev : { ...prev, state: headerState }));
+    }
   }, []);
 
   useEffect(() => {
@@ -77,13 +116,19 @@ export default function CheckoutPage() {
     }));
   }
 
-  const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  // Client-side subtotal (from raw cart prices, before server-side discount resolution)
+  const cartSubtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+
+  // Live tax estimate (Step 1 only)
+  const stateCode = resolveStateCode(form.state);
+  const estimatedTaxRate = taxRates[stateCode]?.rate ?? 0;
+  const estimatedTax = Math.round(cartSubtotal * estimatedTaxRate / 100 * 100) / 100;
+  const estimatedTotal = cartSubtotal + estimatedTax;
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // Step 1 → Step 2: create PaymentIntent + orders on server, then show card form
   async function handleContinueToPayment() {
     if (!form.fullName || !form.street || !form.city || !form.state) {
       toast.error("Please fill in your full name, street, city, and state.");
@@ -114,6 +159,11 @@ export default function CheckoutPage() {
       setClientSecret(data.clientSecret);
       setPaymentTotal(data.total);
       setPaymentCurrency(data.currency);
+      // Store authoritative breakdown for display
+      setServerSubtotal(data.subtotal ?? null);
+      setServerTaxAmount(data.taxAmount ?? null);
+      setServerDiscountAmount(data.discountAmount ?? null);
+      setServerTaxRate(data.taxRate ?? null);
       setStep("payment");
     } catch {
       toast.error("Network error. Please try again.");
@@ -127,7 +177,6 @@ export default function CheckoutPage() {
     router.push("/profile");
   }
 
-  // Group items by store for the order summary panel
   const storeGroups = cartItems.reduce<Record<string, CartItem[]>>((acc, item) => {
     const key = item.storeName || item.storeId;
     if (!acc[key]) acc[key] = [];
@@ -138,6 +187,12 @@ export default function CheckoutPage() {
   const stripeOptions = clientSecret
     ? { clientSecret, appearance: { theme: "stripe" as const } }
     : undefined;
+
+  // For the summary panel: use authoritative server values in Step 2, estimates in Step 1
+  const displaySubtotal = step === "payment" && serverSubtotal !== null ? serverSubtotal : cartSubtotal;
+  const displayTax = step === "payment" && serverTaxAmount !== null ? serverTaxAmount : estimatedTax;
+  const displayDiscount = step === "payment" && serverDiscountAmount !== null ? serverDiscountAmount : 0;
+  const displayTotal = step === "payment" ? paymentTotal : estimatedTotal;
 
   return (
     <div className="min-h-screen px-2 py-4 dark:bg-slate-950">
@@ -166,16 +221,11 @@ export default function CheckoutPage() {
             <div className="ui-divider mb-7 h-[3px] overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
               <div className="h-full w-full rounded-full bg-gradient-to-r from-teal-300 to-indigo-400" />
             </div>
-
             <div className="mb-4 flex items-center gap-2">
-              <button
-                onClick={() => setStep("address")}
-                className="text-xs text-teal-600 hover:underline dark:text-teal-400"
-              >
+              <button onClick={() => setStep("address")} className="text-xs text-teal-600 hover:underline dark:text-teal-400">
                 ← Back to address
               </button>
             </div>
-
             {clientSecret && stripeOptions && (
               <Elements stripe={stripePromise} options={stripeOptions}>
                 <StripePaymentForm
@@ -198,6 +248,7 @@ export default function CheckoutPage() {
             <p className="text-sm text-slate-400">Your cart is empty.</p>
           ) : (
             <div className="space-y-4 text-sm text-black/80 dark:text-slate-300">
+              {/* Items by store */}
               {Object.entries(storeGroups).map(([store, items]) => (
                 <div key={store}>
                   <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 mb-2">{store}</p>
@@ -205,7 +256,7 @@ export default function CheckoutPage() {
                     <div key={`${item.productId}-${item.storeId}-${item.sku}`} className="flex justify-between mb-1">
                       <span className="truncate max-w-[200px]">{item.name} ×{item.quantity}</span>
                       <span className="font-medium text-black dark:text-slate-100">
-                        ${(item.price * item.quantity).toLocaleString()}
+                        ${(item.price * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   ))}
@@ -213,16 +264,40 @@ export default function CheckoutPage() {
                 </div>
               ))}
 
+              {/* Breakdown */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Subtotal</span>
+                  <span>${displaySubtotal.toFixed(2)}</span>
+                </div>
+
+                {displayDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-amber-600">
+                    <span>Discount</span>
+                    <span>−${displayDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Tax</span>
+                  <span>
+                    {stateCode || step === "payment" ? `$${displayTax.toFixed(2)}` : "—"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Total */}
               <div className="flex items-center justify-between border-t-2 border-gray-900 pt-4 dark:border-slate-600">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-900 dark:text-slate-100">Total</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-900 dark:text-slate-100">
+                  Total
+                </span>
                 <span className="text-2xl font-bold text-gray-900 dark:text-slate-100">
-                  ${subtotal.toLocaleString()}
+                  ${displayTotal.toFixed(2)}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Step 1: Continue to Payment button */}
           {step === "address" && (
             <>
               <button

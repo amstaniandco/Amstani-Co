@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Clock3, FolderKanban, Store, TriangleAlert, X } from "lucide-react";
+import { Clock3, ExternalLink, FolderKanban, Store, TriangleAlert, X } from "lucide-react";
 
 type ClaimMessage = {
   senderId: string;
@@ -26,6 +27,7 @@ type Claim = {
   customerName: string;
   storeId: string;
   storeName: string;
+  orderId: string;
   reason: string;
   description: string;
   items: ClaimItem[];
@@ -336,9 +338,19 @@ export default function OwnerClaimsPage() {
                 >
                   {STATUS_LABEL[activeClaim.status]}
                 </span>
+                {activeClaim.orderId && (
+                  <Link
+                    href={`/owner/orders`}
+                    title="View Order"
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Order
+                  </Link>
+                )}
                 <button
                   onClick={() => setActiveClaim(null)}
-                  className="ml-2 text-slate-400 hover:text-slate-700"
+                  className="ml-1 text-slate-400 hover:text-slate-700"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -441,8 +453,17 @@ export default function OwnerClaimsPage() {
               </div>
             )}
             {activeClaim.status === "awaiting_reorder" && (
-              <div className="px-5 py-3 border-t border-slate-200 text-xs text-purple-600 text-center font-semibold">
-                Customer has been asked to reorder the correct product from your store.
+              <div className="px-5 py-3 border-t border-slate-200 space-y-2">
+                <p className="text-xs text-purple-600 text-center font-semibold">
+                  Customer has been asked to reorder the correct product.
+                </p>
+                <button
+                  onClick={() => handleResolve(activeClaim._id)}
+                  disabled={resolving}
+                  className="w-full py-2 rounded-xl bg-[#0e8090] hover:bg-[#0a6572] disabled:opacity-60 text-white text-xs font-semibold transition"
+                >
+                  {resolving ? "Resolving…" : "Mark as Resolved"}
+                </button>
               </div>
             )}
             {activeClaim.status === "resolved" && (

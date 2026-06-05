@@ -17,25 +17,38 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const productIds = storeProducts
     .map((item) => item.productId)
-    .filter((productId) => ObjectId.isValid(productId))
-    .map((productId) => new ObjectId(productId));
+    .filter((id) => ObjectId.isValid(id))
+    .map((id) => new ObjectId(id));
 
   const products = productIds.length
     ? await db.collection("products").find({ _id: { $in: productIds } }).toArray()
     : [];
-  const productMap = new Map(products.map((product) => [product._id.toString(), product]));
+  const productMap = new Map(products.map((p) => [p._id.toString(), p]));
 
-  const mergedProducts = storeProducts.map((storeProduct) => {
-    const product = productMap.get(storeProduct.productId);
-    if (!product) return storeProduct;
+  const mergedProducts = storeProducts.map((sp) => {
+    const global = productMap.get(sp.productId);
+
+    // Resolve selling price: sellingPrice > price > global.price
+    const sellingPrice: number = sp.sellingPrice ?? sp.price ?? global?.price ?? 0;
+
+    // Effective price after discount
+    const discountPercent: number = (sp.isOnSale && sp.discountPercent > 0) ? sp.discountPercent : 0;
+    const effectivePrice = sellingPrice * (1 - discountPercent / 100);
 
     return {
-      ...product,
-      ...storeProduct,
-      name: storeProduct.name ?? product.name,
-      sku: storeProduct.sku ?? product.sku,
-      price: storeProduct.price ?? product.price,
-      mainImage: storeProduct.mainImage ?? product.mainImage ?? product.images?.[0]?.url ?? product.images?.[0] ?? null,
+      ...(global ?? {}),
+      ...sp,
+      name: sp.name ?? global?.name,
+      sku: sp.sku ?? global?.sku,
+      // What the customer sees and pays
+      price: Math.round(effectivePrice * 100) / 100,
+      compareAtPrice: discountPercent > 0 ? sellingPrice : (global?.compareAtPrice ?? null),
+      mainImage: sp.mainImage ?? global?.mainImage ?? global?.images?.[0]?.imageUrl ?? null,
+      // Keep meta for cart/checkout
+      originalPrice: sp.originalPrice ?? global?.price ?? 0,
+      sellingPrice,
+      discountPercent,
+      isOnSale: sp.isOnSale ?? false,
     };
   });
 
