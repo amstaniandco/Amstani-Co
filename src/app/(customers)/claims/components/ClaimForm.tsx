@@ -4,9 +4,21 @@ interface ClaimFormProps {
   setIssueType: (value: string) => void;
   setMessage: (value: string) => void;
   onSubmit: () => void;
+  submitting?: boolean;
+  error?: string;
+  success?: string;
 }
 
-export default function ClaimForm({ issueType, message, setIssueType, setMessage, onSubmit }: ClaimFormProps) {
+export default function ClaimForm({
+  issueType,
+  message,
+  setIssueType,
+  setMessage,
+  onSubmit,
+  submitting,
+  error,
+  success,
+}: ClaimFormProps) {
   return (
     <div className="bg-white rounded-2xl p-6 w-full shadow-sm">
       <h2 className="text-base font-bold text-gray-800 tracking-widest uppercase mb-1">CLAIM</h2>
@@ -46,11 +58,19 @@ export default function ClaimForm({ issueType, message, setIssueType, setMessage
         />
       </div>
 
+      {error && (
+        <p className="text-xs text-red-500 mb-3">{error}</p>
+      )}
+      {success && (
+        <p className="text-xs text-teal-600 mb-3">{success}</p>
+      )}
+
       <button
         onClick={onSubmit}
-        className="w-full py-3 bg-teal-500 hover:bg-teal-600 transition-colors text-white text-sm font-semibold rounded-xl"
+        disabled={submitting}
+        className="w-full py-3 bg-teal-500 hover:bg-teal-600 disabled:opacity-60 transition-colors text-white text-sm font-semibold rounded-xl"
       >
-        Submit
+        {submitting ? "Submitting…" : "Submit"}
       </button>
     </div>
   );

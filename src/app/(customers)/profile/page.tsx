@@ -5,6 +5,7 @@ import ProfileSummary from "./components/ProfileSummary";
 import ShippingSection from "./components/ShippingSection";
 import CardsSection from "./components/CardsSection";
 import OrderHistorySection from "./components/OrderHistorySection";
+import ClaimsHistorySection from "./components/ClaimsHistorySection";
 import AccountActions from "./components/AccountActions";
 import { Address, PaymentMethod, User } from "../../../models/user";
 import { useToast } from "../../../components/global/ToastProvider";
@@ -228,6 +229,7 @@ export default function ProfilePage() {
       />
 
       <OrderHistorySection />
+      <ClaimsHistorySection />
       <AccountActions onDeleteAccount={handleDeleteAccount} />
     </div>
   );

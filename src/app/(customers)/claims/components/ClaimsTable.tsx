@@ -1,11 +1,36 @@
+import Link from "next/link";
+
 type Claim = {
-  id: string;
-  customer: string;
-  issueType: string;
-  status: string;
-  statusClass: string;
-  action: string | null;
-  highlight: boolean;
+  _id?: string;
+  claimNumber: string;
+  customerName: string;
+  reason: string;
+  status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
+  storeId?: string;
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  open: "OPEN",
+  owner_responded: "RESPONDED",
+  resolved: "RESOLVED",
+  admin_escalated: "ESCALATED",
+  awaiting_reorder: "REORDER NEEDED",
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  open: "text-gray-400",
+  owner_responded: "text-green-600",
+  resolved: "text-blue-500",
+  admin_escalated: "text-red-500",
+  awaiting_reorder: "text-purple-600",
+};
+
+const ISSUE_LABEL: Record<string, string> = {
+  damaged: "Damaged item",
+  missing: "Missing item",
+  refund: "Refund",
+  wrong: "Wrong item",
+  other: "Other",
 };
 
 interface ClaimsTableProps {
@@ -26,45 +51,65 @@ export default function ClaimsTable({ claims }: ClaimsTableProps) {
             <rect x="6" y="6" width="4" height="4" rx="0.6" fill="white" />
           </svg>
         </div>
-        <span className="text-xs font-semibold text-gray-700">Global Claims & Escalations</span>
+        <span className="text-xs font-semibold text-gray-700">Your Claims History</span>
       </div>
 
-      <div className="w-full overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-gray-100">
-              {['Claim ID', 'Customer', 'Issue Type', 'Status', 'Action'].map((h) => (
-                <th key={h} className="pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide pr-3">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {claims.map((claim) => (
-              <tr key={claim.id} className="border-b border-gray-50 last:border-0">
-                <td className={`py-3 text-sm font-semibold pr-3 ${claim.highlight ? 'text-red-500' : 'text-gray-700'}`}>
-                  {claim.id}
-                </td>
-                <td className="py-3 text-sm text-gray-600 pr-3 whitespace-nowrap">{claim.customer}</td>
-                <td className="py-3 text-sm text-gray-600 pr-3 whitespace-nowrap">{claim.issueType}</td>
-                <td className={`py-3 text-[10px] font-bold tracking-wide pr-3 whitespace-nowrap ${claim.statusClass}`}>
-                  • {claim.status}
-                </td>
-                <td className="py-3">
-                  {claim.action ? (
-                    <button className="px-3 py-1 bg-red-500 hover:bg-red-600 transition-colors text-white text-[11px] font-semibold rounded-md">
-                      {claim.action}
-                    </button>
-                  ) : (
-                    <span className="text-gray-300 text-sm">—</span>
-                  )}
-                </td>
+      {claims.length === 0 ? (
+        <p className="text-sm text-gray-400 py-4 text-center">No claims filed yet.</p>
+      ) : (
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100">
+                {["Claim ID", "Issue Type", "Status", "Action"].map((h) => (
+                  <th
+                    key={h}
+                    className="pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide pr-3"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {claims.map((claim) => {
+                const isEscalated = claim.status === "admin_escalated";
+                const needsReorder = claim.status === "awaiting_reorder";
+
+                return (
+                  <tr key={claim._id || claim.claimNumber} className={`border-b border-gray-50 last:border-0 ${needsReorder ? "bg-purple-50/50" : ""}`}>
+                    <td className={`py-3 text-sm font-semibold pr-3 ${isEscalated ? "text-red-500" : needsReorder ? "text-purple-600" : "text-gray-700"}`}>
+                      #{claim.claimNumber}
+                    </td>
+                    <td className="py-3 text-sm text-gray-600 pr-3 whitespace-nowrap">
+                      {ISSUE_LABEL[claim.reason] || claim.reason}
+                    </td>
+                    <td className={`py-3 text-[10px] font-bold tracking-wide pr-3 whitespace-nowrap ${STATUS_CLASS[claim.status] || "text-gray-400"}`}>
+                      • {STATUS_LABEL[claim.status] || claim.status.toUpperCase()}
+                    </td>
+                    <td className="py-3">
+                      {needsReorder && claim.storeId ? (
+                        <Link
+                          href={`/store?storeId=${claim.storeId}`}
+                          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 transition-colors text-white text-[11px] font-semibold rounded-md"
+                        >
+                          Reorder from Store
+                        </Link>
+                      ) : isEscalated ? (
+                        <span className="px-3 py-1 bg-red-100 text-red-500 text-[11px] font-semibold rounded-md">
+                          Escalated
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 text-sm">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

@@ -82,6 +82,7 @@ export default function OrderHistorySection() {
     () =>
       orders.map((order) => ({
         id: order.orderNumber || order._id || "-",
+        rawId: order._id || "",
         date: formatDate(order.createdAt),
         total: formatCurrency(getOrderTotal(order)),
         status: normalizeStatus(order.status),
@@ -130,7 +131,10 @@ export default function OrderHistorySection() {
                     </span>
                   </td>
                   <td className="py-3">
-                    <Link href="/claims" className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-300">
+                    <Link
+                      href={order.rawId ? `/claims?orderId=${order.rawId}` : "/claims"}
+                      className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-300"
+                    >
                       Open Claim
                     </Link>
                   </td>

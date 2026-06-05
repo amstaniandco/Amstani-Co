@@ -12,7 +12,8 @@
       "PowerShell(New-Item -ItemType Directory -Force -Path \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\admin\\\\stores\")",
       "Bash(npm install *)",
       "Bash(npx tsc *)",
-      "Bash(xargs grep -l \"claim\" -i)"
+      "Bash(xargs grep -l \"claim\" -i)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\owner\\\\claims\\\\[claimId]\")"
     ]
   }
 }
