@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Filter, Download } from "lucide-react";
+import { ArrowLeft, Search, Filter, Download } from "lucide-react";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
 import ListedProducts, { type StoreProductItem } from "./components/ListedProducts";
@@ -115,6 +115,13 @@ export default function StoreProductsClient() {
           <section className="mt-3 rounded-xl bg-white px-3 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:mt-4 sm:rounded-[26px] sm:px-4 sm:py-4 md:px-5 md:py-5">
             <div className="flex flex-col gap-4 border-b border-[#e7edf1] pb-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
+                <button
+                  type="button"
+                  onClick={() => router.push("/admin/stores")}
+                  className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" /> Back to Stores
+                </button>
                 <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-[26px]">
                   {storeName}
                 </h1>
@@ -122,20 +129,6 @@ export default function StoreProductsClient() {
                   Manage listed items, listing requests, and add new products for this store.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (currentTab === "listed") {
-                    const path = storeId
-                      ? `/admin/stores/promote?storeId=${encodeURIComponent(storeId)}`
-                      : "/admin/stores/promote";
-                    router.push(path);
-                  }
-                }}
-                className="inline-flex items-center justify-center rounded-full border border-[#d8e3e8] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                {currentTab === "listed" ? "Promote" : "Update Store Listing"}
-              </button>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 border-b border-[#e7edf1] pb-3 text-sm sm:flex-row sm:items-center sm:justify-between">

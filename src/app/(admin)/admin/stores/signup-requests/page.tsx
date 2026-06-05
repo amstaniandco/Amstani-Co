@@ -76,7 +76,7 @@ export default function AdminStoreSignupRequestsPage() {
         if (mounted) setLoading(false);
       }
     })();
-        if (mounted) toast.error("Failed to load signup requests");
+
     return () => {
       mounted = false;
     };

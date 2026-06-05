@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, AlertCircle, TriangleAlert } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import StoreManagementTabs from "../../../../components/admin/StoreManagementTabs";
+import { CircleCheck, CircleSlash, Mail, Package, ShieldX, TriangleAlert, Trash2 } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
@@ -14,13 +15,14 @@ import StoreManagementTable, {
 } from "../../../../components/admin/StoreManagementTable";
 import { fetchAllStores, updateStoreStatus, type StoreData } from "../../../../services/admin/storesService";
 
-const tabs = [
-  { label: "All Stores", href: "/admin/stores" },
-  { label: "Store Applications", href: "/admin/stores/applications" },
-  { label: "Signup Requests", href: "/admin/stores/signup-requests" },
+const NAV_TABS = [
+  { label: "All Stores",        href: "/admin/stores",                key: "stores" },
+  { label: "Store Applications",href: "/admin/stores/applications",   key: null },
+  { label: "Signup Requests",   href: "/admin/stores/signup-requests",key: null },
+  { label: "Live Warnings",     href: null,                           key: "warnings" },
 ];
 
-function convertStoreToRow(store: StoreData): StoreRow {
+function convertStoreToRow(store: StoreData & { rating?: number }): StoreRow {
   const statusMap: Record<string, "Active" | "Suspended" | "Dormant"> = {
     active: "Active",
     suspended: "Suspended",
@@ -34,7 +36,7 @@ function convertStoreToRow(store: StoreData): StoreRow {
     owner: store.owner?.name || "Unknown",
     onboarding: store.createdAt ? new Date(store.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "N/A",
     revenue: "$0",
-    rating: "0.0",
+    rating: store.rating != null && store.rating > 0 ? Number(store.rating).toFixed(1) : "0.0",
     ownerEmail: store.owner?.email,
     ownerPhone: store.owner?.phone,
     location: store.owner?.state,
@@ -57,6 +59,9 @@ export default function AdminStoresPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Suspended" | "Dormant">("all");
   const [stateFilter, setStateFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState<"stores" | "warnings">(
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "warnings" ? "warnings" : "stores"
+  );
   const [openChats, setOpenChats] = useState<{ id: string; name: string }[]>([]);
   const [activeChatId, setActiveChatId] = useState("");
   const [liveWarnings, setLiveWarnings] = useState<{
@@ -184,7 +189,11 @@ export default function AdminStoresPage() {
     const store = stores.find((s) => s.id === storeId);
     if (!store) return;
     openOwnerChat(store);
-    chatRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // Switch to stores tab first so the chat section is rendered, then scroll
+    setActiveTab("stores");
+    setTimeout(() => {
+      chatRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 100);
   };
 
   return (
@@ -196,49 +205,24 @@ export default function AdminStoresPage() {
           <AdminNavbar />
 
           <section className="mt-3 rounded-xl bg-white px-3 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:mt-4 sm:rounded-[26px] sm:px-4 sm:py-4 md:px-5 md:py-5">
-            <div className="flex flex-col gap-4 border-b border-[#e7edf1] pb-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-[26px]">
-                  Store Management
-                </h1>
-                <p className="mt-1 text-xs text-slate-600 sm:text-sm">
-                  Oversee multi-vendor operations and performance metrics.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-[#6ec0c9] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#5db1bb] sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
-              >
-                <Plus className="h-4 w-4" />
-                Register New Store
-              </button>
+            <div className="border-b border-[#e7edf1] pb-4">
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-[26px]">
+                Store Management
+              </h1>
+              <p className="mt-1 text-xs text-slate-600 sm:text-sm">
+                Oversee multi-vendor operations and performance metrics.
+              </p>
             </div>
 
-            <div className="mt-3 overflow-x-auto border-b border-[#e7edf1] text-xs font-semibold text-slate-700 sm:mt-4 sm:text-sm">
-              <div className="flex min-w-max gap-6">
-                {tabs.map((tab) => {
-                  const isActive = tab.href === "/admin/stores";
-
-                  return (
-                    <Link
-                      key={tab.label}
-                      href={tab.href}
-                      className={`border-b-2 pb-3 transition ${
-                        isActive
-                          ? "border-[#58b8c3] text-[#2f7f8d]"
-                          : "border-transparent text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {tab.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+            <StoreManagementTabs
+              warningCount={liveWarnings.length}
+              activeWarningsTab={activeTab === "warnings"}
+              onWarningsTabClick={() => setActiveTab(activeTab === "warnings" ? "stores" : "warnings")}
+            />
           </section>
 
-          {liveWarnings.length > 0 && (
+          {/* Live Warnings tab content */}
+          {activeTab === "warnings" && (
             <section className="mt-4 rounded-[22px] border border-amber-200 bg-amber-50 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-3">
                 <TriangleAlert className="h-5 w-5 text-amber-600 flex-shrink-0" />
@@ -246,38 +230,55 @@ export default function AdminStoresPage() {
                   Compliance Warnings — {liveWarnings.length} Store{liveWarnings.length !== 1 ? "s" : ""} at 3/3
                 </h2>
               </div>
-              <div className="space-y-2">
-                {liveWarnings.map((w) => (
-                  <div key={w.storeId} className="flex flex-col gap-1.5 rounded-xl border border-amber-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{w.storeName}</p>
-                      <p className="text-xs text-slate-500">{w.ownerName} · {w.ownerEmail}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600">
-                        3/3 Warnings
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const store = stores.find((s) => s.id === w.storeId);
-                          if (store) {
+              {liveWarnings.length === 0 ? (
+                <p className="text-sm text-amber-700">No stores have reached the warning limit.</p>
+              ) : (
+                <div className="space-y-2">
+                  {liveWarnings.map((w) => (
+                    <div key={w.storeId} className="flex flex-col gap-1.5 rounded-xl border border-amber-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{w.storeName}</p>
+                        <p className="text-xs text-slate-500">{w.ownerName} · {w.ownerEmail}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600">
+                          3/3 Warnings
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
                             handleContactOwner(w.storeId);
                             chatRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                          }
-                        }}
-                        className="rounded-lg bg-[#6ec0c9] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#5db1bb]"
-                      >
-                        Contact Owner
-                      </button>
+                          }}
+                          className="rounded-lg bg-[#6ec0c9] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#5db1bb]"
+                        >
+                          Contact Owner
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm(`Remove all warnings from ${w.storeName}?`)) return;
+                            await fetch("/api/admin/live-warnings", {
+                              method: "DELETE",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ storeId: w.storeId }),
+                            });
+                            setLiveWarnings((prev) => prev.filter((x) => x.storeId !== w.storeId));
+                            toast.success(`Warnings cleared for ${w.storeName}`);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                        >
+                          <ShieldX className="h-3.5 w-3.5" /> Remove Warning
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
-          {isLoading && (
+          {activeTab === "stores" && isLoading && (
             <section className="mt-4 flex items-center justify-center rounded-[22px] border border-[#d9e2e8] bg-white p-12 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               <div className="text-center">
                 <div className="mb-4 inline-flex h-10 w-10 animate-spin rounded-full border-4 border-[#d8e3e8] border-t-[#6ec0c9]" />
@@ -286,19 +287,19 @@ export default function AdminStoresPage() {
             </section>
           )}
 
-          {!isLoading && stores.length === 0 && (
+          {activeTab === "stores" && !isLoading && stores.length === 0 && (
             <section className="mt-4 rounded-[22px] border border-[#d9e2e8] bg-white p-8 text-center shadow-[0_12px_30px_rgba(15,23,42,0.04)] sm:p-12">
               <p className="text-slate-600">No stores found</p>
             </section>
           )}
 
-          {!isLoading && stores.length > 0 && filteredStores.length === 0 && (
+          {activeTab === "stores" && !isLoading && stores.length > 0 && filteredStores.length === 0 && (
             <section className="mt-4 rounded-[22px] border border-[#e5edf1] bg-blue-50 p-8 text-center shadow-[0_12px_30px_rgba(15,23,42,0.04)] sm:p-12">
               <p className="text-slate-600">No stores match your filters. Try adjusting your search or filter criteria.</p>
             </section>
           )}
 
-          {!isLoading && stores.length > 0 && filteredStores.length > 0 && (
+          {activeTab === "stores" && !isLoading && stores.length > 0 && filteredStores.length > 0 && (
             <>
               <section className="mt-4">
                 <StoreManagementTable
@@ -355,6 +356,50 @@ export default function AdminStoresPage() {
 
 
 
+                  {/* Action buttons */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {selectedStore.status !== "Active" ? (
+                      <button
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => handleUpdateStatus(selectedStore.id, "active")}
+                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-60"
+                      >
+                        <CircleCheck className="h-4 w-4" /> Activate Store
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => handleUpdateStatus(selectedStore.id, "suspended")}
+                        className="inline-flex items-center gap-2 rounded-lg bg-slate-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-600 disabled:opacity-60"
+                      >
+                        <CircleSlash className="h-4 w-4" /> Suspend Store
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { handleContactOwner(selectedStore.id); chatRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }}
+                      className="inline-flex items-center gap-2 rounded-lg bg-[#6ec0c9] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#5db1bb]"
+                    >
+                      <Mail className="h-4 w-4" /> Contact Owner
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/admin/stores/store-products?storeId=${encodeURIComponent(selectedStore.id)}`)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Package className="h-4 w-4" /> Manage Products
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm("Delete this store? This cannot be undone.")) alert("Delete coming soon"); }}
+                      className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete Store
+                    </button>
+                  </div>
+
                   <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                     <DetailItem label="Owner" value={selectedStore.owner} />
                     <DetailItem
@@ -381,7 +426,9 @@ export default function AdminStoresPage() {
                     <DetailItem
                       label="Store Rating"
                       value={
-                        selectedStore.rating === "0.0" ? "n/a" : selectedStore.rating
+                        selectedStore.rating === "0.0" || !selectedStore.rating
+                          ? "0/0"
+                          : `${selectedStore.rating}/5`
                       }
                     />
                     <DetailItem

@@ -23,6 +23,18 @@ export async function GET() {
           },
         },
         { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+        // storeId in store_reviews is a string — compare against $toString of _id
+        {
+          $lookup: {
+            from: "store_reviews",
+            let: { sidStr: { $toString: "$_id" } },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$storeId", "$$sidStr"] } } },
+              { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } },
+            ],
+            as: "reviewData",
+          },
+        },
         {
           $project: {
             _id: 1,
@@ -37,6 +49,8 @@ export async function GET() {
             "owner.email": 1,
             "owner.phone": 1,
             "owner.state": 1,
+            rating: { $ifNull: [{ $arrayElemAt: ["$reviewData.avg", 0] }, 0] },
+            reviewCount: { $ifNull: [{ $arrayElemAt: ["$reviewData.count", 0] }, 0] },
           },
         },
         { $sort: { createdAt: -1 } },

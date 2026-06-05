@@ -1,7 +1,6 @@
 "use client";
 
-import { CircleCheck, CircleSlash, Download, Ellipsis, Filter, PhoneCall, Search, ShieldAlert, Package, Trash2, Eye, Mail } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Download, Search } from "lucide-react";
 
 export type StoreStatus = "Active" | "Suspended" | "Dormant";
 
@@ -121,32 +120,6 @@ const statusStyles: Record<StoreStatus, string> = {
   Dormant: "bg-slate-50 text-slate-500 border-slate-200",
 };
 
-function ActionPill({
-  icon: Icon,
-  tone,
-  onClick,
-}: {
-  icon: typeof CircleCheck;
-  tone: "green" | "slate" | "rose";
-  onClick?: () => void;
-}) {
-  const toneStyles: Record<typeof tone, string> = {
-    green: "border-emerald-200 text-emerald-500 hover:bg-emerald-50",
-    slate: "border-slate-200 text-slate-500 hover:bg-slate-50",
-    rose: "border-rose-200 text-rose-500 hover:bg-rose-50",
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${toneStyles[tone]}`}
-      aria-label="Store action"
-    >
-      <Icon className="h-4 w-4" />
-    </button>
-  );
-}
 
 export default function StoreManagementTable({
   rows = defaultRows,
@@ -168,19 +141,6 @@ export default function StoreManagementTable({
   onStateFilterChange,
   availableStates = [],
 }: StoreManagementTableProps) {
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
   return (
     <div className="overflow-hidden rounded-[22px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
       <div className="flex flex-col gap-3 border-b border-[#e5edf1] bg-[#f8fbfc] p-3 sm:p-5">
@@ -284,124 +244,16 @@ export default function StoreManagementTable({
 
             <div className="mt-2 flex items-center justify-between text-xs">
               <span className="text-slate-600">Revenue: <span className="font-semibold text-slate-900">{row.revenue}</span></span>
-              <span className="text-amber-500">{row.rating === "0.0" ? "n/a" : `★ ${row.rating}`}</span>
+              <span className="text-amber-500">{row.rating === "0.0" || !row.rating ? "No reviews" : `★ ${row.rating}`}</span>
             </div>
 
-            <div className="mt-2 flex items-center justify-end gap-2">
-              {row.status === "Active" ? (
-                <>
-                  <ActionPill 
-                    icon={CircleSlash} 
-                    tone="slate"
-                    onClick={() => onSuspend?.(row.id)}
-                  />
-                  <ActionPill 
-                    icon={PhoneCall} 
-                    tone="green"
-                    onClick={() => onContact?.(row.id)}
-                  />
-                </>
-              ) : row.status === "Suspended" ? (
-                <>
-                  <ActionPill 
-                    icon={ShieldAlert} 
-                    tone="rose"
-                    onClick={() => onActivate?.(row.id)}
-                  />
-                  <ActionPill 
-                    icon={PhoneCall} 
-                    tone="slate"
-                    onClick={() => onContact?.(row.id)}
-                  />
-                </>
-              ) : (
-                <>
-                  <ActionPill 
-                    icon={CircleCheck} 
-                    tone="green"
-                    onClick={() => onActivate?.(row.id)}
-                  />
-                  <ActionPill 
-                    icon={PhoneCall} 
-                    tone="slate"
-                    onClick={() => onContact?.(row.id)}
-                  />
-                </>
-              )}
-              <div className="relative" ref={menuRef}>
-                <button 
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" 
-                  type="button" 
-                  onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
-                  aria-label="More actions"
-                >
-                  <Ellipsis className="h-4 w-4" />
-                </button>
-
-                {openMenuId === row.id && (
-                  <div className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-[#e5edf1] bg-white shadow-lg z-50" onMouseDown={(e) => e.stopPropagation()}>
-                    <div className="p-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onManageProducts?.(row.id);
-                          setOpenMenuId(null);
-                        }}
-                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
-                      >
-                        <Package className="h-4 w-4" />
-                        Manage Products
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onViewAnalytics?.(row.id);
-                          setOpenMenuId(null);
-                        }}
-                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View Analytics
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onViewStore?.(row.id);
-                          setOpenMenuId(null);
-                        }}
-                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
-                      >
-                        <Mail className="h-4 w-4" />
-                        Contact Owner
-                      </button>
-
-                      <div className="my-1 border-t border-[#e5edf1]" />
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onDeleteStore?.(row.id);
-                          setOpenMenuId(null);
-                        }}
-                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-rose-600 transition hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete Store
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         ))}
       </div>
 
       <div className="hidden overflow-x-auto md:block">
         <div className="min-w-[1040px]">
-          <div className="grid grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr_0.8fr] border-b border-[#e7eef2] bg-[#fbfcfd] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+          <div className="grid grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr] border-b border-[#e7eef2] bg-[#fbfcfd] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
             <div>Store ID</div>
             <div>Store Name</div>
             <div>Status</div>
@@ -409,14 +261,13 @@ export default function StoreManagementTable({
             <div>Onboarding</div>
             <div>Revenue (30d)</div>
             <div>Rating</div>
-            <div className="text-right">Actions</div>
           </div>
 
           <div className="divide-y divide-[#edf2f5]">
             {rows.map((row, index) => (
               <div
                 key={`${row.id}-${index}`}
-                className={`grid cursor-pointer grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr_0.8fr] items-center px-5 py-4 text-sm text-slate-800 transition ${
+                className={`grid cursor-pointer grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr] items-center px-5 py-4 text-sm text-slate-800 transition ${
                   selectedStoreId === row.id ? "bg-cyan-50/45" : "hover:bg-slate-50"
                 }`}
                 onClick={() => onSelectStore?.(row)}
@@ -436,103 +287,7 @@ export default function StoreManagementTable({
                 <div className="text-slate-700">{row.owner}</div>
                 <div className="text-slate-700">{row.onboarding}</div>
                 <div className="font-semibold text-slate-900">{row.revenue}</div>
-                <div className="text-amber-500">{row.rating === "0.0" ? "n/a" : `★ ${row.rating}`}</div>
-                <div className="flex items-center justify-end gap-2">
-                  {row.status === "Active" ? (
-                    <>
-                      <ActionPill 
-                        icon={CircleSlash} 
-                        tone="slate"
-                        onClick={() => onSuspend?.(row.id)}
-                      />
-                      <ActionPill 
-                        icon={PhoneCall} 
-                        tone="green"
-                        onClick={() => onContact?.(row.id)}
-                      />
-                    </>
-                  ) : row.status === "Suspended" ? (
-                    <>
-                      <ActionPill 
-                        icon={ShieldAlert} 
-                        tone="rose"
-                        onClick={() => onActivate?.(row.id)}
-                      />
-                      <ActionPill 
-                        icon={PhoneCall} 
-                        tone="slate"
-                        onClick={() => onContact?.(row.id)}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <ActionPill 
-                        icon={CircleCheck} 
-                        tone="green"
-                        onClick={() => onActivate?.(row.id)}
-                      />
-                      <ActionPill 
-                        icon={PhoneCall} 
-                        tone="slate"
-                        onClick={() => onContact?.(row.id)}
-                      />
-                    </>
-                  )}
-                  <div className="relative" ref={menuRef}>
-                    <button 
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" 
-                      type="button"
-                      onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
-                      aria-label="More actions"
-                    >
-                      <Ellipsis className="h-4 w-4" />
-                    </button>
-
-                    {openMenuId === row.id && (
-                      <div className="fixed right-4 top-auto rounded-lg border border-[#e5edf1] bg-white shadow-xl" style={{ zIndex: 9999, minWidth: '200px' }} onMouseDown={(e) => e.stopPropagation()}>
-                        <div className="p-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onManageProducts?.(row.id);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
-                          >
-                            <Package className="h-4 w-4" />
-                            Manage Products
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onContact?.(row.id);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
-                          >
-                            <Mail className="h-4 w-4" />
-                            Contact Owner
-                          </button>
-
-                          <div className="my-1 border-t border-[#e5edf1]" />
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onDeleteStore?.(row.id);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-rose-600 transition hover:bg-rose-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete Store
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <div className="text-amber-500">{row.rating === "0.0" || !row.rating ? "No reviews" : `★ ${row.rating}`}</div>
               </div>
             ))}
           </div>

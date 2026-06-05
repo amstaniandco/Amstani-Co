@@ -19,29 +19,40 @@ type Props = {
   onAdded: () => void;
 };
 
+const PAGE_SIZE = 10;
+
 export default function AddNewProduct({ storeId, onAdded }: Props) {
   const toast = useToast();
+
   const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Record<string, number>>({}); // productId → quantity
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
 
+  // Debounce search so we don't hit the API on every keypress
+  useEffect(() => {
+    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Fetch page from server
   useEffect(() => {
     setLoading(true);
-    fetch("/api/admin/global-catalog/products?limit=200")
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
+    if (debouncedSearch) params.set("q", debouncedSearch);
+
+    fetch(`/api/admin/global-catalog/products?${params}`)
       .then((r) => r.json())
-      .then((data) => setCatalog(data.products ?? []))
+      .then((data) => { setCatalog(data.products ?? []); setTotal(data.total ?? 0); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, debouncedSearch]);
 
-  const filtered = catalog.filter(
-    (p) =>
-      !search ||
-      p.name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(search.toLowerCase())
-  );
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const toggle = (productId: string) => {
     setSelected((prev) => {
@@ -126,7 +137,7 @@ export default function AddNewProduct({ storeId, onAdded }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#eef2f5] bg-white text-slate-700">
-              {filtered.map((product, index) => {
+              {catalog.map((product, index) => {
                 const isChecked = selected[product._id] !== undefined;
                 return (
                   <tr key={product._id} className={`cursor-pointer ${index % 2 === 0 ? "bg-[#fbfcfd]" : "bg-white"} ${isChecked ? "ring-1 ring-inset ring-cyan-300" : ""}`}>
@@ -173,13 +184,29 @@ export default function AddNewProduct({ storeId, onAdded }: Props) {
                   </tr>
                 );
               })}
-              {filtered.length === 0 && (
+              {catalog.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-sm text-slate-400">No products found.</td>
                 </tr>
               )}
             </tbody>
           </table>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-[#eef2f5] px-4 py-3 text-sm text-slate-600">
+              <span className="text-xs">{total} products · page {page} of {totalPages}</span>
+              <div className="flex gap-2">
+                <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
+                  className="rounded-lg border border-[#dbe5ea] px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-40">
+                  Previous
+                </button>
+                <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
+                  className="rounded-lg border border-[#dbe5ea] px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-40">
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
