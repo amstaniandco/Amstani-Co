@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import type { ActiveOrder, OnSaleStore } from "../mockData";
-import Image from "next/image";
 import DesktopOnSaleSidebar from "./DesktopOnSaleSidebar";
-import { useEffect, useState } from "react";
+import PromotionBannerSlideshow from "./PromotionBannerSlideshow";
 
 interface SidebarProps {
   onSaleStores: OnSaleStore[];
@@ -12,15 +11,6 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
-  const [banner, setBanner] = useState<{ title: string; imageUrl: string } | null>(null);
-
-  useEffect(() => {
-    fetch("/api/communications/banners")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => setBanner(data?.banners?.[0] ?? null))
-      .catch(() => {});
-  }, []);
-
   return (
     <aside className="w-full shrink-0 space-y-5 lg:ml-2 lg:w-[280px]">
       <div className="hidden lg:block">
@@ -35,53 +25,52 @@ export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
           </span>
         </div>
 
-        {activeOrders.map((order) => (
-          <div key={order.id} className="space-y-2">
-            <div className="flex items-start gap-2">
-              <div className="w-1 self-stretch rounded-full bg-teal-200" />
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
-                  Pending Tackle
-                </p>
-                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
-                  {order.id}
-                </p>
+        {activeOrders.length === 0 ? (
+          <p className="py-2 text-sm text-slate-400 dark:text-slate-500">
+            No active orders
+          </p>
+        ) : (
+          activeOrders.map((order) => (
+            <div key={order.id} className="space-y-2">
+              <div className="flex items-start gap-2">
+                <div className="w-1 self-stretch rounded-full bg-teal-200" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                    Pending
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
+                    {order.id}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-start gap-2 mt-2">
-              <div className="w-1 self-stretch rounded-full bg-green-200" />
-              <div>
-                <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider">
-                  {order.status}
-                </p>
-                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
-                  {order.detail}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-slate-400">
-                  {order.sub}
-                </p>
+              <div className="flex items-start gap-2 mt-2">
+                <div className="w-1 self-stretch rounded-full bg-green-200" />
+                <div>
+                  <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider">
+                    {order.status}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
+                    {order.detail}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-slate-400">
+                    {order.sub}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
         <Link
-          href="/profile"
+          href="/my-orders"
           className="mt-5 block w-full rounded-full border border-[#b7cad8] bg-white py-2 text-center text-sm font-medium text-slate-600 transition-colors hover:border-[#7abfce] hover:text-teal-700 dark:border-slate-600 dark:bg-[#12213a] dark:text-slate-200 dark:hover:border-[#4DB8B8] dark:hover:text-[#7ad5df]"
         >
           View All History
         </Link>
       </div>
-      <div>
-        <Image
-          src={banner?.imageUrl || "/assets/poster.png"}
-          alt={banner?.title || "Side Banner"}
-          width={280}
-          height={200}
-          className="rounded-2xl object-cover"
-        ></Image>
-      </div>
+
+      <PromotionBannerSlideshow />
     </aside>
   );
 }

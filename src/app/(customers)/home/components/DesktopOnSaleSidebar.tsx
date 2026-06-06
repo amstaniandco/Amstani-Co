@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { OnSaleStore } from "../mockData";
 
@@ -20,16 +19,16 @@ export default function DesktopOnSaleSidebar({ onSaleStores }: DesktopOnSaleSide
         {onSaleStores.map((store) => (
           <Link
             key={store.id}
-            href="/store"
+            href="/sale"
             className="group flex items-center gap-2.5 cursor-pointer"
           >
             <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[#dbe3eb] dark:border-slate-600">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={store.img}
                 alt={store.name}
-                fill
-                sizes="44px"
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => { (e.target as HTMLImageElement).src = "/assets/placeholder-store.svg"; }}
+                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <span className="text-sm font-medium text-slate-600 transition-colors group-hover:text-teal-700 dark:text-slate-300 dark:group-hover:text-[#7ad5df]">
