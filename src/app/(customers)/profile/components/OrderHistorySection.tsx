@@ -92,7 +92,15 @@ export default function OrderHistorySection() {
 
   return (
     <section className="ui-panel mt-6 rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800">
-      <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Order History</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Order History</h2>
+        <Link
+          href="/my-orders"
+          className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-300"
+        >
+          View All →
+        </Link>
+      </div>
       <div className="mt-4 overflow-x-auto">
         {loading ? (
           <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">

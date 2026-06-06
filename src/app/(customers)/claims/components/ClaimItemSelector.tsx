@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 type Product = {
   id: string;
   orderId: string;
@@ -127,15 +125,6 @@ export default function ClaimItemSelector({
                 </div>
               </div>
 
-              {/* Open Order link */}
-              <div className="flex justify-end">
-                <Link
-                  href={`/my-orders?orderId=${product.orderId}`}
-                  className="text-[11px] font-semibold text-teal-600 hover:text-teal-700 underline underline-offset-2"
-                >
-                  Open Order ↗
-                </Link>
-              </div>
             </div>
           );
         })}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MessageCircle, X } from "lucide-react";
+import Header from "../../../../components/pages/Header";
 
 type ClaimMessage = {
   senderId: string;
@@ -158,7 +159,9 @@ export default function ClaimsHistorySection() {
 
       {/* Full-screen panel overlay */}
       {open && (
-        <div className="fixed inset-0 z-50 flex bg-black/50">
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-50">
+          <Header />
+          <div className="flex flex-1 overflow-hidden">
           {/* Claims list sidebar */}
           <div
             className={`flex flex-col bg-white w-full max-w-sm border-r border-slate-200 ${activeClaim ? "hidden sm:flex" : "flex"}`}
@@ -351,6 +354,7 @@ export default function ClaimsHistorySection() {
                 )}
               </>
             )}
+          </div>
           </div>
         </div>
       )}
