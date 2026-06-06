@@ -340,7 +340,7 @@ export default function OwnerClaimsPage() {
                 </span>
                 {activeClaim.orderId && (
                   <Link
-                    href={`/owner/orders`}
+                    href={`/orders`}
                     title="View Order"
                     className="flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition"
                   >

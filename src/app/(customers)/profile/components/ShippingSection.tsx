@@ -172,11 +172,11 @@ export default function ShippingSection({
 
       <div className="ui-subpanel mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900">
         {!showAddForm ? (
-          <>
-            <div className="mb-4">
+          <div className="flex flex-col" style={{ minHeight: 320 }}>
+            <div className="flex-1 min-h-0 mb-4">
               <ProfileLocationMap onSelectAddress={handleMapAddressSelect} />
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center pt-2">
               <button
                 onClick={() => setShowAddForm(true)}
                 className="rounded-full bg-cyan-400 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-cyan-500 transition"
@@ -184,7 +184,7 @@ export default function ShippingSection({
                 + Add New Location
               </button>
             </div>
-          </>
+          </div>
         ) : (
           <div className="space-y-3">
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-base mb-4">Add New Address</h3>
