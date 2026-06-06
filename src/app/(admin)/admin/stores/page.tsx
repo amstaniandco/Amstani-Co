@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import StoreManagementTabs from "../../../../components/admin/StoreManagementTabs";
-import { CircleCheck, CircleSlash, Mail, Package, ShieldX, TriangleAlert, Trash2 } from "lucide-react";
+import { CircleCheck, CircleSlash, Mail, Package, ShieldX, TriangleAlert, Trash2, Megaphone } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
@@ -59,6 +59,7 @@ export default function AdminStoresPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Suspended" | "Dormant">("all");
   const [stateFilter, setStateFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"stores" | "warnings">(
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "warnings" ? "warnings" : "stores"
   );
@@ -108,6 +109,13 @@ export default function AdminStoresPage() {
 
     return true;
   });
+
+  const PAGE_SIZE = 6;
+  const totalPages = Math.max(1, Math.ceil(filteredStores.length / PAGE_SIZE));
+  const pagedStores = filteredStores.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset to page 1 whenever filters / search change
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, stateFilter, ratingFilter]);
 
   useEffect(() => {
     const loadStores = async () => {
@@ -303,7 +311,7 @@ export default function AdminStoresPage() {
             <>
               <section className="mt-4">
                 <StoreManagementTable
-                  rows={filteredStores}
+                  rows={pagedStores}
                   selectedStoreId={selectedStore?.id}
                   onSelectStore={handleStoreClick}
                   onSuspend={(storeId) => handleUpdateStatus(storeId, "suspended")}
@@ -337,6 +345,41 @@ export default function AdminStoresPage() {
                   availableStates={uniqueStates as string[]}
                 />
               </section>
+
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#d9e2e8] bg-white text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                  >
+                    ‹
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border text-sm font-medium transition ${
+                        page === currentPage
+                          ? "border-[#6ec0c9] bg-[#6ec0c9] text-white"
+                          : "border-[#d9e2e8] bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#d9e2e8] bg-white text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
 
               {selectedStore && (
                 <section className="mt-4 rounded-[22px] border border-[#d9e2e8] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] sm:p-5">
@@ -390,6 +433,13 @@ export default function AdminStoresPage() {
                       className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
                       <Package className="h-4 w-4" /> Manage Products
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/admin/stores/promote?storeId=${encodeURIComponent(selectedStore.id)}`)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-600"
+                    >
+                      <Megaphone className="h-4 w-4" /> Promote
                     </button>
                     <button
                       type="button"
