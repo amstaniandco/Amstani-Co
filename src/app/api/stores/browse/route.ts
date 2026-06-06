@@ -7,6 +7,8 @@ export async function GET(request: Request) {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DBNAME || "amstani");
 
+    const today = new Date().toISOString().slice(0, 10);
+
     const pipeline: object[] = [
       { $match: { status: "active" } },
       {
@@ -41,6 +43,33 @@ export async function GET(request: Request) {
       },
       { $sort: { createdAt: -1 } },
       { $limit: 60 },
+      // Join active promotions — storeId in promotions is stored as string
+      {
+        $lookup: {
+          from: "promotions",
+          let: { sid: { $toString: "$_id" } },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$storeId", "$$sid"] },
+                endDate: { $gte: today },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: "activePromotion",
+        },
+      },
+      {
+        $addFields: {
+          isPromoted: { $gt: [{ $size: "$activePromotion" }, 0] },
+        },
+      },
+      {
+        $project: {
+          activePromotion: 0,
+        },
+      },
     );
 
     const stores = await db.collection("stores").aggregate(pipeline).toArray();
