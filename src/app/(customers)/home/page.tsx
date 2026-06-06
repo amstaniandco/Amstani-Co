@@ -5,12 +5,58 @@ import BrowseStoresSection from "./components/BrowseStoresSection";
 import LiveStoresSection from "./components/LiveStoresSection";
 import OnSaleSection from "./components/OnSaleSection";
 import Sidebar from "./components/Sidebar";
-import { ACTIVE_ORDERS, ON_SALE_STORES } from "./mockData";
+import type { OnSaleStore, ActiveOrder } from "./mockData";
+import { getSelectedState, subscribeSelectedState } from "../../../lib/state-preference";
+
+const INACTIVE_STATUSES = new Set(["delivered", "cancelled", "rejected", "resolved"]);
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [liveStores, setLiveStores] = useState<any[]>([]);
   const [browseStores, setBrowseStores] = useState<any[]>([]);
+  const [stateFilter, setStateFilter] = useState("");
+  const [onSaleProducts, setOnSaleProducts] = useState<OnSaleStore[]>([]);
+  const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
+
+  // Init from localStorage after mount (avoids SSR/client hydration mismatch)
+  useEffect(() => {
+    setStateFilter(getSelectedState());
+    return subscribeSelectedState((s) => setStateFilter(s));
+  }, []);
+
+  // Fetch on-sale products
+  useEffect(() => {
+    fetch("/api/products/sale")
+      .then((r) => r.ok ? r.json() : { products: [] })
+      .then((data) => {
+        const mapped: OnSaleStore[] = (data.products || []).slice(0, 5).map((p: any, i: number) => ({
+          id: i,
+          name: p.name || "Product",
+          img: p.mainImage || "/assets/placeholder-store.svg",
+        }));
+        setOnSaleProducts(mapped);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch active orders
+  useEffect(() => {
+    fetch("/api/orders")
+      .then((r) => r.ok ? r.json() : { orders: [] })
+      .then((data) => {
+        const mapped: ActiveOrder[] = (data.orders || [])
+          .filter((o: any) => !INACTIVE_STATUSES.has((o.status || "").toLowerCase()))
+          .slice(0, 2)
+          .map((o: any) => ({
+            id: o.orderNumber || o._id,
+            status: (o.status || "PROCESSING").toUpperCase(),
+            detail: o.items?.[0]?.name || "Item",
+            sub: `${o.storeName || "Store"} · ${o.items?.length ?? 1} item${(o.items?.length ?? 1) !== 1 ? "s" : ""}`,
+          }));
+        setActiveOrders(mapped);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -41,9 +87,18 @@ export default function Home() {
       }
     })();
 
+    return () => { mounted = false };
+  }, []);
+
+  // Re-fetch browse stores whenever the selected state changes
+  useEffect(() => {
+    let mounted = true;
     (async () => {
       try {
-        const res = await fetch('/api/stores/browse');
+        const url = stateFilter
+          ? `/api/stores/browse?state=${encodeURIComponent(stateFilter)}`
+          : '/api/stores/browse';
+        const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
         if (!mounted) return;
@@ -53,11 +108,16 @@ export default function Home() {
           name: s.name || 'Store',
           description: s.description || '',
           state: s.owner?.state || '',
-          badge: 'Featured',
-          badgeColor: 'bg-teal-500',
-          rating: s.rating ? String(s.rating) : '4.9',
+          badge: s.isLive ? 'Live' : '',
+          badgeColor: 'bg-red-500',
+          rating: s.rating ? String(parseFloat(String(s.rating)).toFixed(1)) : '',
           img: ((s.logoUrl || s.bannerUrl) || '').startsWith('https://') ? (s.logoUrl || s.bannerUrl) : '/assets/placeholder-store.svg',
+          isPromoted: s.isPromoted || false,
+          isLive: s.isLive || false,
         }));
+
+        // Promoted stores first
+        mapped.sort((a: any, b: any) => (b.isPromoted ? 1 : 0) - (a.isPromoted ? 1 : 0));
 
         setBrowseStores(mapped);
       } catch (e) {
@@ -66,24 +126,25 @@ export default function Home() {
     })();
 
     return () => { mounted = false };
-  }, []);
+  }, [stateFilter]);
 
   return (
     <div className="home-shell min-h-screen bg-[#eef1f4] dark:bg-[#0c1322]">
       <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-5 px-2 py-4 sm:px-3 lg:gap-7 lg:px-4 lg:flex-row">
         <div className="flex-1 min-w-0">
-          <LiveStoresSection liveStores={liveStores.length ? liveStores : []} />
+          <LiveStoresSection liveStores={liveStores} />
           <div className="lg:hidden">
-            <OnSaleSection onSaleStores={ON_SALE_STORES} />
+            <OnSaleSection onSaleStores={onSaleProducts} />
           </div>
           <BrowseStoresSection
-            stores={browseStores.length ? browseStores : []}
+            stores={browseStores}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
+            stateFilter={stateFilter}
           />
         </div>
 
-        <Sidebar onSaleStores={ON_SALE_STORES} activeOrders={ACTIVE_ORDERS} />
+        <Sidebar onSaleStores={onSaleProducts} activeOrders={activeOrders} />
       </div>
     </div>
   );

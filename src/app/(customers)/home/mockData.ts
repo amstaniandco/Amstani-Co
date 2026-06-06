@@ -18,6 +18,8 @@ export type BrowseStore = {
   badgeColor: string;
   rating: string;
   img: string;
+  isPromoted?: boolean;
+  isLive?: boolean;
 };
 
 export type OnSaleStore = {

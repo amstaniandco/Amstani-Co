@@ -4,15 +4,15 @@ import type { LiveStore } from "../mockData";
 export default function LiveStoresSection({ liveStores }: { liveStores: LiveStore[] }) {
   return (
     <section className="home-section mb-5">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3">
         <h2 className="home-heading text-[24px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[28px]">
           Live Stores <span className="font-normal text-gray-400 dark:text-slate-400">({liveStores.length})</span>
         </h2>
-        <Link href="/store" className="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline dark:text-slate-300 dark:hover:text-white sm:text-sm">
-          View All
-        </Link>
       </div>
 
+      {liveStores.length === 0 && (
+        <p className="py-4 text-sm text-slate-400 dark:text-slate-500">No live stores right now</p>
+      )}
       <div className="flex items-start gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
         {liveStores.map((store, index) => {
           const inner = (
