@@ -58,6 +58,10 @@ export async function PATCH(
     // Just marking as "owner_responded" — no resolution action yet
     resolutionType = "none";
     newStatus = status;
+  } else if (claim.status === "awaiting_reorder") {
+    // Customer was asked to reorder; owner is now marking it fully resolved
+    resolutionType = "reorder_completed";
+    newStatus = "resolved";
   } else if (RESEND_REASONS.has(reason)) {
     resolutionType = "replacement";
     newStatus = "resolved";
@@ -81,6 +85,16 @@ export async function PATCH(
       },
     }
   );
+
+  // ── REORDER COMPLETED (wrong item, customer reordered) ──────────────────
+  if (resolutionType === "reorder_completed") {
+    await createNotification({
+      userId: claim.customerId,
+      title: "Claim Resolved",
+      message: `Your claim #${claim.claimNumber} has been marked as resolved by the store owner.`,
+      referenceId: claimId,
+    });
+  }
 
   // ── REPLACEMENT (damaged / missing / other) ──────────────────────────────
   if (resolutionType === "replacement") {
