@@ -35,24 +35,30 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-black/10" />
 
-        <div className="absolute left-2 top-2 sm:left-3 sm:top-3">
-          <span className={`${store.badgeColor} rounded-full px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs`}>
-            {store.badge}
-          </span>
-        </div>
-        <div className="absolute right-2 top-2 sm:right-3 sm:top-3">
-          <span className="rounded-full bg-teal-500 px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs">
-            {store.badge.startsWith("Ranked") ? store.badge : "Best #1"}
-          </span>
-        </div>
+        {(store.badge || store.isPromoted) && (
+          <div className="absolute left-2 top-2 flex flex-col gap-1 sm:left-3 sm:top-3">
+            {store.badge && (
+              <span className={`${store.badgeColor} rounded-full px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs`}>
+                {store.badge}
+              </span>
+            )}
+            {store.isPromoted && (
+              <span className="rounded-full bg-violet-500 px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs">
+                ✦ Best Featured
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="absolute inset-x-0 bottom-0 px-3 pb-3 sm:px-4 sm:pb-4">
           <div className="mb-2 flex items-center justify-between sm:mb-2.5">
             <h3 className="text-base font-semibold leading-tight text-white sm:text-xl">{store.name}</h3>
-            <div className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs">
-              <StarIcon />
-              <span>{store.rating}</span>
-            </div>
+            {store.rating && (
+              <div className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs">
+                <StarIcon />
+                <span>{store.rating}</span>
+              </div>
+            )}
           </div>
 
           <p className="line-clamp-1 text-xs leading-snug text-white/85 sm:text-sm">{store.description}</p>

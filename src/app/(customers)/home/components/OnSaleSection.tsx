@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { OnSaleStore } from "../mockData";
 
@@ -20,16 +19,16 @@ export default function OnSaleSection({ onSaleStores }: OnSaleSectionProps) {
         {onSaleStores.map((store) => (
           <Link
             key={store.id}
-            href="/store"
+            href="/sale"
             className="flex min-w-[84px] flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-slate-50 p-2 text-center transition hover:border-teal-300 hover:bg-white dark:border-slate-600 dark:bg-[#12213a] dark:hover:border-[#4DB8B8] dark:hover:bg-[#162844]"
           >
             <div className="relative h-14 w-14 overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-700">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={store.img}
                 alt={store.name}
-                fill
-                sizes="56px"
-                className="object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).src = "/assets/placeholder-store.svg"; }}
+                className="h-full w-full object-cover"
               />
             </div>
             <span className="max-w-[70px] truncate text-[10px] font-medium text-slate-700 dark:text-slate-200">
