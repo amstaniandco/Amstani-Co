@@ -265,14 +265,12 @@ export default function Header() {
         const profileState = typeof data?.user?.state === "string" ? data.user.state : "";
         const profileAvatar = typeof data?.user?.avatarUrl === "string" ? data.user.avatarUrl : "";
 
-        setUserState(profileState);
         setAvatarUrl(profileAvatar);
 
-        if (profileState) {
-          setSelectedState(profileState);
-        } else if (!getSelectedState()) {
-          setSelectedState("");
-        }
+        // Only use the DB state as a fallback when localStorage has no preference yet
+        const storedState = getSelectedState();
+        const uiState = storedState || profileState;
+        setUserState(uiState);
       } catch {
         if (!cancelled) setAvatarUrl("");
       }
@@ -283,7 +281,7 @@ export default function Header() {
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, pathname]);
 
   useEffect(() => subscribeSelectedState((state) => setUserState(state)), []);
 
@@ -353,29 +351,11 @@ export default function Header() {
     );
   };
 
-  const currentAvatar = avatarUrl || "https://i.pravatar.cc/64?img=47";
+  const currentAvatar = avatarUrl;
 
-  const handleStateChange = async (nextState: string) => {
+  const handleStateChange = (nextState: string) => {
     setUserState(nextState);
     setSelectedState(nextState);
-
-    if (!isLoggedIn) return;
-
-    try {
-      const response = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: nextState }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update state");
-      }
-
-      toast.success("State updated.");
-    } catch {
-      toast.error("Could not update your state.");
-    }
   };
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
@@ -403,26 +383,13 @@ export default function Header() {
       window.clearTimeout(searchTimeoutRef.current);
     }
 
-    if (pathname !== "/our-products") {
-      searchTimeoutRef.current = window.setTimeout(() => {
-        if (query) {
-          router.replace(`/our-products?q=${encodeURIComponent(query)}`, {
-            scroll: false,
-          });
-        } else {
-          router.replace("/our-products", { scroll: false });
-        }
-      }, 150);
-      return;
-    }
-
-    const url = new URL(window.location.href);
-    if (query) {
-      url.searchParams.set("q", query);
-    } else {
-      url.searchParams.delete("q");
-    }
-    window.history.replaceState({}, "", url);
+    searchTimeoutRef.current = window.setTimeout(() => {
+      if (query) {
+        router.replace(`/our-products?q=${encodeURIComponent(query)}`, { scroll: false });
+      } else {
+        router.replace("/our-products", { scroll: false });
+      }
+    }, 300);
   };
 
   const handleLogout = async () => {
@@ -444,7 +411,8 @@ export default function Header() {
 
   useEffect(() => {
     if (pathname === "/our-products") {
-      searchRef.current?.focus();
+      const t = window.setTimeout(() => searchRef.current?.focus(), 50);
+      return () => window.clearTimeout(t);
     }
   }, [pathname]);
 
@@ -464,7 +432,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full overflow-x-hidden border-b border-white/10 bg-[#151C1DCC] dark:bg-[#0b1220]">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#151C1DCC] dark:bg-[#0b1220]">
       <div className="px-3 sm:px-4 md:px-8 py-4 md:py-5">
         <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
@@ -538,7 +506,7 @@ export default function Header() {
                   </button>
 
                   {stateMenuOpen && (
-                    <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-2xl border border-white/10 bg-[#151C1D] p-2 shadow-2xl">
+                    <div className="absolute left-0 top-full z-[200] mt-2 w-72 rounded-2xl border border-white/10 bg-[#151C1D] p-2 shadow-2xl">
                       <div className="max-h-72 overflow-y-auto pr-1">
                         <button
                           type="button"
@@ -588,7 +556,13 @@ export default function Header() {
                       <Badge count={notificationCount} />
                     </Link>
                     <Link href="/profile" aria-label="Profile" className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200">
-                      <Image src={currentAvatar} alt="User Avatar" fill sizes="32px" className="object-cover" />
+                      {currentAvatar ? (
+                        <Image src={currentAvatar} alt="User Avatar" fill sizes="40px" className="object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center bg-[#1e2a30]">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-[#4DB8B8]/60"><path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" /></svg>
+                        </span>
+                      )}
                     </Link>
                   </div>
                 )}
@@ -600,7 +574,13 @@ export default function Header() {
                       {role === "owner" ? "Store Owner" : "Admin"}
                     </span>
                     <Link href={role === "owner" ? "/owner/profile" : "/admin"} aria-label="Profile" className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#4DB8B8]/50 hover:border-[#4DB8B8] transition-colors duration-200">
-                      <Image src={currentAvatar} alt="Avatar" fill sizes="32px" className="object-cover" />
+                      {currentAvatar ? (
+                        <Image src={currentAvatar} alt="Avatar" fill sizes="40px" className="object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center bg-[#1e2a30]">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-[#4DB8B8]/60"><path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" /></svg>
+                        </span>
+                      )}
                     </Link>
                     <button onClick={handleLogout} className="text-gray-400 hover:text-red-400 transition-colors duration-200" aria-label="Logout">
                       <LogoutIcon />
@@ -638,7 +618,7 @@ export default function Header() {
 
         {/* Mobile Menu - Visible when mobileMenuOpen is true */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-3 pt-3 border-t border-white/10 max-w-full overflow-x-hidden">
+          <div className="md:hidden mt-3 pt-3 border-t border-white/10 max-w-full">
             {showAuthenticatedNavbar ? (
               <div className="space-y-3">
                 {/* Mobile Search Bar — customers only */}
@@ -696,7 +676,7 @@ export default function Header() {
                   </button>
 
                   {stateMenuOpen && (
-                    <div className="absolute left-0 top-full z-20 mt-2 w-full rounded-2xl border border-white/10 bg-[#151C1D] p-2 shadow-2xl">
+                    <div className="absolute left-0 top-full z-[200] mt-2 w-full rounded-2xl border border-white/10 bg-[#151C1D] p-2 shadow-2xl">
                       <div className="max-h-64 overflow-y-auto pr-1">
                         <button
                           type="button"
@@ -750,7 +730,13 @@ export default function Header() {
                     </Link>
                     <Link href="/profile" onClick={handleMobileNavClick} aria-label="Profile" className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
                       <div className="relative w-6 h-6 rounded-full overflow-hidden border border-[#4DB8B8]/50">
-                        <Image src={currentAvatar} alt="User Avatar" fill sizes="24px" className="object-cover" />
+                        {currentAvatar ? (
+                          <Image src={currentAvatar} alt="User Avatar" fill sizes="24px" className="object-cover" />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center bg-[#1e2a30]">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-[#4DB8B8]/60"><path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" /></svg>
+                          </span>
+                        )}
                       </div>
                       <span className="text-xs">Profile</span>
                     </Link>
@@ -764,7 +750,13 @@ export default function Header() {
                       {role === "owner" ? "Store Owner" : "Admin"}
                     </span>
                     <Link href={role === "owner" ? "/owner/profile" : "/admin"} onClick={handleMobileNavClick} className="relative w-8 h-8 rounded-full overflow-hidden border border-[#4DB8B8]/50">
-                      <Image src={currentAvatar} alt="Avatar" fill sizes="32px" className="object-cover" />
+                      {currentAvatar ? (
+                        <Image src={currentAvatar} alt="Avatar" fill sizes="32px" className="object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center bg-[#1e2a30]">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-[#4DB8B8]/60"><path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" /></svg>
+                        </span>
+                      )}
                     </Link>
                   </div>
                 )}

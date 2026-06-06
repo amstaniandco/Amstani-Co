@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Box, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 
@@ -247,28 +247,45 @@ function QuickViewModal({
 
 export default function StoreProductsView() {
   const pathname = usePathname();
-  const mode: "sale" | "new-arrivals" = pathname === "/new-arrivals" ? "new-arrivals" : "sale";
+  const searchParams = useSearchParams();
+  const mode: "all" | "sale" | "new-arrivals" =
+    pathname === "/new-arrivals" ? "new-arrivals" : pathname === "/sale" ? "sale" : "all";
+
+  const searchQuery = searchParams.get("q") ?? "";
 
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [quickView, setQuickView] = useState<CatalogProduct | null>(null);
 
   useEffect(() => {
-    const endpoint = mode === "sale" ? "/api/products/sale" : "/api/products/new-arrivals";
+    let endpoint: string;
+    if (mode === "sale") {
+      endpoint = "/api/products/sale";
+    } else if (mode === "new-arrivals") {
+      endpoint = "/api/products/new-arrivals";
+    } else {
+      endpoint = searchQuery
+        ? `/api/products/all?q=${encodeURIComponent(searchQuery)}`
+        : "/api/products/all";
+    }
     setLoading(true);
     fetch(endpoint)
       .then((r) => r.json())
       .then((data) => setProducts(data.products ?? []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
-  }, [mode]);
+  }, [mode, searchQuery]);
 
-  const pageTitle = mode === "sale" ? "Sale" : "New Arrivals";
-  const pageIcon = mode === "sale" ? "🏷️" : "✨";
+  const pageTitle = mode === "sale" ? "Sale" : mode === "new-arrivals" ? "New Arrivals" : "All Products";
+  const pageIcon = mode === "sale" ? "" : mode === "new-arrivals" ? "" : "";
   const emptyMsg =
     mode === "sale"
       ? "No sale products right now. Check back soon!"
-      : "No new arrivals yet. Store owners can tag their products as New Arrivals.";
+      : mode === "new-arrivals"
+      ? "No new arrivals yet. Store owners can tag their products as New Arrivals."
+      : searchQuery
+      ? `No products found for "${searchQuery}".`
+      : "No products available yet.";
 
   return (
     <div className="flex min-h-screen items-start justify-center p-4 pt-10 dark:bg-slate-950">

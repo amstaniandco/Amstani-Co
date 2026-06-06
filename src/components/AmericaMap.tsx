@@ -9,7 +9,7 @@ import {
 } from "react-simple-maps";
 import { ChevronDown } from "lucide-react";
 import { useToast } from "./global/ToastProvider";
-import { getSelectedState, setSelectedState } from "../lib/state-preference";
+import { getSelectedState, setSelectedState as publishSelectedState, subscribeSelectedState } from "../lib/state-preference";
 
 type Position = [number, number];
 
@@ -263,7 +263,7 @@ const STATE_ABBREVIATIONS: Record<string, string> = {
 
 export default function AmericaMap() {
   const [hoveredState, setHoveredState] = useState<string | null>(null);
-  const [selectedState, setSelectedState] = useState<string>("");
+  const [selectedState, setSelectedStateLocal] = useState<string>("");
   const [geoData, setGeoData] = useState<object | null>(null);
   const toast = useToast();
 
@@ -287,36 +287,20 @@ export default function AmericaMap() {
     };
   }, []);
 
+  // Initialise from shared preference and keep in sync when navbar changes it
   useEffect(() => {
-    const initialState = getSelectedState();
-    if (initialState) {
-      setSelectedState(initialState);
-    }
+    setSelectedStateLocal(getSelectedState());
+    return subscribeSelectedState((s) => setSelectedStateLocal(s));
   }, []);
 
-  const handleExplore = async () => {
+  const handleExplore = () => {
     if (!selectedState) {
       toast.error("Select a state first.");
       return;
     }
 
-    setSelectedState(selectedState);
-
-    try {
-      const response = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: selectedState }),
-      });
-
-      if (!response.ok && response.status !== 401) {
-        throw new Error("Failed to save state");
-      }
-
-      toast.success(`Showing stores in ${selectedState}.`);
-    } catch {
-      toast.error("Could not save your selected state.");
-    }
+    publishSelectedState(selectedState);
+    toast.success(`Showing stores in ${selectedState}.`);
   };
 
   return (
@@ -353,7 +337,7 @@ export default function AmericaMap() {
                             className={`am-map-state ${isHovered ? "am-map-state--hovered" : ""}`}
                             onMouseEnter={() => setHoveredState(stateName)}
                             onMouseLeave={() => setHoveredState(null)}
-                            onClick={() => setSelectedState(stateName)}
+                            onClick={() => setSelectedStateLocal(stateName)}
                             style={{
                               default: {
                                 fill: "#3fb5d0",
@@ -395,7 +379,7 @@ export default function AmericaMap() {
             <div className="relative">
               <select
                 value={selectedState}
-                onChange={(e) => setSelectedState(e.target.value)}
+                onChange={(e) => setSelectedStateLocal(e.target.value)}
                 className="w-full appearance-none rounded-lg border border-slate-600 bg-[#25231c] px-4 py-2.5 text-sm text-slate-200 outline-none transition focus:border-[#79d0de]"
               >
                 <option value="">Select Your State</option>
