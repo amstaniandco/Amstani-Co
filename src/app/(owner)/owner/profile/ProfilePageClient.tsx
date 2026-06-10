@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { PenLine, Store, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { PenLine, Store, Loader2, CheckCircle2, XCircle, BookOpen } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
+import { useTutorial } from "../../../../components/owner/tutorial/TutorialProvider";
 
 function isProfileComplete(store: any): boolean {
   return !!(
@@ -154,7 +155,7 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
         }}
       />
 
-      <div className="relative h-[126px] overflow-hidden rounded-[12px] bg-zinc-900 sm:h-[176px]">
+      <div data-tutorial-id="owner-banner" className="relative h-[126px] overflow-hidden rounded-[12px] bg-zinc-900 sm:h-[176px]">
         {store?.bannerUrl ? (
           <img src={store.bannerUrl} alt="Store Banner" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
@@ -178,7 +179,7 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="relative h-[66px] w-[66px] shrink-0 overflow-visible">
+          <div data-tutorial-id="owner-logo" className="relative h-[66px] w-[66px] shrink-0 overflow-visible">
             <div className="h-full w-full overflow-hidden rounded-full bg-[#9a9a9a]">
               {store?.logoUrl ? <img src={store.logoUrl} alt="Logo" className="h-full w-full object-cover" /> : null}
             </div>
@@ -425,7 +426,7 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
   };
 
   return (
-    <section className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] dark:border dark:border-slate-700 dark:bg-slate-800 sm:p-6">
+    <section data-tutorial-id="owner-store-customization" className="rounded-[26px] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] dark:border dark:border-slate-700 dark:bg-slate-800 sm:p-6">
       <h3 className="text-[1.2rem] font-bold text-slate-900 dark:text-slate-100 sm:text-[1.45rem]">Store Customization</h3>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Update store name, description, photos and owner contact details.</p>
 
@@ -526,6 +527,7 @@ export default function ProfilePageClient() {
   const forwardAppId = searchParams.get("forwardAppId") || "";
   const [user, setUser] = useState<any>(null);
   const [store, setStore] = useState<any>(null);
+  const { start: startTutorial } = useTutorial();
   const [followerCount, setFollowerCount] = useState(0);
   const [productCount, setProductCount] = useState(0);
   const [applications, setApplications] = useState<StoreApplication[]>([]);
@@ -608,7 +610,16 @@ export default function ProfilePageClient() {
           <h1 className="text-xl font-semibold sm:text-2xl">{store?.name || "Setup Your Store"}</h1>
         </div>
 
-        <span className={`inline-flex items-center self-start rounded-full border px-4 py-1.5 text-sm font-semibold sm:self-auto ${
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={startTutorial}
+            className="inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
+          >
+            <BookOpen className="h-3.5 w-3.5" /> See Tutorial
+          </button>
+
+        <span className={`inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-semibold ${
           store?.status === "active"
             ? "border-green-500 text-green-600 dark:border-green-400 dark:text-green-400"
             : store?.status === "suspended"
@@ -625,6 +636,7 @@ export default function ProfilePageClient() {
             ? "Incomplete Profile"
             : "Awaiting Activation"}
         </span>
+        </div>
       </section>
 
       <section className="mt-4">
@@ -632,7 +644,7 @@ export default function ProfilePageClient() {
       </section>
 
       {!isProfileComplete(store) && (
-        <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-700 dark:bg-amber-900/20">
+        <section data-tutorial-id="owner-profile-checklist" className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-700 dark:bg-amber-900/20">
           <p className="font-semibold text-amber-800 dark:text-amber-300">Complete your profile to get your store activated</p>
           <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">Your store will not be visible to customers until all required fields are filled and an admin activates it.</p>
           <ul className="mt-3 space-y-1.5">

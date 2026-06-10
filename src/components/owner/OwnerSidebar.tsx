@@ -152,10 +152,18 @@ export default function OwnerSidebar() {
             const isActive = item.label === activeLabel;
             const badge = BADGE_MAP[item.href] ?? 0;
 
+            const tutorialId =
+              item.href === "/products" ? "sidebar-products"
+              : item.href === "/orders" ? "sidebar-orders"
+              : item.href === "/owner/claims" ? "sidebar-claims"
+              : item.href === "/store/chats" ? "sidebar-chats"
+              : undefined;
+
             return (
               <Link
                 key={item.label}
                 href={item.href}
+                data-tutorial-id={tutorialId}
                 className={`flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition md:w-full ${
                   isActive
                     ? "bg-[#65bbc5] text-white shadow-sm"

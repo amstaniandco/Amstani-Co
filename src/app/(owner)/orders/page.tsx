@@ -330,7 +330,7 @@ export default function OwnerOrdersPage() {
         </div>
       </section>
 
-      <section className="mt-4 space-y-4">
+      <section data-tutorial-id="owner-orders-list" className="mt-4 space-y-4">
         {loading ? (
           <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center text-sm text-slate-400">Loading orders...</div>
         ) : error ? (

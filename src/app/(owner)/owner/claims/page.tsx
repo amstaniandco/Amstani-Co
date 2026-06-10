@@ -295,7 +295,7 @@ export default function OwnerClaimsPage() {
         </div>
       </section>
 
-      <section className="mt-8">
+      <section data-tutorial-id="owner-claims-table" className="mt-8">
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
           <div className="flex items-center justify-between px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2 text-slate-900">
