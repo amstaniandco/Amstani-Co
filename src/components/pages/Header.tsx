@@ -286,6 +286,12 @@ export default function Header() {
   useEffect(() => subscribeSelectedState((state) => setUserState(state)), []);
 
   useEffect(() => {
+    const handler = () => setNotificationCount(0);
+    window.addEventListener("notifications-read", handler);
+    return () => window.removeEventListener("notifications-read", handler);
+  }, []);
+
+  useEffect(() => {
     setStateMenuOpen(false);
   }, [pathname]);
 
@@ -314,7 +320,11 @@ export default function Header() {
 
         if (cancelled) return;
 
-        setCartCount(Array.isArray(cartData.items) ? cartData.items.length : 0);
+        setCartCount(
+          Array.isArray(cartData.items)
+            ? cartData.items.reduce((sum: number, item: { quantity?: number }) => sum + (item.quantity ?? 1), 0)
+            : 0,
+        );
         setWishlistCount(Array.isArray(wishlistData.items) ? wishlistData.items.length : 0);
         setNotificationCount(
           Array.isArray(notificationData.notifications)

@@ -27,3 +27,16 @@ export async function GET() {
     })),
   });
 }
+
+export async function PATCH() {
+  const user = await getUserFromToken();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const client = await clientPromise;
+  const db = client.db(DB_NAME);
+  await db
+    .collection("notifications")
+    .updateMany({ userId: new ObjectId(user.id), isRead: { $ne: true } }, { $set: { isRead: true } });
+
+  return NextResponse.json({ ok: true });
+}
