@@ -41,6 +41,7 @@ type StoreManagementTableProps = {
   stateFilter?: string;
   onStateFilterChange?: (state: string) => void;
   availableStates?: string[];
+  chatBadges?: Record<string, number>;
 };
 
 export const defaultRows: StoreRow[] = [
@@ -140,6 +141,7 @@ export default function StoreManagementTable({
   stateFilter = "all",
   onStateFilterChange,
   availableStates = [],
+  chatBadges = {},
 }: StoreManagementTableProps) {
   return (
     <div className="overflow-hidden rounded-[22px] border border-[#d9e2e8] bg-white shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
@@ -233,6 +235,11 @@ export default function StoreManagementTable({
                     {row.name.charAt(0)}
                   </span>
                   <span>{row.name}</span>
+                  {(chatBadges[row.id] ?? 0) > 0 && (
+                    <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-teal-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                      {chatBadges[row.id]}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-slate-600">Owner: {row.owner}</p>
                 <p className="mt-0.5 text-xs text-slate-600">Onboarding: {row.onboarding}</p>
@@ -278,6 +285,11 @@ export default function StoreManagementTable({
                     {row.name.charAt(0)}
                   </span>
                   <span>{row.name}</span>
+                  {(chatBadges[row.id] ?? 0) > 0 && (
+                    <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-teal-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                      {chatBadges[row.id]}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[row.status]}`}>

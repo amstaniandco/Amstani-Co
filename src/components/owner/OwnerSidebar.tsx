@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -40,20 +40,62 @@ const sidebarItems: SidebarItem[] = [
   { label: "Payouts", href: "/owner/stripe", icon: CreditCard },
 ];
 
+type SidebarCounts = { orders: number; claims: number; notifications: number; listing_requests: number };
+
 function getActiveLabel(pathname: string) {
   const match = sidebarItems.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
-
   return match?.label ?? "Chats";
+}
+
+function buildQuery(since: Record<string, string>) {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(since)) if (v) params.set(k, v);
+  const qs = params.toString();
+  return `/api/owner/sidebar-counts${qs ? `?${qs}` : ""}`;
 }
 
 export default function OwnerSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const activeLabel = getActiveLabel(pathname || "");
-
   const [isOpen, setIsOpen] = useState(false);
+  const [counts, setCounts] = useState<SidebarCounts>({ orders: 0, claims: 0, notifications: 0, listing_requests: 0 });
+
+  useEffect(() => {
+    let cancelled = false;
+    const since = {
+      since_orders: localStorage.getItem("sb_seen_owner_orders") ?? "",
+      since_claims: localStorage.getItem("sb_seen_owner_claims") ?? "",
+      since_notifications: localStorage.getItem("sb_seen_owner_notifications") ?? "",
+      since_requests: localStorage.getItem("sb_seen_owner_listing_requests") ?? "",
+    };
+    fetch(buildQuery(since))
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (!cancelled && data) setCounts(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [pathname]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (detail === "owner_orders") setCounts((p) => ({ ...p, orders: 0 }));
+      if (detail === "owner_claims") setCounts((p) => ({ ...p, claims: 0 }));
+      if (detail === "owner_notifications") setCounts((p) => ({ ...p, notifications: 0 }));
+      if (detail === "owner_listing_requests") setCounts((p) => ({ ...p, listing_requests: 0 }));
+    };
+    window.addEventListener("sb-seen", handler);
+    return () => window.removeEventListener("sb-seen", handler);
+  }, []);
+
+  const BADGE_MAP: Record<string, number> = {
+    "/orders": counts.orders,
+    "/owner/claims": counts.claims,
+    "/owner/notifications": counts.notifications,
+    "/products": counts.listing_requests,
+  };
 
   const handleLogout = async () => {
     try {
@@ -108,6 +150,7 @@ export default function OwnerSidebar() {
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.label === activeLabel;
+            const badge = BADGE_MAP[item.href] ?? 0;
 
             return (
               <Link
@@ -120,8 +163,15 @@ export default function OwnerSidebar() {
                 }`}
                 onClick={() => setIsOpen(false)}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {badge > 0 && (
+                  <span className={`inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                    isActive ? "bg-white/30 text-white" : "bg-red-500 text-white"
+                  }`}>
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </Link>
             );
           })}

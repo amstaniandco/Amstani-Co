@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
+import { ObjectId, WithId, Document } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
 
@@ -32,5 +32,31 @@ export async function GET() {
     .sort({ listedAt: -1 })
     .toArray();
 
-  return NextResponse.json({ products, storeName: store.name, markupPercent, discountCap });
+  // Enrich with brand/category/description from global catalog
+  const productIds = products
+    .map((p) => { try { return new ObjectId(p.productId as string); } catch { return null; } })
+    .filter(Boolean) as ObjectId[];
+
+  const catalogDocs = productIds.length
+    ? await db.collection("products")
+        .find({ _id: { $in: productIds } })
+        .project({ _id: 1, brand: 1, category: 1, description: 1 })
+        .toArray()
+    : [];
+
+  const catalogMap = new Map(
+    (catalogDocs as WithId<Document>[]).map((d) => [d._id.toString(), d])
+  );
+
+  const enriched = products.map((p) => {
+    const cat = catalogMap.get(p.productId as string);
+    return {
+      ...p,
+      brand: (cat?.brand as { name?: string } | undefined)?.name ?? null,
+      category: (cat?.category as string | undefined) ?? null,
+      description: (cat?.description as string | undefined) ?? null,
+    };
+  });
+
+  return NextResponse.json({ products: enriched, storeName: store.name, markupPercent, discountCap });
 }

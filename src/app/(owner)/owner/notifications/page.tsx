@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Square, Store } from "lucide-react";
+import { Bell, ChevronLeft, Square, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type NotificationItem = {
@@ -23,7 +23,9 @@ function relativeTime(value: string) {
 function NotificationRow({ item }: { item: NotificationItem }) {
   return (
     <article className="grid grid-cols-[40px_minmax(0,1fr)] gap-x-4 gap-y-0.5 py-2.5 sm:grid-cols-[46px_minmax(0,1fr)_auto] sm:items-center">
-      <div className="h-9 w-9 rounded-full bg-slate-300 sm:h-10 sm:w-10" />
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-100 sm:h-10 sm:w-10">
+        <Bell className="h-4 w-4 text-teal-600" />
+      </div>
       <div className="min-w-0">
         <h3 className="text-[17px] font-bold leading-tight text-slate-900 sm:text-[18px]">{item.title}</h3>
         <p className="mt-0.5 text-[11px] leading-4 text-slate-700">{item.message}</p>
@@ -41,6 +43,8 @@ export default function OwnerNotificationsPage() {
       .then((res) => res.ok ? res.json() : null)
       .then((data) => setNotifications(data?.notifications ?? []))
       .catch(() => {});
+    localStorage.setItem("sb_seen_owner_notifications", new Date().toISOString());
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "owner_notifications" }));
   }, []);
 
   return (

@@ -62,6 +62,12 @@ export default function StoreProductsClient() {
     if (currentTab === "listing-requests") fetchListingRequests();
   }, [currentTab, fetchListedProducts, fetchListingRequests]);
 
+  // Fetch listing requests once on mount to populate the tab badge
+  useEffect(() => {
+    if (storeId) fetchListingRequests();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId]);
+
   const handleRemoveProduct = async (productId: string) => {
     if (!confirm("Remove this product from the store?")) return;
     await fetch(`/api/admin/stores/${storeId}/products`, {
@@ -87,10 +93,12 @@ export default function StoreProductsClient() {
     fetchListedProducts();
   };
 
+  const pendingRequestsCount = listingRequests.filter((r) => r.status === "pending").length;
+
   const tabs = [
-    { label: "Listed", value: "listed" },
-    { label: "Listing Requests", value: "listing-requests" },
-    { label: "Add New", value: "add-new" },
+    { label: "Listed", value: "listed", badge: 0 },
+    { label: "Listing Requests", value: "listing-requests", badge: pendingRequestsCount },
+    { label: "Add New", value: "add-new", badge: 0 },
   ];
 
   // Filter by search
@@ -138,13 +146,18 @@ export default function StoreProductsClient() {
                     key={tab.value}
                     type="button"
                     onClick={() => setCurrentTab(tab.value)}
-                    className={`rounded-full px-4 py-2 transition ${
+                    className={`relative rounded-full px-4 py-2 transition ${
                       currentTab === tab.value
                         ? "bg-[#0f766e] text-white shadow-sm"
                         : "bg-[#f8fafb] text-slate-600 hover:bg-white"
                     }`}
                   >
                     {tab.label}
+                    {tab.badge > 0 && (
+                      <span className="absolute -right-1 -top-1 inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[9px] font-bold leading-none text-white ring-2 ring-white">
+                        {tab.badge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(Get-ChildItem -Force)"
+      "Bash(Get-ChildItem -Force)",
+      "Bash(find src/app/api/owner/products -name \"*.ts\")",
+      "Bash(find src/app/api/products -name \"*.ts\")",
+      "Bash(ls src/app/api/owner/)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\admin\\\\stores\\\\chat-counts\")",
+      "Bash(Write-Host \"done\")"
     ]
   }
 }

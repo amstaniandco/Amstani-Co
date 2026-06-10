@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users } from "lucide-react";
 
@@ -28,6 +29,17 @@ const defaultItems: AdminSidebarItem[] = [
   { label: "Claims", href: "/admin/claims", icon: FileWarning },
 ];
 
+type SidebarCounts = { stores: number; claims: number; chats: number };
+
+function buildQuery(since_claims: string, since_stores: string, since_chats: string) {
+  const params = new URLSearchParams();
+  if (since_claims) params.set("since_claims", since_claims);
+  if (since_stores) params.set("since_stores", since_stores);
+  if (since_chats) params.set("since_chats", since_chats);
+  const qs = params.toString();
+  return `/api/admin/sidebar-counts${qs ? `?${qs}` : ""}`;
+}
+
 export default function AdminSidebar({
   activePath,
   items = defaultItems,
@@ -35,7 +47,41 @@ export default function AdminSidebar({
   className = "",
 }: AdminSidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const isLight = variant === "light";
+  const [counts, setCounts] = useState<SidebarCounts>({ stores: 0, claims: 0, chats: 0 });
+
+  const resolvedActive = activePath ?? pathname ?? "";
+
+  useEffect(() => {
+    let cancelled = false;
+    const since_claims = localStorage.getItem("sb_seen_admin_claims") ?? "";
+    const since_stores = localStorage.getItem("sb_seen_admin_stores") ?? "";
+    const since_chats = localStorage.getItem("sb_seen_admin_chats") ?? "";
+    fetch(buildQuery(since_claims, since_stores, since_chats))
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (!cancelled && data) setCounts(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [pathname]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (detail === "admin_claims") setCounts((p) => ({ ...p, claims: 0 }));
+      if (detail === "admin_stores" || detail === "admin_stores_applications" || detail === "admin_stores_signups") {
+        setCounts((p) => ({ ...p, stores: 0 }));
+      }
+      if (detail === "admin_chats") setCounts((p) => ({ ...p, chats: 0 }));
+    };
+    window.addEventListener("sb-seen", handler);
+    return () => window.removeEventListener("sb-seen", handler);
+  }, []);
+
+  const BADGE_MAP: Record<string, number> = {
+    "/admin/stores": counts.stores + counts.chats,
+    "/admin/claims": counts.claims,
+  };
 
   const handleLogout = async () => {
     try {
@@ -91,7 +137,8 @@ export default function AdminSidebar({
       <nav className="relative flex-1 space-y-2 overflow-y-auto pr-1">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = activePath === item.href;
+          const isActive = resolvedActive === item.href || resolvedActive.startsWith(item.href + "/");
+          const badge = BADGE_MAP[item.href] ?? 0;
 
           return (
             <Link
@@ -120,7 +167,12 @@ export default function AdminSidebar({
               >
                 <Icon className="h-4 w-4" />
               </span>
-              <span className="font-medium">{item.label}</span>
+              <span className="flex-1 font-medium">{item.label}</span>
+              {badge > 0 && (
+                <span className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
             </Link>
           );
         })}

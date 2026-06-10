@@ -92,6 +92,19 @@ function dueDate(createdAt: string): string {
   return d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
 }
 
+const CLAIMS_PAGE_SIZE = 10;
+
+function getClaimUnread(claim: Claim): number {
+  const lastRead = localStorage.getItem(`claim_read_${claim._id}`);
+  if (!lastRead) {
+    return claim.messages.filter((m) => m.senderRole === "user").length;
+  }
+  const since = new Date(lastRead).getTime();
+  return claim.messages.filter(
+    (m) => m.senderRole === "user" && new Date(m.timestamp).getTime() > since,
+  ).length;
+}
+
 export default function OwnerClaimsPage() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [storeName, setStoreName] = useState("");
@@ -103,6 +116,8 @@ export default function OwnerClaimsPage() {
   const [resolving, setResolving] = useState(false);
   const [requestingResolve, setRequestingResolve] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [claimsPage, setClaimsPage] = useState(1);
+  const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   async function loadClaims() {
@@ -119,6 +134,17 @@ export default function OwnerClaimsPage() {
   }
 
   useEffect(() => { loadClaims(); }, []);
+
+  useEffect(() => {
+    const map: Record<string, number> = {};
+    claims.forEach((c) => { map[c._id] = getClaimUnread(c); });
+    setUnreadMap(map);
+  }, [claims]);
+
+  useEffect(() => {
+    localStorage.setItem("sb_seen_owner_claims", new Date().toISOString());
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "owner_claims" }));
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,6 +207,13 @@ export default function OwnerClaimsPage() {
     }
   }
 
+  function openClaim(claim: Claim) {
+    const now = new Date().toISOString();
+    localStorage.setItem(`claim_read_${claim._id}`, now);
+    setUnreadMap((prev) => ({ ...prev, [claim._id]: 0 }));
+    setActiveClaim(claim);
+  }
+
   const summaryCards = [
     {
       title: "TOTAL ACTIVE CLAIMS",
@@ -207,6 +240,9 @@ export default function OwnerClaimsPage() {
       icon: Clock3,
     },
   ];
+
+  const totalClaimsPages = Math.ceil(claims.length / CLAIMS_PAGE_SIZE);
+  const pagedClaims = claims.slice((claimsPage - 1) * CLAIMS_PAGE_SIZE, claimsPage * CLAIMS_PAGE_SIZE);
 
   return (
     <>
@@ -277,6 +313,7 @@ export default function OwnerClaimsPage() {
               No claims for your store yet.
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <div className="min-w-[920px]">
                 <div className="grid grid-cols-[1fr_1.15fr_1.05fr_0.95fr_0.9fr_1.35fr] border-t border-slate-200 bg-slate-50 px-4 py-4 text-[11px] font-extrabold uppercase leading-4 tracking-[0.08em] text-slate-700 sm:px-5">
@@ -289,8 +326,9 @@ export default function OwnerClaimsPage() {
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {claims.map((claim) => {
+                  {pagedClaims.map((claim) => {
                     const isEscalated = claim.status === "admin_escalated";
+                    const unreadCount = unreadMap[claim._id] ?? 0;
                     return (
                       <div
                         key={claim._id}
@@ -299,7 +337,14 @@ export default function OwnerClaimsPage() {
                         }`}
                       >
                         <div>
-                          <div className="text-[12px] font-semibold text-slate-600">#{claim.claimNumber}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] font-semibold text-slate-600">#{claim.claimNumber}</span>
+                            {unreadCount > 0 && (
+                              <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                                {unreadCount}
+                              </span>
+                            )}
+                          </div>
                           {claim.orderNumber && (
                             <div className="text-[11px] text-slate-400 mt-0.5">Order: {claim.orderNumber}</div>
                           )}
@@ -318,7 +363,7 @@ export default function OwnerClaimsPage() {
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <button
-                            onClick={() => setActiveClaim(claim)}
+                            onClick={() => openClaim(claim)}
                             className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-50"
                           >
                             View / Chat
@@ -352,6 +397,28 @@ export default function OwnerClaimsPage() {
                 </div>
               </div>
             </div>
+            {totalClaimsPages > 1 && (
+              <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+                <button
+                  onClick={() => setClaimsPage((p) => Math.max(1, p - 1))}
+                  disabled={claimsPage === 1}
+                  className="text-sm font-medium text-slate-500 transition hover:text-slate-800 disabled:opacity-30"
+                >
+                  ← Prev
+                </button>
+                <span className="text-xs text-slate-400">
+                  Page {claimsPage} of {totalClaimsPages}
+                </span>
+                <button
+                  onClick={() => setClaimsPage((p) => Math.min(totalClaimsPages, p + 1))}
+                  disabled={claimsPage === totalClaimsPages}
+                  className="text-sm font-medium text-slate-500 transition hover:text-slate-800 disabled:opacity-30"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </section>

@@ -13,6 +13,12 @@ export default function AdminStoreApplicationsPage() {
   const [settingsLoading, setSettingsLoading]     = useState(true);
   const [saving, setSaving]                       = useState(false);
 
+  useEffect(() => {
+    localStorage.setItem("sb_seen_admin_stores_applications", new Date().toISOString());
+    localStorage.setItem("sb_seen_admin_stores", new Date().toISOString());
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "admin_stores_applications" }));
+  }, []);
+
   // Load settings on mount
   useEffect(() => {
     fetch("/api/admin/stores/applications/settings")

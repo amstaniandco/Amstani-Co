@@ -127,6 +127,11 @@ export default function AdminClaimsPage() {
 
   useEffect(() => { loadClaims(); }, []);
 
+  useEffect(() => {
+    localStorage.setItem("sb_seen_admin_claims", new Date().toISOString());
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "admin_claims" }));
+  }, []);
+
   async function handleIntervene(claim: Claim) {
     setIntervening(true);
     try {

@@ -45,6 +45,12 @@ export default function AdminStoreSignupRequestsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    localStorage.setItem("sb_seen_admin_stores_signups", new Date().toISOString());
+    localStorage.setItem("sb_seen_admin_stores", new Date().toISOString());
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "admin_stores_signups" }));
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
 
     (async () => {

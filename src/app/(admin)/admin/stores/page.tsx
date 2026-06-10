@@ -65,6 +65,8 @@ export default function AdminStoresPage() {
   );
   const [openChats, setOpenChats] = useState<{ id: string; name: string }[]>([]);
   const [activeChatId, setActiveChatId] = useState("");
+  const [pendingListingCount, setPendingListingCount] = useState(0);
+  const [chatBadges, setChatBadges] = useState<Record<string, number>>({});
   const [liveWarnings, setLiveWarnings] = useState<{
     storeId: string; storeName: string; warnings: number;
     warningsResetAt: string | null; ownerName: string; ownerEmail: string;
@@ -118,6 +120,24 @@ export default function AdminStoresPage() {
   useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, stateFilter, ratingFilter]);
 
   useEffect(() => {
+    // Read BEFORE clearing so we can show badges for messages since last visit
+    const prevSinceChats = localStorage.getItem("sb_seen_admin_chats") ?? "";
+
+    const now = new Date().toISOString();
+    localStorage.setItem("sb_seen_admin_stores", now);
+    localStorage.setItem("sb_seen_admin_chats", now);
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "admin_stores" }));
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "admin_chats" }));
+
+    // Fetch per-store chat badge counts using the previous since timestamp
+    const params = prevSinceChats ? `?since=${encodeURIComponent(prevSinceChats)}` : "";
+    fetch(`/api/admin/stores/chat-counts${params}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setChatBadges(data.counts ?? {}); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const loadStores = async () => {
       try {
         setIsLoading(true);
@@ -142,6 +162,20 @@ export default function AdminStoresPage() {
       .then((d) => setLiveWarnings(d.warnings || []))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!selectedStore) { setPendingListingCount(0); return; }
+    let cancelled = false;
+    fetch(`/api/admin/stores/${encodeURIComponent(selectedStore.id)}/listing-requests`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const pending = (data.requests as { status: string }[]).filter((r) => r.status === "pending").length;
+        setPendingListingCount(pending);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedStore?.id]);
 
   const openOwnerChat = (store: StoreRow) => {
     setOpenChats((prev) =>
@@ -343,6 +377,7 @@ export default function AdminStoresPage() {
                   stateFilter={stateFilter}
                   onStateFilterChange={setStateFilter}
                   availableStates={uniqueStates as string[]}
+                  chatBadges={chatBadges}
                 />
               </section>
 
@@ -430,9 +465,14 @@ export default function AdminStoresPage() {
                     <button
                       type="button"
                       onClick={() => router.push(`/admin/stores/store-products?storeId=${encodeURIComponent(selectedStore.id)}`)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      className="relative inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
                       <Package className="h-4 w-4" /> Manage Products
+                      {pendingListingCount > 0 && (
+                        <span className="ml-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                          {pendingListingCount}
+                        </span>
+                      )}
                     </button>
                     <button
                       type="button"

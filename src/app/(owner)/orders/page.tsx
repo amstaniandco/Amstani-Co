@@ -6,7 +6,6 @@ import {
   CalendarDays,
   CreditCard,
   Download,
-  Ellipsis,
   List,
   MapPin,
   PackageSearch,
@@ -136,7 +135,7 @@ function OrdersTable({
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[920px] text-left">
+        <table className="w-full min-w-[700px] text-left">
           <thead className="bg-slate-50">
             <tr className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
               <th className="px-5 py-4">Order ID</th>
@@ -144,7 +143,6 @@ function OrdersTable({
               <th className="px-5 py-4">Date</th>
               <th className="px-5 py-4">Total</th>
               <th className="px-5 py-4">Status</th>
-              <th className="px-5 py-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -167,13 +165,6 @@ function OrdersTable({
                   <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${statusStyles[order.statusTone]}`}>
                     {order.status}
                   </span>
-                </td>
-                <td className="px-5 py-5">
-                  <div className="flex justify-end">
-                  <span className="text-2xl leading-none text-slate-500">
-                    <Ellipsis className="h-5 w-5" />
-                  </span>
-                  </div>
                 </td>
               </tr>
             ))}
@@ -228,6 +219,11 @@ export default function OwnerOrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  useEffect(() => {
+    localStorage.setItem("sb_seen_owner_orders", new Date().toISOString());
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "owner_orders" }));
+  }, []);
 
   const filteredOrders = useMemo(() => {
     const q = query.trim().toLowerCase();

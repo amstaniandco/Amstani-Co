@@ -68,9 +68,12 @@ export async function POST(
     { $push: { messages: message } as any, $set: setFields }
   );
 
-  // Notify the other party
+  // Resolve store doc once for all notification branches
+  if (!store && ObjectId.isValid(claim.storeId)) {
+    store = await db.collection("stores").findOne({ _id: new ObjectId(claim.storeId) });
+  }
+
   if (user.role === "owner") {
-    // Owner replied → notify customer
     await createNotification({
       userId: claim.customerId,
       title: "Store Owner Replied to Your Claim",
@@ -78,17 +81,27 @@ export async function POST(
       referenceId: claimId,
     });
   } else if (user.role === "user") {
-    // Customer replied → notify store owner
-    if (!store && ObjectId.isValid(claim.storeId)) {
-      store = await db
-        .collection("stores")
-        .findOne({ _id: new ObjectId(claim.storeId) });
-    }
     if (store?.ownerId) {
       await createNotification({
         userId: store.ownerId.toString(),
         title: "Customer Replied on Claim",
         message: `${senderName} replied on claim #${claim.claimNumber}: "${content.trim().slice(0, 100)}"`,
+        referenceId: claimId,
+      });
+    }
+  } else if (user.role === "admin") {
+    // Admin replied → notify both customer and store owner
+    await createNotification({
+      userId: claim.customerId,
+      title: "Admin Replied to Your Claim",
+      message: `Admin replied on claim #${claim.claimNumber}: "${content.trim().slice(0, 100)}"`,
+      referenceId: claimId,
+    });
+    if (store?.ownerId) {
+      await createNotification({
+        userId: store.ownerId.toString(),
+        title: "Admin Commented on Claim",
+        message: `Admin replied on claim #${claim.claimNumber}: "${content.trim().slice(0, 100)}"`,
         referenceId: claimId,
       });
     }

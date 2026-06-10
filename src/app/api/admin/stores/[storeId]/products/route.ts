@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
+import { ObjectId, WithId, Document } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../../lib/db";
 import { requireAdminResponse } from "../../../../../../lib/admin-catalog-taxonomy";
 
@@ -12,14 +12,40 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const { storeId } = await params;
   const client = await clientPromise;
-  const rows = await client
-    .db(DB_NAME)
+  const db = client.db(DB_NAME);
+  const rows = await db
     .collection("store_products")
     .find({ storeId })
     .sort({ listedAt: -1 })
     .toArray();
 
-  return NextResponse.json({ products: rows });
+  // Enrich with brand/category/description from global catalog
+  const productIds = rows
+    .map((r) => { try { return new ObjectId(r.productId as string); } catch { return null; } })
+    .filter(Boolean) as ObjectId[];
+
+  const catalogDocs = productIds.length
+    ? await db.collection("products")
+        .find({ _id: { $in: productIds } })
+        .project({ _id: 1, brand: 1, category: 1, description: 1 })
+        .toArray()
+    : [];
+
+  const catalogMap = new Map(
+    (catalogDocs as WithId<Document>[]).map((d) => [d._id.toString(), d])
+  );
+
+  const enriched = rows.map((r) => {
+    const cat = catalogMap.get(r.productId as string);
+    return {
+      ...r,
+      brand: (cat?.brand as { name?: string } | undefined)?.name ?? null,
+      category: (cat?.category as string | undefined) ?? null,
+      description: (cat?.description as string | undefined) ?? null,
+    };
+  });
+
+  return NextResponse.json({ products: enriched });
 }
 
 // POST — add selected global-catalog products to this store

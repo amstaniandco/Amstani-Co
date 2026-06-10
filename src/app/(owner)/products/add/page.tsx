@@ -43,6 +43,11 @@ export default function AddNewProductsPage() {
   const totalQuantity = form.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
   useEffect(() => {
+    localStorage.setItem("sb_seen_owner_listing_requests", new Date().toISOString());
+    window.dispatchEvent(new CustomEvent("sb-seen", { detail: "owner_listing_requests" }));
+  }, []);
+
+  useEffect(() => {
     setHistoryLoading(true);
     fetch("/api/owner/listing-requests")
       .then((r) => r.json())
