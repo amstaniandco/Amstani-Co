@@ -37,9 +37,12 @@ type Claim = {
   reason: string;
   description: string;
   items: ClaimItem[];
+  mediaUrls?: string[];
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
   messages: ClaimMessage[];
   adminIntervened?: boolean;
+  resolveRequestPending?: boolean;
+  resolveApprovedByAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -100,6 +103,7 @@ export default function AdminClaimsPage() {
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [intervening, setIntervening] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   async function loadClaims() {
     try {
@@ -109,11 +113,13 @@ export default function AdminClaimsPage() {
       const fetched: Claim[] = data.claims || [];
       setClaims(fetched);
       setStats(data.stats || { total: 0, escalated: 0, avgResolutionHours: 0 });
-      // Auto-select first escalated claim for the timeline panel
-      if (!selectedClaim) {
-        const first = fetched.find((c) => c.status === "admin_escalated") || fetched[0];
-        if (first) setSelectedClaim(first);
-      }
+      setSelectedClaim((prev) => {
+        if (!prev) {
+          return fetched.find((c) => c.status === "admin_escalated") || fetched[0] || null;
+        }
+        // Always sync with fresh data so buttons reflect current state
+        return fetched.find((c) => c._id === prev._id) || prev;
+      });
     } finally {
       setLoading(false);
     }
@@ -133,6 +139,20 @@ export default function AdminClaimsPage() {
       await loadClaims();
     } finally {
       setIntervening(false);
+    }
+  }
+
+  async function handleApproveResolve(claim: Claim) {
+    try {
+      const res = await fetch(`/api/admin/claims/${claim._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve_resolve" }),
+      });
+      if (!res.ok) return;
+      await loadClaims();
+    } catch {
+      // silent
     }
   }
 
@@ -297,6 +317,14 @@ export default function AdminClaimsPage() {
                             </span>
                           </div>
                         </div>
+                        {row.resolveRequestPending && !row.resolveApprovedByAdmin && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleApproveResolve(row); }}
+                            className="w-full inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+                          >
+                            Approve Resolve
+                          </button>
+                        )}
                         {row.status === "admin_escalated" && (() => {
                           const { label, cls } = interveneButtonMeta(row.reason);
                           return (
@@ -369,25 +397,35 @@ export default function AdminClaimsPage() {
                               </span>
                             </td>
                             <td className="px-3 py-3 text-right">
-                              {row.status === "admin_escalated" ? (() => {
-                                const { label, cls } = interveneButtonMeta(row.reason);
-                                return (
+                              <div className="flex items-center justify-end gap-1.5">
+                                {row.resolveRequestPending && !row.resolveApprovedByAdmin && (
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); handleIntervene(row); }}
-                                    disabled={intervening}
-                                    className={cls}
+                                    onClick={(e) => { e.stopPropagation(); handleApproveResolve(row); }}
+                                    className="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
                                   >
-                                    {label}
+                                    Approve Resolve
                                   </button>
-                                );
-                              })() : (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setSelectedClaim(row); }}
-                                  className="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold border border-[#dbe5ea] bg-white text-slate-700 hover:bg-slate-50"
-                                >
-                                  Review
-                                </button>
-                              )}
+                                )}
+                                {row.status === "admin_escalated" ? (() => {
+                                  const { label, cls } = interveneButtonMeta(row.reason);
+                                  return (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleIntervene(row); }}
+                                      disabled={intervening}
+                                      className={cls}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })() : (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedClaim(row); }}
+                                    className="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold border border-[#dbe5ea] bg-white text-slate-700 hover:bg-slate-50"
+                                  >
+                                    Review
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -410,9 +448,28 @@ export default function AdminClaimsPage() {
                   <p className="mt-4 text-sm text-slate-400">
                     Select a claim from the table to view its lifecycle.
                   </p>
-                ) : timelineEvents.length === 0 ? (
-                  <p className="mt-4 text-sm text-slate-400">No activity yet.</p>
                 ) : (
+                  <>
+                  {selectedClaim.mediaUrls && selectedClaim.mediaUrls.length > 0 && (
+                    <div className="mt-3 mb-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Photo Evidence</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedClaim.mediaUrls.map((url, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setLightboxUrl(url)}
+                            className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[#dbe5ea] hover:opacity-80 transition-opacity"
+                          >
+                            <img src={url} alt={`Evidence ${i + 1}`} className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {timelineEvents.length === 0 ? (
+                  <p className="mt-4 text-sm text-slate-400">No activity yet.</p>
+                  ) : (
                   <div className="mt-4 space-y-3">
                     {timelineEvents.map((item) => (
                       <div key={item.id} className="flex gap-3">
@@ -449,15 +506,25 @@ export default function AdminClaimsPage() {
                       </div>
                     ))}
                   </div>
+                  )}
+                  </>
                 )}
 
-                {selectedClaim && selectedClaim.status !== "resolved" && selectedClaim.status !== "awaiting_reorder" && (() => {
+                {selectedClaim && selectedClaim.resolveRequestPending && !selectedClaim.resolveApprovedByAdmin && (
+                  <button
+                    onClick={() => handleApproveResolve(selectedClaim)}
+                    className="mt-5 w-full rounded-lg px-3 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition"
+                  >
+                    Approve Owner&apos;s Resolve Request
+                  </button>
+                )}
+                {selectedClaim && selectedClaim.status === "admin_escalated" && (() => {
                   const { label, cls } = interveneButtonMeta(selectedClaim.reason);
                   return (
                     <button
                       onClick={() => handleIntervene(selectedClaim)}
                       disabled={intervening}
-                      className={`mt-5 w-full rounded-lg px-3 py-2 text-xs font-semibold transition ${cls}`}
+                      className={`mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold transition ${cls}`}
                     >
                       {intervening ? "Processing…" : label}
                     </button>
@@ -468,6 +535,30 @@ export default function AdminClaimsPage() {
           </section>
         </main>
       </div>
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 h-9 w-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Full view"
+            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

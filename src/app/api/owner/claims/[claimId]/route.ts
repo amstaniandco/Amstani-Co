@@ -29,9 +29,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid claimId" }, { status: 400 });
   }
 
-  const { status } = await req.json();
-  if (!["resolved", "owner_responded"].includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  const body = await req.json();
+  const { status, action } = body;
+
+  if (action !== "request_resolve" && !["resolved", "owner_responded"].includes(status)) {
+    return NextResponse.json({ error: "Invalid action or status" }, { status: 400 });
   }
 
   const client = await clientPromise;
@@ -46,6 +48,30 @@ export async function PATCH(
     .collection("claims")
     .findOne({ _id: new ObjectId(claimId), storeId: store._id.toString() });
   if (!claim) return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+
+  // ── REQUEST ADMIN APPROVAL TO RESOLVE ────────────────────────────────────
+  if (action === "request_resolve") {
+    const now = new Date();
+    await db.collection("claims").updateOne(
+      { _id: new ObjectId(claimId) },
+      { $set: { resolveRequestPending: true, updatedAt: now } }
+    );
+
+    // Notify all admins
+    const admins = await db.collection("users").find({ role: "admin" }, { projection: { _id: 1 } }).toArray();
+    await Promise.all(
+      admins.map((admin) =>
+        createNotification({
+          userId: admin._id.toString(),
+          title: "Owner Requesting Resolve Approval",
+          message: `Store "${store.name || "owner"}" is requesting admin approval to resolve claim #${claim.claimNumber}.`,
+          referenceId: claimId,
+        })
+      )
+    );
+
+    return NextResponse.json({ ok: true });
+  }
 
   const now = new Date();
   const reason: string = claim.reason;

@@ -31,6 +31,7 @@ type Claim = {
   items: ClaimItem[];
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
   messages: ClaimMessage[];
+  mediaUrls?: string[];
   createdAt: string;
 };
 
@@ -91,6 +92,7 @@ export default function ClaimsHistorySection() {
   const [activeClaim, setActiveClaim] = useState<Claim | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   async function loadClaims() {
@@ -217,14 +219,6 @@ export default function ClaimsHistorySection() {
               )}
             </div>
 
-            <div className="px-3 py-3 border-t border-slate-200">
-              <Link
-                href="/claims"
-                className="block w-full text-center py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition"
-              >
-                + File New Claim
-              </Link>
-            </div>
           </div>
 
           {/* Chat / detail panel */}
@@ -277,6 +271,24 @@ export default function ClaimsHistorySection() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Photo evidence */}
+                {activeClaim.mediaUrls && activeClaim.mediaUrls.length > 0 && (
+                  <div className="px-5 py-2.5 bg-slate-50 border-b border-slate-100">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Photo Evidence</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {activeClaim.mediaUrls.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`Evidence ${i + 1}`}
+                          onClick={() => setLightboxUrl(url)}
+                          className="h-16 w-16 shrink-0 rounded-lg object-cover border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -356,6 +368,29 @@ export default function ClaimsHistorySection() {
             )}
           </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 h-9 w-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Full view"
+            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </>

@@ -25,6 +25,61 @@ import {
 } from "./data";
 
 const filters = ["All", "Incoming", "Accepted", "Rejected", "On Hold", "Dispatched", "Shipped", "Delivered"];
+const PAGE_SIZE = 10;
+
+function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+
+  const pages: (number | "…")[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (page > 3) pages.push("…");
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+    if (page < totalPages - 2) pages.push("…");
+    pages.push(totalPages);
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1 pt-2">
+      <button
+        type="button"
+        onClick={() => onPage(page - 1)}
+        disabled={page === 1}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+      >
+        Prev
+      </button>
+      {pages.map((p, i) =>
+        p === "…" ? (
+          <span key={`ellipsis-${i}`} className="px-2 text-xs text-slate-400">…</span>
+        ) : (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPage(p as number)}
+            className={`min-w-[32px] rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+              p === page
+                ? "border-[#65bbc5] bg-[#65bbc5] text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {p}
+          </button>
+        )
+      )}
+      <button
+        type="button"
+        onClick={() => onPage(page + 1)}
+        disabled={page === totalPages}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+      >
+        Next
+      </button>
+    </div>
+  );
+}
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
@@ -136,6 +191,7 @@ export default function OwnerOrdersPage() {
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [error, setError] = useState("");
 
   const fetchOrders = useCallback(() => {
@@ -149,6 +205,20 @@ export default function OwnerOrdersPage() {
         const mapped = (data.orders ?? []).map(mapOrderToRow);
         setOrders(mapped);
         setStoreName(data.storeName ?? "My Store");
+
+        const params = new URLSearchParams(window.location.search);
+        const targetMongoId = params.get("orderId");
+        if (targetMongoId) {
+          const match = mapped.find((o: OrderRow) => o._mongoId === targetMongoId);
+          if (match) {
+            setSelectedOrderId(match.id);
+            setActiveFilter("All");
+            setQuery("");
+            const idx = mapped.findIndex((o: OrderRow) => o._mongoId === targetMongoId);
+            if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1);
+            return;
+          }
+        }
         setSelectedOrderId((current) => current || mapped[0]?.id || "");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load orders"))
@@ -159,7 +229,7 @@ export default function OwnerOrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
-  const visibleOrders = useMemo(() => {
+  const filteredOrders = useMemo(() => {
     const q = query.trim().toLowerCase();
     return orders.filter((order) => {
       const matchesFilter = activeFilter === "All" || order.status === activeFilter;
@@ -168,10 +238,19 @@ export default function OwnerOrdersPage() {
         order.id.toLowerCase().includes(q) ||
         order.customer.toLowerCase().includes(q) ||
         order.email.toLowerCase().includes(q);
-
       return matchesFilter && matchesQuery;
     });
   }, [activeFilter, orders, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => { setPage(1); }, [activeFilter, query]);
+
+  const visibleOrders = useMemo(
+    () => filteredOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredOrders, page],
+  );
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.id === selectedOrderId) ?? orders[0],
@@ -261,7 +340,10 @@ export default function OwnerOrdersPage() {
         ) : error ? (
           <div className="rounded-[28px] border border-red-100 bg-white p-12 text-center text-sm text-red-500">{error}</div>
         ) : (
-          <OrdersTable orders={visibleOrders} selectedOrderId={selectedOrderId} onSelectOrder={setSelectedOrderId} />
+          <>
+            <OrdersTable orders={visibleOrders} selectedOrderId={selectedOrderId} onSelectOrder={setSelectedOrderId} />
+            <Pagination page={page} totalPages={totalPages} onPage={setPage} />
+          </>
         )}
 
         {selectedOrder && (
@@ -434,7 +516,10 @@ export default function OwnerOrdersPage() {
       </section>
 
       <section className="mt-4 text-sm text-slate-500">
-        <p>Showing {visibleOrders.length} of {orders.length} orders</p>
+        <p>
+          Showing {filteredOrders.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length} orders
+          {filteredOrders.length !== orders.length && ` (filtered from ${orders.length} total)`}
+        </p>
       </section>
     </>
   );

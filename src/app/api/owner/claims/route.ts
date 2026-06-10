@@ -76,8 +76,30 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .toArray();
 
+  // Bulk-fetch order numbers so the UI can display them without N+1 queries
+  const validOrderIds = claims
+    .map((c) => c.orderId)
+    .filter((id) => ObjectId.isValid(id))
+    .map((id) => new ObjectId(id));
+
+  const orderNumberMap = new Map<string, string>();
+  if (validOrderIds.length) {
+    const orderDocs = await db
+      .collection("orders")
+      .find({ _id: { $in: validOrderIds } }, { projection: { _id: 1, orderNumber: 1 } })
+      .toArray();
+    for (const o of orderDocs) {
+      orderNumberMap.set(o._id.toString(), o.orderNumber || "");
+    }
+  }
+
+  const enrichedClaims = claims.map((c) => ({
+    ...c,
+    orderNumber: orderNumberMap.get(c.orderId) || "",
+  }));
+
   const total = claims.filter((c) => c.status !== "resolved").length;
   const escalated = claims.filter((c) => c.status === "admin_escalated").length;
 
-  return NextResponse.json({ claims, storeName: store.name, stats: { total, escalated } });
+  return NextResponse.json({ claims: enrichedClaims, storeName: store.name, stats: { total, escalated } });
 }

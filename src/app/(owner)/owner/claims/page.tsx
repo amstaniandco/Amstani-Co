@@ -28,11 +28,15 @@ type Claim = {
   storeId: string;
   storeName: string;
   orderId: string;
+  orderNumber?: string;
   reason: string;
   description: string;
   items: ClaimItem[];
+  mediaUrls?: string[];
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
   messages: ClaimMessage[];
+  resolveRequestPending?: boolean;
+  resolveApprovedByAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -97,6 +101,8 @@ export default function OwnerClaimsPage() {
   const [chatInput, setChatInput] = useState("");
   const [sending, setSending] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [requestingResolve, setRequestingResolve] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   async function loadClaims() {
@@ -155,6 +161,23 @@ export default function OwnerClaimsPage() {
       await loadClaims();
     } finally {
       setResolving(false);
+    }
+  }
+
+  async function handleRequestResolve(claimId: string) {
+    setRequestingResolve(true);
+    try {
+      const res = await fetch(`/api/owner/claims/${claimId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "request_resolve" }),
+      });
+      if (!res.ok) return;
+      await loadClaims();
+      // Update activeClaim state optimistically
+      setActiveClaim((prev) => prev ? { ...prev, resolveRequestPending: true } : prev);
+    } finally {
+      setRequestingResolve(false);
     }
   }
 
@@ -275,8 +298,11 @@ export default function OwnerClaimsPage() {
                           isEscalated ? "border-l-4 border-red-500 bg-red-50/35" : ""
                         }`}
                       >
-                        <div className="text-[12px] font-semibold text-slate-600">
-                          #{claim.claimNumber}
+                        <div>
+                          <div className="text-[12px] font-semibold text-slate-600">#{claim.claimNumber}</div>
+                          {claim.orderNumber && (
+                            <div className="text-[11px] text-slate-400 mt-0.5">Order: {claim.orderNumber}</div>
+                          )}
                         </div>
                         <div className="text-[12px] text-slate-700">{claim.customerName}</div>
                         <div>
@@ -297,18 +323,28 @@ export default function OwnerClaimsPage() {
                           >
                             View / Chat
                           </button>
-                          {claim.status !== "resolved" && claim.status !== "awaiting_reorder" && claim.status !== "admin_escalated" && (() => {
-                            const { label, cls } = resolveButtonMeta(claim.reason);
-                            return (
+                          {claim.status !== "resolved" && claim.status !== "awaiting_reorder" && claim.status !== "admin_escalated" && (
+                            claim.resolveApprovedByAdmin ? (() => {
+                              const { label, cls } = resolveButtonMeta(claim.reason);
+                              return (
+                                <button onClick={() => handleResolve(claim._id)} disabled={resolving} className={cls}>
+                                  {label}
+                                </button>
+                              );
+                            })() : claim.resolveRequestPending ? (
+                              <span className="rounded-xl bg-amber-100 px-3.5 py-2 text-[12px] font-semibold text-amber-700">
+                                Awaiting Admin Approval
+                              </span>
+                            ) : (
                               <button
-                                onClick={() => handleResolve(claim._id)}
-                                disabled={resolving}
-                                className={cls}
+                                onClick={() => handleRequestResolve(claim._id)}
+                                disabled={requestingResolve}
+                                className="rounded-xl bg-slate-700 hover:bg-slate-800 px-3.5 py-2 text-[12px] font-semibold text-white transition disabled:opacity-60"
                               >
-                                {label}
+                                Request Admin Approval
                               </button>
-                            );
-                          })()}
+                            )
+                          )}
                         </div>
                       </div>
                     );
@@ -340,7 +376,7 @@ export default function OwnerClaimsPage() {
                 </span>
                 {activeClaim.orderId && (
                   <Link
-                    href={`/orders`}
+                    href={`/orders?orderId=${activeClaim.orderId}`}
                     title="View Order"
                     className="flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition"
                   >
@@ -385,6 +421,25 @@ export default function OwnerClaimsPage() {
                 ))}
               </div>
             </div>
+
+            {/* Photo Evidence */}
+            {activeClaim.mediaUrls && activeClaim.mediaUrls.length > 0 && (
+              <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Photo Evidence</p>
+                <div className="flex flex-wrap gap-2">
+                  {activeClaim.mediaUrls.map((url, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setLightboxUrl(url)}
+                      className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 hover:opacity-80 transition-opacity"
+                    >
+                      <img src={url} alt={`Evidence ${i + 1}`} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
@@ -433,7 +488,7 @@ export default function OwnerClaimsPage() {
                     Send
                   </button>
                 </div>
-                {(() => {
+                {activeClaim.resolveApprovedByAdmin ? (() => {
                   const { label, cls } = resolveButtonMeta(activeClaim.reason);
                   return (
                     <button
@@ -444,7 +499,19 @@ export default function OwnerClaimsPage() {
                       {resolving ? "Processing…" : label}
                     </button>
                   );
-                })()}
+                })() : activeClaim.resolveRequestPending ? (
+                  <div className="w-full py-2 rounded-xl bg-amber-50 border border-amber-200 text-center text-xs font-semibold text-amber-700">
+                    Awaiting Admin Approval to Resolve
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleRequestResolve(activeClaim._id)}
+                    disabled={requestingResolve}
+                    className="w-full py-2 rounded-xl bg-slate-700 hover:bg-slate-800 disabled:opacity-60 text-white text-xs font-semibold transition"
+                  >
+                    {requestingResolve ? "Requesting…" : "Request Admin Approval to Resolve"}
+                  </button>
+                )}
               </div>
             )}
             {activeClaim.status === "admin_escalated" && (
@@ -472,6 +539,28 @@ export default function OwnerClaimsPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 h-9 w-9 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Full view"
+            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </>

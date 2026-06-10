@@ -22,7 +22,28 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .toArray();
 
-  return NextResponse.json({ claims });
+  const validOrderIds = claims
+    .map((c) => c.orderId)
+    .filter((id) => ObjectId.isValid(id))
+    .map((id) => new ObjectId(id));
+
+  const orderNumberMap = new Map<string, string>();
+  if (validOrderIds.length) {
+    const orderDocs = await db
+      .collection("orders")
+      .find({ _id: { $in: validOrderIds } }, { projection: { _id: 1, orderNumber: 1 } })
+      .toArray();
+    for (const o of orderDocs) {
+      orderNumberMap.set(o._id.toString(), o.orderNumber || "");
+    }
+  }
+
+  const enrichedClaims = claims.map((c) => ({
+    ...c,
+    orderNumber: orderNumberMap.get(c.orderId) || "",
+  }));
+
+  return NextResponse.json({ claims: enrichedClaims });
 }
 
 export async function POST(req: Request) {
@@ -31,11 +52,18 @@ export async function POST(req: Request) {
   if (user.role !== "user") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { orderId, items, reason, description } = body;
+  const { orderId, items, reason, description, mediaUrls } = body;
 
   if (!orderId || !items?.length || !reason || !description?.trim()) {
     return NextResponse.json(
       { error: "orderId, items, reason, and description are required" },
+      { status: 400 }
+    );
+  }
+
+  if (!Array.isArray(mediaUrls) || mediaUrls.length === 0) {
+    return NextResponse.json(
+      { error: "At least one photo is required to submit a claim" },
       { status: 400 }
     );
   }
@@ -80,6 +108,7 @@ export async function POST(req: Request) {
     storeName: order.storeName || "Store",
     reason,
     description,
+    mediaUrls,
     items,
     status: "open" as const,
     messages: [

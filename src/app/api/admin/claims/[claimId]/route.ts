@@ -50,7 +50,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid claimId" }, { status: 400 });
   }
 
-  const { adminNote } = await req.json();
+  const { adminNote, action } = await req.json();
 
   const client = await clientPromise;
   const db = client.db(DB_NAME);
@@ -61,6 +61,27 @@ export async function PATCH(
 
   const claim = await db.collection("claims").findOne({ _id: new ObjectId(claimId) });
   if (!claim) return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+
+  // ── APPROVE OWNER'S RESOLVE REQUEST ──────────────────────────────────────
+  if (action === "approve_resolve") {
+    const now = new Date();
+    await db.collection("claims").updateOne(
+      { _id: new ObjectId(claimId) },
+      { $set: { resolveApprovedByAdmin: true, resolveRequestPending: false, updatedAt: now } }
+    );
+
+    const store = await db.collection("stores").findOne({ _id: new ObjectId(claim.storeId) });
+    if (store?.ownerId) {
+      await createNotification({
+        userId: store.ownerId.toString(),
+        title: "Resolve Approved",
+        message: `Admin approved your request to resolve claim #${claim.claimNumber}. You can now mark it as resolved.`,
+        referenceId: claimId,
+      });
+    }
+
+    return NextResponse.json({ ok: true });
+  }
 
   const now = new Date();
   const reason: string = claim.reason;

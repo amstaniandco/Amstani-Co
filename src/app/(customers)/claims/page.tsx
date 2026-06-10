@@ -54,6 +54,7 @@ function ClaimPageContent() {
   const [selected, setSelected] = useState<{ [key: string]: boolean }>({});
   const [issueType, setIssueType] = useState("");
   const [message, setMessage] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
@@ -154,6 +155,10 @@ function ClaimPageContent() {
       setSubmitError("Please describe the issue.");
       return;
     }
+    if (!mediaFiles.length) {
+      setSubmitError("Please upload at least one photo as evidence.");
+      return;
+    }
 
     // Group by orderId — one claim per order
     const byOrder = new Map<string, FlatProduct[]>();
@@ -164,6 +169,21 @@ function ClaimPageContent() {
 
     setSubmitting(true);
     try {
+      // Upload all media files first
+      const mediaUrls: string[] = [];
+      for (const file of mediaFiles) {
+        const form = new FormData();
+        form.append("file", file);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json().catch(() => ({}));
+          setSubmitError(uploadData.error || "Failed to upload photo. Please try again.");
+          return;
+        }
+        const { url } = await uploadRes.json();
+        mediaUrls.push(url);
+      }
+
       for (const [orderId, orderItems] of byOrder) {
         const claimItems = orderItems.map((p) => ({
           productId: p.id.split("__")[0],
@@ -182,6 +202,7 @@ function ClaimPageContent() {
             items: claimItems,
             reason: issueType,
             description: message.trim(),
+            mediaUrls,
           }),
         });
 
@@ -196,6 +217,7 @@ function ClaimPageContent() {
       setSelected({});
       setIssueType("");
       setMessage("");
+      setMediaFiles([]);
 
       const claimsRes = await fetch("/api/claims");
       if (claimsRes.ok) {
@@ -237,6 +259,8 @@ function ClaimPageContent() {
         message={message}
         setIssueType={setIssueType}
         setMessage={setMessage}
+        mediaFiles={mediaFiles}
+        onMediaChange={setMediaFiles}
         onSubmit={handleSubmitClaim}
         submitting={submitting}
         error={submitError}
