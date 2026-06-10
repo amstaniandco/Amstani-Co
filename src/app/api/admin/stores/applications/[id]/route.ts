@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../../lib/db";
 import { getUserFromToken } from "../../../../../../lib/auth";
+import stripe, { STRIPE_CURRENCY } from "../../../../../../lib/stripe";
+
+const REFERRAL_BONUS_CENTS = 10_000; // $100
 
 export async function PATCH(
   req: Request,
@@ -28,6 +31,15 @@ export async function PATCH(
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
+    const application = await db.collection("store_applications").findOne({ _id: new ObjectId(id) });
+    if (!application) {
+      return NextResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+
+    if (application.status === "approved_by_admin" || application.status === "denied_by_admin") {
+      return NextResponse.json({ error: "Application has already been reviewed" }, { status: 409 });
+    }
+
     const update: Record<string, unknown> = {
       status,
       updatedAt: new Date(),
@@ -37,16 +49,36 @@ export async function PATCH(
 
     if (action === "approve") {
       update.ownerSignupLink = "http://localhost:3000/store-signup";
+
+      // Transfer $100 referral bonus to the store owner's Stripe connected account
+      if (application.storeId) {
+        const store = await db.collection("stores").findOne({ _id: new ObjectId(application.storeId.toString()) });
+        if (store?.stripeAccountId) {
+          try {
+            const transfer = await stripe.transfers.create({
+              amount: REFERRAL_BONUS_CENTS,
+              currency: STRIPE_CURRENCY,
+              destination: store.stripeAccountId as string,
+              metadata: {
+                applicationId: id,
+                storeId: application.storeId.toString(),
+                ownerId: application.ownerId?.toString() ?? "",
+                type: "referral_bonus",
+              },
+            });
+            update.referralBonusTransferId = transfer.id;
+            update.referralBonusPaid = true;
+          } catch (err) {
+            console.error("[admin approve] Stripe referral transfer failed:", err);
+          }
+        }
+      }
     }
 
-    const result = await db.collection("store_applications").updateOne(
+    await db.collection("store_applications").updateOne(
       { _id: new ObjectId(id) },
       { $set: update }
     );
-
-    if (!result.matchedCount) {
-      return NextResponse.json({ error: "Application not found" }, { status: 404 });
-    }
 
     return NextResponse.json({ message: `Application ${action}d successfully` }, { status: 200 });
   } catch (error) {

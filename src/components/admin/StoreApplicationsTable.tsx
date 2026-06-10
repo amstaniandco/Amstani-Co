@@ -144,14 +144,18 @@ function ApplicationsTable() {
                     : row.status === "denied_by_admin" ? "bg-red-100 text-red-700"
                     : "bg-amber-100 text-amber-700"
                   }`}>{statusLabel(row.status)}</span>
-                  <button type="button" onClick={() => updateStatus(row.id, "approve")} disabled={row.status === "approved_by_admin"}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-40" aria-label="Approve">
-                    ✓
-                  </button>
-                  <button type="button" onClick={() => updateStatus(row.id, "deny")} disabled={row.status === "denied_by_admin"}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-red-500 transition hover:bg-red-50 disabled:opacity-40" aria-label="Deny">
-                    ⦸
-                  </button>
+                  {row.status !== "approved_by_admin" && row.status !== "denied_by_admin" && (
+                    <>
+                      <button type="button" onClick={() => updateStatus(row.id, "approve")}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-emerald-600 transition hover:bg-emerald-50" aria-label="Approve">
+                        ✓
+                      </button>
+                      <button type="button" onClick={() => updateStatus(row.id, "deny")}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-red-500 transition hover:bg-red-50" aria-label="Deny">
+                        ⦸
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
