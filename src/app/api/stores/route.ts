@@ -23,11 +23,39 @@ export async function GET(req: Request) {
           { projection: { _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, isLive: 1, liveLink: 1, rating: 1, settings: 1 } }
         );
 
-      return NextResponse.json({ stores: store ? [store] : [] }, { status: 200 });
+      if (!store) return NextResponse.json({ stores: [] }, { status: 200 });
+
+      // Only expose stores with a complete profile
+      const profileComplete = !!(
+        store.name?.trim() &&
+        store.description?.trim() &&
+        store.logoUrl?.trim() &&
+        store.bannerUrl?.trim() &&
+        (store.settings?.languages as string[] | undefined)?.length
+      );
+
+      if (!profileComplete) return NextResponse.json({ stores: [] }, { status: 200 });
+
+      return NextResponse.json({ stores: [store] }, { status: 200 });
     }
 
     const pipeline: object[] = [
       { $match: { status: "active" } },
+      // Only include stores with a complete profile
+      {
+        $addFields: {
+          profileComplete: {
+            $and: [
+              { $gt: [{ $strLenCP: { $ifNull: ["$name", ""] } }, 0] },
+              { $gt: [{ $strLenCP: { $ifNull: ["$description", ""] } }, 0] },
+              { $gt: [{ $strLenCP: { $ifNull: ["$logoUrl", ""] } }, 0] },
+              { $gt: [{ $strLenCP: { $ifNull: ["$bannerUrl", ""] } }, 0] },
+              { $gt: [{ $size: { $ifNull: ["$settings.languages", []] } }, 0] },
+            ],
+          },
+        },
+      },
+      { $match: { profileComplete: true } },
       {
         $lookup: {
           from: "users",

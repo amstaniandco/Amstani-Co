@@ -3,7 +3,9 @@ import clientPromise from "../../../../lib/db";
 
 export async function GET(request: Request) {
   try {
-    const stateFilter = new URL(request.url).searchParams.get("state")?.trim() ?? "";
+    const params = new URL(request.url).searchParams;
+    const stateFilter = params.get("state")?.trim() ?? "";
+    const promotedOnly = params.get("promoted_only") === "true";
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DBNAME || "amstani");
 
@@ -11,6 +13,21 @@ export async function GET(request: Request) {
 
     const pipeline: object[] = [
       { $match: { status: "active" } },
+      // Only include stores with a fully completed profile
+      {
+        $addFields: {
+          profileComplete: {
+            $and: [
+              { $gt: [{ $strLenCP: { $ifNull: ["$name", ""] } }, 0] },
+              { $gt: [{ $strLenCP: { $ifNull: ["$description", ""] } }, 0] },
+              { $gt: [{ $strLenCP: { $ifNull: ["$logoUrl", ""] } }, 0] },
+              { $gt: [{ $strLenCP: { $ifNull: ["$bannerUrl", ""] } }, 0] },
+              { $gt: [{ $size: { $ifNull: ["$settings.languages", []] } }, 0] },
+            ],
+          },
+        },
+      },
+      { $match: { profileComplete: true } },
       {
         $lookup: {
           from: "users",
@@ -27,6 +44,7 @@ export async function GET(request: Request) {
     }
 
     pipeline.push(
+      { $sort: { createdAt: -1 } },
       {
         $project: {
           _id: 1,
@@ -41,8 +59,6 @@ export async function GET(request: Request) {
           "owner.state": 1,
         },
       },
-      { $sort: { createdAt: -1 } },
-      { $limit: 60 },
       // Join active promotions — storeId in promotions is stored as string
       {
         $lookup: {
@@ -65,11 +81,10 @@ export async function GET(request: Request) {
           isPromoted: { $gt: [{ $size: "$activePromotion" }, 0] },
         },
       },
-      {
-        $project: {
-          activePromotion: 0,
-        },
-      },
+      // Landing page passes promoted_only=true to show only promoted stores
+      ...(promotedOnly ? [{ $match: { isPromoted: true } }] : []),
+      { $limit: 60 },
+      { $project: { activePromotion: 0 } },
     );
 
     const stores = await db.collection("stores").aggregate(pipeline).toArray();

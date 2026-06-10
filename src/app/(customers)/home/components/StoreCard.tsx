@@ -35,18 +35,11 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-black/10" />
 
-        {(store.badge || store.isPromoted) && (
-          <div className="absolute left-2 top-2 flex flex-col gap-1 sm:left-3 sm:top-3">
-            {store.badge && (
-              <span className={`${store.badgeColor} rounded-full px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs`}>
-                {store.badge}
-              </span>
-            )}
-            {store.isPromoted && (
-              <span className="rounded-full bg-violet-500 px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs">
-                ✦ Best Featured
-              </span>
-            )}
+        {store.badge && (
+          <div className="absolute left-2 top-2 sm:left-3 sm:top-3">
+            <span className={`${store.badgeColor} rounded-full px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs`}>
+              {store.badge}
+            </span>
           </div>
         )}
 

@@ -26,7 +26,10 @@ export default function DigitalMallSection() {
     const loadStores = async (state: string) => {
       try {
         setLoading(true);
-        const response = await fetch(state ? `/api/stores/browse?state=${encodeURIComponent(state)}` : "/api/stores/browse");
+        const url = new URL("/api/stores/browse", window.location.origin);
+        url.searchParams.set("promoted_only", "true");
+        if (state) url.searchParams.set("state", state);
+        const response = await fetch(url.toString());
         if (!response.ok) return;
 
         const data = await response.json();

@@ -3,8 +3,29 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { PenLine, Store, Loader2 } from "lucide-react";
+import { PenLine, Store, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
+
+function isProfileComplete(store: any): boolean {
+  return !!(
+    store?.name?.trim() &&
+    store?.description?.trim() &&
+    store?.logoUrl?.trim() &&
+    store?.bannerUrl?.trim() &&
+    (store?.settings?.languages?.length ?? 0) > 0
+  );
+}
+
+function CheckItem({ done, label }: { done: boolean; label: string }) {
+  return (
+    <li className={`flex items-center gap-2 text-sm ${done ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
+      {done
+        ? <CheckCircle2 className="h-4 w-4 shrink-0" />
+        : <XCircle className="h-4 w-4 shrink-0" />}
+      <span>{label}</span>
+    </li>
+  );
+}
 
 type StoreApplication = {
   id: string;
@@ -178,9 +199,19 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
               <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
                 store?.status === "active"
                   ? "border-green-500 text-green-500 dark:border-green-400 dark:text-green-400"
-                  : "border-red-500 text-red-500 dark:border-red-400 dark:text-red-400"
+                  : store?.status === "suspended"
+                  ? "border-red-500 text-red-500 dark:border-red-400 dark:text-red-400"
+                  : !isProfileComplete(store)
+                  ? "border-amber-400 text-amber-600 dark:border-amber-400 dark:text-amber-400"
+                  : "border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400"
               }`}>
-                {store?.status === "active" ? "Live" : "Pending"}
+                {store?.status === "active"
+                  ? "Live"
+                  : store?.status === "suspended"
+                  ? "Suspended"
+                  : !isProfileComplete(store)
+                  ? "Incomplete"
+                  : "Awaiting Activation"}
               </span>
             </div>
           </div>
@@ -336,6 +367,10 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
       toast.error("Store name is required");
       return false;
     }
+    if (!storeDescription.trim()) {
+      toast.error("Store description is required for profile completion");
+      return false;
+    }
     if (!ownerName.trim()) {
       toast.error("Owner name is required");
       return false;
@@ -440,7 +475,7 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Store Description</label>
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Store Description <span className="text-red-500">*</span></label>
           <textarea
             value={storeDescription}
             onChange={(e) => setStoreDescription(e.target.value)}
@@ -576,15 +611,39 @@ export default function ProfilePageClient() {
         <span className={`inline-flex items-center self-start rounded-full border px-4 py-1.5 text-sm font-semibold sm:self-auto ${
           store?.status === "active"
             ? "border-green-500 text-green-600 dark:border-green-400 dark:text-green-400"
-            : "border-red-400 text-red-500 dark:border-red-400 dark:text-red-400"
+            : store?.status === "suspended"
+            ? "border-red-400 text-red-500 dark:border-red-400 dark:text-red-400"
+            : !isProfileComplete(store)
+            ? "border-amber-400 text-amber-600 dark:border-amber-400 dark:text-amber-400"
+            : "border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400"
         }`}>
-          {store?.status === "active" ? "Active" : "Pending Approval"}
+          {store?.status === "active"
+            ? "Active"
+            : store?.status === "suspended"
+            ? "Suspended"
+            : !isProfileComplete(store)
+            ? "Incomplete Profile"
+            : "Awaiting Activation"}
         </span>
       </section>
 
       <section className="mt-4">
         <ProfileHero store={store} onRefresh={fetchProfile} followerCount={followerCount} productCount={productCount} />
       </section>
+
+      {!isProfileComplete(store) && (
+        <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-700 dark:bg-amber-900/20">
+          <p className="font-semibold text-amber-800 dark:text-amber-300">Complete your profile to get your store activated</p>
+          <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">Your store will not be visible to customers until all required fields are filled and an admin activates it.</p>
+          <ul className="mt-3 space-y-1.5">
+            <CheckItem done={!!store?.name?.trim()} label="Store name" />
+            <CheckItem done={!!store?.description?.trim()} label="Store description" />
+            <CheckItem done={!!store?.logoUrl?.trim()} label="Store logo (click the edit icon on your profile picture)" />
+            <CheckItem done={!!store?.bannerUrl?.trim()} label="Store banner (click the edit icon on the banner)" />
+            <CheckItem done={(store?.settings?.languages?.length ?? 0) > 0} label="At least one language selected" />
+          </ul>
+        </section>
+      )}
 
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
         <ApplicationsCard applications={applications} />
