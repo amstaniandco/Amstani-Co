@@ -96,6 +96,199 @@ function ApplicationsCard({ applications }: { applications: StoreApplication[] }
   );
 }
 
+function StorePreviewModal({
+  store,
+  followerCount,
+  productCount,
+  rank,
+  onClose,
+}: {
+  store: any;
+  followerCount: number;
+  productCount: number;
+  rank: number | null;
+  onClose: () => void;
+}) {
+  const storeId = store?._id ? String(store._id) : "";
+
+  type PreviewProduct = {
+    productId: string;
+    name: string;
+    price: number;
+    mainImage?: string | null;
+    discountPercent?: number;
+    isOnSale?: boolean;
+    isNewArrival?: boolean;
+    quantity: number;
+  };
+  type PreviewReview = {
+    _id: string;
+    userName: string;
+    rating: number;
+    text: string;
+    createdAt: string;
+  };
+
+  const [products, setProducts] = useState<PreviewProduct[]>([]);
+  const [reviews, setReviews] = useState<PreviewReview[]>([]);
+  const [reviewAvg, setReviewAvg] = useState(0);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+
+  useEffect(() => {
+    if (!storeId) return;
+    fetch(`/api/stores/${storeId}/products`)
+      .then((r) => r.json())
+      .then((d) => setProducts(d.products ?? []))
+      .finally(() => setLoadingProducts(false));
+    fetch(`/api/stores/${storeId}/reviews`)
+      .then((r) => r.json())
+      .then((d) => { setReviews(d.reviews ?? []); setReviewAvg(d.avg ?? 0); })
+      .finally(() => setLoadingReviews(false));
+  }, [storeId]);
+
+  return (
+    <div className="fixed inset-0 z-[9990] flex flex-col">
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between gap-3 bg-slate-900 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <ExternalLink className="h-4 w-4 text-teal-400" />
+          <p className="text-sm font-semibold text-white">Customer View Preview</p>
+          <span className="rounded-full bg-teal-800 px-2 py-0.5 text-[10px] font-semibold text-teal-300">Read-only</span>
+        </div>
+        <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-slate-700 hover:text-white">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Scrollable store content */}
+      <div className="flex-1 overflow-y-auto bg-[#f5f5f5]">
+        <div className="mx-auto max-w-screen-lg space-y-4 px-3 py-4">
+
+          {/* Store hero */}
+          <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <div className="relative h-[200px] w-full overflow-hidden rounded-2xl bg-slate-200">
+              {store?.bannerUrl ? (
+                <img src={store.bannerUrl} alt="Banner" className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900" />
+              )}
+            </div>
+            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-200">
+                  {store?.logoUrl && <img src={store.logoUrl} alt="Logo" className="h-full w-full object-cover" />}
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-2xl font-bold text-slate-900">{store?.name || "Store Name"}</h2>
+                    {rank !== null && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">
+                        <Trophy className="h-3 w-3" /> Ranked #{rank}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 max-w-xs text-sm leading-5 text-slate-500">{store?.description || ""}</p>
+                  {(store?.settings?.languages?.length ?? 0) > 0 && (
+                    <p className="mt-1.5 text-xs text-slate-400">Languages: {store.settings.languages.join(", ")}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-slate-900">{productCount}</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Products</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-slate-900">{followerCount}</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Followers</p>
+                </div>
+                <button disabled title="Read-only preview" className="cursor-not-allowed rounded-full bg-[#68B8C1] px-6 py-2 text-sm font-semibold text-white opacity-40">
+                  Follow
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Products */}
+          <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Products</h3>
+            {loadingProducts ? (
+              <p className="py-8 text-center text-sm text-slate-400">Loading products…</p>
+            ) : products.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-400">No products listed yet.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {products.map((p) => {
+                  const effective = p.isOnSale && p.discountPercent ? p.price * (1 - p.discountPercent / 100) : p.price;
+                  return (
+                    <div key={p.productId} className="overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                      <div className="relative aspect-square bg-slate-200">
+                        {p.mainImage && <img src={p.mainImage} alt={p.name} className="h-full w-full object-cover" />}
+                        {p.isNewArrival && (
+                          <span className="absolute left-2 top-2 rounded-full bg-teal-500 px-2 py-0.5 text-[10px] font-bold text-white">New</span>
+                        )}
+                        {p.isOnSale && p.discountPercent && (
+                          <span className="absolute right-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">{p.discountPercent}% OFF</span>
+                        )}
+                      </div>
+                      <div className="p-2.5">
+                        <p className="truncate text-xs font-semibold text-slate-800">{p.name}</p>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-slate-900">${effective.toFixed(2)}</p>
+                          {p.isOnSale && p.discountPercent && (
+                            <p className="text-xs text-slate-400 line-through">${p.price.toFixed(2)}</p>
+                          )}
+                        </div>
+                        <p className="mt-0.5 text-[10px] text-slate-400">{p.quantity} in stock</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Reviews */}
+          {!loadingReviews && reviews.length > 0 && (
+            <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-900">Reviews</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{reviewAvg.toFixed(1)}</span>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <span key={s} className={`text-lg ${s <= Math.round(reviewAvg) ? "text-amber-400" : "text-slate-200"}`}>★</span>
+                    ))}
+                  </div>
+                  <span className="text-sm text-slate-500">({reviews.length})</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {reviews.slice(0, 6).map((r) => (
+                  <div key={r._id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-800">{r.userName}</p>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <span key={s} className={`text-sm ${s <= r.rating ? "text-amber-400" : "text-slate-200"}`}>★</span>
+                        ))}
+                      </div>
+                    </div>
+                    {r.text && <p className="mt-1 text-sm text-slate-600">{r.text}</p>}
+                    <p className="mt-1 text-xs text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { store: any; onRefresh: () => void; followerCount: number; productCount: number; rank: number | null }) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -257,35 +450,14 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
       </div>
     </section>
 
-      {/* Store preview modal — inline fixed overlay; no portal needed since fixed covers viewport */}
       {showPreview && (
-        <div className="fixed inset-0 z-[9990] flex flex-col bg-black/80">
-          {/* Header bar */}
-          <div className="flex items-center justify-between gap-3 bg-slate-900 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4 text-teal-400" />
-              <p className="text-sm font-semibold text-white">
-                Customer View Preview
-              </p>
-              <span className="rounded-full bg-teal-800 px-2 py-0.5 text-[10px] font-semibold text-teal-300">
-                Read-only
-              </span>
-            </div>
-            <button
-              onClick={() => setShowPreview(false)}
-              className="grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-slate-700 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          {/* Preview frame — sandbox prevents the iframe from navigating the parent window */}
-          <iframe
-            src={store?._id ? `/store?storeId=${store._id}` : "/store"}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            className="flex-1 w-full border-0 bg-white"
-            title="Store Customer Preview"
-          />
-        </div>
+        <StorePreviewModal
+          store={store}
+          followerCount={followerCount}
+          productCount={productCount}
+          rank={rank}
+          onClose={() => setShowPreview(false)}
+        />
       )}
     </>
   );
