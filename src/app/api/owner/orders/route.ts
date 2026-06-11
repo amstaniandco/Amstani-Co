@@ -2,6 +2,28 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import {
+  sendEmail,
+  orderAcceptedEmail,
+  orderOnHoldEmail,
+  orderStatusUpdateEmail,
+} from "../../../../lib/email";
+
+// Maps a new order status → which automated-template toggle gates it and which email to build.
+const STATUS_EMAIL: Record<
+  string,
+  { toggle: "orderAcceptance" | "orderOnHold" | "statusUpdate" }
+> = {
+  // Accept/reject are a single decision, so both are gated by the Order Acceptance toggle.
+  Accepted: { toggle: "orderAcceptance" },
+  Rejected: { toggle: "orderAcceptance" },
+  "On Hold": { toggle: "orderOnHold" },
+  Dispatched: { toggle: "statusUpdate" },
+  Shipped: { toggle: "statusUpdate" },
+  Delivered: { toggle: "statusUpdate" },
+};
+
+const DEFAULT_TEMPLATES = { orderAcceptance: true, orderOnHold: true, statusUpdate: false };
 
 const validStatuses = ["Incoming", "Accepted", "Rejected", "On Hold", "Dispatched", "Shipped", "Delivered"];
 
@@ -52,6 +74,32 @@ export async function PATCH(req: Request) {
 
   if (!result.matchedCount) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  // Send the automated customer email for this status change, if the store has the
+  // matching template toggle enabled. Non-blocking — email failures never fail the request.
+  const mapping = STATUS_EMAIL[status];
+  if (mapping) {
+    const templates = { ...DEFAULT_TEMPLATES, ...(store.automatedTemplates ?? {}) };
+    if (templates[mapping.toggle]) {
+      const order = await db.collection("orders").findOne({ _id: new ObjectId(orderId) });
+      if (order?.customerEmail) {
+        const data = {
+          customerName: order.customerName,
+          orderNumber: order.orderNumber,
+          storeName: order.storeName ?? store.name,
+          items: order.items,
+          total: order.total,
+        };
+        const built =
+          status === "Accepted"
+            ? orderAcceptedEmail(data)
+            : status === "On Hold"
+            ? orderOnHoldEmail(data)
+            : orderStatusUpdateEmail({ ...data, status });
+        void sendEmail({ to: order.customerEmail, subject: built.subject, html: built.html });
+      }
+    }
   }
 
   return NextResponse.json({ ok: true });

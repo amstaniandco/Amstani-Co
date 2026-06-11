@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { User } from "../../../../models/user";
+import { sendEmail, welcomeEmail } from "../../../../lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +40,10 @@ export async function POST(req: Request) {
     };
 
     const result = await usersCollection.insertOne(newUser as any);
+
+    // Send the welcome / thank-you-for-registering email (non-blocking).
+    const welcome = welcomeEmail(name);
+    void sendEmail({ to: email, subject: welcome.subject, html: welcome.html });
 
     return NextResponse.json(
       {
