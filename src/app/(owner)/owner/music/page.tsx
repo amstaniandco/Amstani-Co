@@ -140,7 +140,7 @@ export default function OwnerMusicPage() {
         <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{storeName}</h1>
       </section>
 
-      <section className="mt-6">
+      <section data-tutorial-id="owner-music-section" className="mt-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="pt-1 text-[18px] font-semibold tracking-[0.06em] text-slate-900">Upload music file</h2>

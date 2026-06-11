@@ -570,7 +570,7 @@ export default function OwnerChatsPage() {
         })}
       </section>
 
-      <section className="mt-4 grid grid-cols-1 overflow-hidden rounded-[24px] border border-slate-200 bg-[#f7f7f7] lg:min-h-[620px] lg:grid-cols-[340px_1fr] lg:rounded-[30px]">
+      <section data-tutorial-id="owner-chats-section" className="mt-4 grid grid-cols-1 overflow-hidden rounded-[24px] border border-slate-200 bg-[#f7f7f7] lg:min-h-[620px] lg:grid-cols-[340px_1fr] lg:rounded-[30px]">
         {/* Inbox sidebar */}
         <div className="border-b border-slate-200 p-4 lg:border-b-0 lg:border-r">
           <div className="mb-4 flex items-center rounded-full border border-[#9fb0c6] bg-white px-4 py-2 text-slate-500">

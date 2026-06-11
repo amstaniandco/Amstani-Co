@@ -283,7 +283,7 @@ export default function OwnerPerformancePage() {
         <section className="mt-4 rounded-2xl border border-red-100 bg-white p-12 text-center text-sm text-red-500">{error}</section>
       ) : (
         <>
-          <section className="mt-3">
+          <section data-tutorial-id="owner-performance-section" className="mt-3">
             <MetricsCards metrics={metrics} revenueBars={data?.revenueBars ?? []} visitsLine={data?.visitsLine ?? []} />
           </section>
 

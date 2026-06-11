@@ -103,7 +103,7 @@ export default function LoginPage() {
       if (role === "admin") {
         router.push("/admin/dashboard");
       } else if (role === "owner") {
-        router.push("/chats");
+        router.push("/owner/profile");
       } else {
         router.push("/home");
       }

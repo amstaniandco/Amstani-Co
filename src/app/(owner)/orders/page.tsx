@@ -322,7 +322,7 @@ export default function OwnerOrdersPage() {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-nowrap items-center gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div data-tutorial-id="owner-orders-filters" className="mt-5 flex flex-nowrap items-center gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="shrink-0">
             <SearchField value={query} onChange={setQuery} />
           </div>

@@ -72,7 +72,7 @@ export default function OwnerNotificationsPage() {
             Back
           </button>
 
-          <section className="mt-4 rounded-[36px] bg-white px-4 py-5 shadow-[0_10px_26px_rgba(15,23,42,0.04)] sm:px-6 sm:py-6">
+          <section data-tutorial-id="owner-notifications-section" className="mt-4 rounded-[36px] bg-white px-4 py-5 shadow-[0_10px_26px_rgba(15,23,42,0.04)] sm:px-6 sm:py-6">
             <h2 className="text-[2.35rem] font-bold text-slate-900">Notifications</h2>
 
             <div className="mt-4 space-y-1 sm:space-y-0.5">

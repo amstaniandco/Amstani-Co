@@ -371,7 +371,7 @@ export default function OwnerCommunicationsPage() {
       </section>
 
       {/* Automated Email Templates */}
-      <section className="mt-6">
+      <section data-tutorial-id="owner-communications-templates" className="mt-6">
         <h2 className="text-xl font-bold text-slate-900 sm:text-[25px]">
           Automated Email Templates &amp; Triggers
         </h2>
@@ -411,7 +411,7 @@ export default function OwnerCommunicationsPage() {
       </section>
 
       {/* Announcements table */}
-      <section className="mt-7">
+      <section data-tutorial-id="owner-communications-announcements" className="mt-7">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-900 sm:text-[25px]">

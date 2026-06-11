@@ -5,25 +5,17 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, X, BookOpen } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { TUTORIAL_STEPS, type TutorialStep } from "./tutorialSteps";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Rect = { top: number; left: number; width: number; height: number };
-
-type TutorialContextType = {
-  isActive: boolean;
-  start: () => void;
-  stop: () => void;
-};
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
+type TutorialContextType = { isActive: boolean; start: () => void; stop: () => void };
 const TutorialContext = createContext<TutorialContextType>({
   isActive: false,
   start: () => {},
@@ -34,40 +26,48 @@ export function useTutorial() {
   return useContext(TutorialContext);
 }
 
-// ─── Spotlight Overlay ────────────────────────────────────────────────────────
+// ─── Overlay ──────────────────────────────────────────────────────────────────
 
-const TOOLTIP_W = 284;
-const TOOLTIP_H = 190;
-const SPOT_PAD = 8;
+type Rect = { top: number; left: number; width: number; height: number };
 
-function calcTooltipStyle(
-  rect: Rect,
-  position: TutorialStep["position"],
-): React.CSSProperties {
+const CARD_W_INTRO = 400;
+const CARD_W_PLACED = 316;
+const CARD_H_EST = 200;
+const SPOT_PAD = 10;
+const TOOLTIP_GAP = 16;
+
+function calcTooltipPos(rect: Rect, position: TutorialStep["position"]): { top: number; left: number } {
   const { top, left, width, height } = rect;
-  const sTop = top - SPOT_PAD;
-  const sLeft = left - SPOT_PAD;
-  const sRight = sLeft + width + SPOT_PAD * 2;
-  const sBottom = sTop + height + SPOT_PAD * 2;
-  const sCX = sLeft + (sRight - sLeft) / 2;
-  const sCY = sTop + (sBottom - sTop) / 2;
-
+  const sRight  = left + width  + SPOT_PAD;
+  const sBottom = top  + height + SPOT_PAD;
+  const sCX = left + width  / 2;
+  const sCY = top  + height / 2;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const clampL = (v: number) => Math.max(8, Math.min(vw - TOOLTIP_W - 8, v));
-  const clampT = (v: number) => Math.max(8, Math.min(vh - TOOLTIP_H - 8, v));
 
+  let t = 0, l = 0;
   switch (position) {
-    case "right":
-      return { left: Math.min(sRight + 12, vw - TOOLTIP_W - 8), top: clampT(sCY - TOOLTIP_H / 2) };
-    case "left":
-      return { left: Math.max(8, sLeft - TOOLTIP_W - 12), top: clampT(sCY - TOOLTIP_H / 2) };
     case "top":
-      return { left: clampL(sCX - TOOLTIP_W / 2), top: clampT(sTop - TOOLTIP_H - 12) };
+      t = top - SPOT_PAD - TOOLTIP_GAP - CARD_H_EST;
+      l = sCX - CARD_W_PLACED / 2;
+      break;
+    case "right":
+      t = sCY - CARD_H_EST / 2;
+      l = sRight + TOOLTIP_GAP;
+      break;
+    case "left":
+      t = sCY - CARD_H_EST / 2;
+      l = left - SPOT_PAD - TOOLTIP_GAP - CARD_W_PLACED;
+      break;
     case "bottom":
     default:
-      return { left: clampL(sCX - TOOLTIP_W / 2), top: clampT(sBottom + 12) };
+      t = sBottom + TOOLTIP_GAP;
+      l = sCX - CARD_W_PLACED / 2;
   }
+  return {
+    top:  Math.max(12, Math.min(vh - CARD_H_EST - 12, t)),
+    left: Math.max(12, Math.min(vw - CARD_W_PLACED - 12, l)),
+  };
 }
 
 function TutorialOverlay({
@@ -87,120 +87,167 @@ function TutorialOverlay({
   onPrev: () => void;
   onSkip: () => void;
 }) {
-  const isLast = stepIdx === total - 1;
-  const isCentered = !step.target || !targetRect;
+  // "intro"  → card is centred, full dark backdrop
+  // "placed" → card slides to tooltip position, spotlight takes over
+  const [phase, setPhase] = useState<"intro" | "placed">("intro");
+  const phaseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const btnBase =
-    "inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold transition";
+  useEffect(() => {
+    setPhase("intro");
+    if (phaseRef.current) clearTimeout(phaseRef.current);
+    if (step.target) {
+      phaseRef.current = setTimeout(() => setPhase("placed"), 350);
+    }
+    return () => { if (phaseRef.current) clearTimeout(phaseRef.current); };
+  // stepIdx is the stable key — step object reference changes with each render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIdx]);
 
-  if (isCentered) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4">
-        <div
-          className="w-full rounded-2xl bg-white p-6 shadow-2xl"
-          style={{ maxWidth: 360 }}
-        >
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-600">
-              <BookOpen className="h-3.5 w-3.5" />
-              Store Tour · {stepIdx + 1} / {total}
-            </div>
-            <button onClick={onSkip} className="text-slate-400 hover:text-slate-700">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <h3 className="mt-1 text-xl font-bold text-slate-900">{step.title}</h3>
-          <p className="mt-2.5 text-sm leading-relaxed text-slate-600">{step.description}</p>
-          <div className="mt-5 flex items-center justify-between">
-            <button onClick={onSkip} className="text-xs text-slate-400 hover:text-slate-600">
-              Skip tour
-            </button>
-            <div className="flex gap-2">
-              {stepIdx > 0 && (
-                <button onClick={onPrev} className={`${btnBase} border border-slate-200 text-slate-600 hover:bg-slate-50`}>
-                  <ChevronLeft className="h-3.5 w-3.5" /> Back
-                </button>
-              )}
-              <button onClick={onNext} className={`${btnBase} bg-teal-600 text-white hover:bg-teal-700`}>
-                {isLast ? "Finish" : "Next"} {!isLast && <ChevronRight className="h-3.5 w-3.5" />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  const isPlaced = phase === "placed" && !!targetRect && !!step.target;
+  const isLast   = stepIdx === total - 1;
+
+  const vw = typeof window !== "undefined" ? window.innerWidth  : 1200;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+
+  // ── Card geometry ──────────────────────────────────────────────────────────
+  let cardTop  = vh / 2 - CARD_H_EST;
+  let cardLeft = vw / 2 - CARD_W_INTRO / 2;
+  let cardW    = CARD_W_INTRO;
+
+  if (isPlaced && targetRect) {
+    const pos = calcTooltipPos(targetRect, step.position ?? "bottom");
+    cardTop  = pos.top;
+    cardLeft = pos.left;
+    cardW    = CARD_W_PLACED;
   }
 
-  // Spotlight mode
-  const { top, left, width, height } = targetRect!;
-  const spotStyle: React.CSSProperties = {
-    position: "fixed",
-    top: top - SPOT_PAD,
-    left: left - SPOT_PAD,
-    width: width + SPOT_PAD * 2,
-    height: height + SPOT_PAD * 2,
-    boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)",
-    borderRadius: 12,
-    border: "2px solid rgba(103, 232, 249, 0.75)",
-    zIndex: 9999,
-    pointerEvents: "none",
-  };
+  // ── Spotlight geometry ─────────────────────────────────────────────────────
+  const spotTop    = targetRect ? targetRect.top    - SPOT_PAD : 0;
+  const spotLeft   = targetRect ? targetRect.left   - SPOT_PAD : 0;
+  const spotWidth  = targetRect ? targetRect.width  + SPOT_PAD * 2 : 0;
+  const spotHeight = targetRect ? targetRect.height + SPOT_PAD * 2 : 0;
 
-  const tooltipStyle: React.CSSProperties = {
-    position: "fixed",
-    width: TOOLTIP_W,
-    zIndex: 10000,
-    ...calcTooltipStyle(targetRect!, step.position),
-  };
+  const EASE = "cubic-bezier(.4,0,.2,1)";
+  const DURATION = "0.22s";
+  const TRANSITION = `top ${DURATION} ${EASE}, left ${DURATION} ${EASE}, width ${DURATION} ${EASE}`;
 
-  return (
+  const btnBase = "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition";
+
+  return createPortal(
     <>
-      {/* Click blocker — prevents interacting with page content during tour */}
-      <div className="fixed inset-0 z-[9997]" />
-      {/* Spotlight cutout */}
-      <div style={spotStyle} />
-      {/* Tooltip */}
-      <div style={tooltipStyle} className="rounded-2xl bg-white p-4 shadow-2xl">
-        <div className="mb-1.5 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-600">
-            <BookOpen className="h-3 w-3" />
-            {stepIdx + 1} / {total}
+      {/* Pointer-events blocker — stops clicks reaching page content during tour */}
+      <div className="fixed inset-0 z-[9996]" />
+
+      {/* Full-screen backdrop — fades out as spotlight takes over */}
+      <div
+        className="fixed inset-0 z-[9997] pointer-events-none"
+        style={{
+          background: "rgba(0,0,0,0.70)",
+          opacity: isPlaced ? 0 : 1,
+          transition: `opacity ${DURATION} ${EASE}`,
+        }}
+      />
+
+      {/* Spotlight — grows in and slides with the target element */}
+      {step.target && (
+        <div
+          className="fixed z-[9998] pointer-events-none rounded-xl"
+          style={{
+            top:    spotTop,
+            left:   spotLeft,
+            width:  isPlaced ? spotWidth  : 0,
+            height: isPlaced ? spotHeight : 0,
+            boxShadow: isPlaced ? "0 0 0 9999px rgba(0,0,0,0.70)" : "none",
+            border: isPlaced ? "2px solid rgba(103,232,249,0.55)" : "none",
+            transition: `all ${DURATION} ${EASE}`,
+          }}
+        />
+      )}
+
+      {/* Tooltip card — slides from centre to beside the target */}
+      <div
+        className="fixed z-[9999] pointer-events-auto"
+        style={{ top: cardTop, left: cardLeft, width: cardW, transition: TRANSITION }}
+      >
+        <div className="overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)]">
+          {/* Progress bar */}
+          <div className="h-[3px] bg-slate-100">
+            <div
+              className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all duration-300"
+              style={{ width: `${Math.round(((stepIdx + 1) / total) * 100)}%` }}
+            />
           </div>
-          <button onClick={onSkip} className="text-slate-400 hover:text-slate-700">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <p className="text-[13px] font-bold text-slate-900">{step.title}</p>
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{step.description}</p>
-        <div className="mt-3 flex items-center justify-between">
-          <button onClick={onSkip} className="text-[11px] text-slate-400 hover:text-slate-600">
-            Skip
-          </button>
-          <div className="flex gap-1.5">
-            {stepIdx > 0 && (
-              <button onClick={onPrev} className={`${btnBase} border border-slate-200 text-slate-600 hover:bg-slate-50`}>
-                <ChevronLeft className="h-3.5 w-3.5" /> Back
+
+          <div className="p-5">
+            {/* Header row */}
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <BookOpen className="h-3 w-3 text-teal-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-teal-600">
+                    Step {stepIdx + 1} of {total}
+                  </span>
+                </div>
+                <h3 className="text-[15px] font-bold leading-snug text-slate-900">
+                  {step.title}
+                </h3>
+              </div>
+              <button
+                onClick={onSkip}
+                className="shrink-0 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-4 w-4" />
               </button>
-            )}
-            <button onClick={onNext} className={`${btnBase} bg-teal-600 text-white hover:bg-teal-700`}>
-              {isLast ? "Done" : "Next"} {!isLast && <ChevronRight className="h-3.5 w-3.5" />}
-            </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-[13px] leading-[1.65] text-slate-600">{step.description}</p>
+
+            {/* Actions */}
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                onClick={onSkip}
+                className="text-[11px] text-slate-400 transition hover:text-slate-600"
+              >
+                Skip tour
+              </button>
+              <div className="flex items-center gap-2">
+                {stepIdx > 0 && (
+                  <button
+                    onClick={onPrev}
+                    className={`${btnBase} border border-slate-200 text-slate-600 hover:bg-slate-50`}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" /> Back
+                  </button>
+                )}
+                <button
+                  onClick={onNext}
+                  className={`${btnBase} bg-teal-600 text-white hover:bg-teal-700`}
+                >
+                  {isLast ? "Finish" : "Next"}
+                  {!isLast && <ChevronRight className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
-  const [active, setActive] = useState(false);
-  const [stepIdx, setStepIdx] = useState(0);
+  const [active,     setActive]     = useState(false);
+  const [stepIdx,    setStepIdx]    = useState(0);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [mounted,    setMounted]    = useState(false);
+  // Incremented on every start() call so TutorialOverlay remounts with fresh phase state
+  const [overlayKey, setOverlayKey] = useState(0);
   const pathname = usePathname();
-  const router = useRouter();
+  const router   = useRouter();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -208,60 +255,78 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     if (!localStorage.getItem("owner_tutorial_seen")) {
-      setActive(true);
+      setOverlayKey(k => k + 1);
       setStepIdx(0);
+      setActive(true);
+      // If the user landed on a page other than the first step, navigate there
+      if (TUTORIAL_STEPS[0].page !== pathname) {
+        router.push(TUTORIAL_STEPS[0].page);
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted]);
 
   const currentStep = TUTORIAL_STEPS[stepIdx];
 
-  // Find target element and set spotlight rect
+  // Find the target element and set spotlight rect
   useEffect(() => {
     if (!active || !currentStep?.target || currentStep.page !== pathname) {
       setTargetRect(null);
       return;
     }
 
+    let cancelled = false;
     let rafId: number;
     let attempts = 0;
 
     const find = () => {
-      const el = document.querySelector(
-        `[data-tutorial-id="${currentStep.target}"]`,
-      ) as HTMLElement | null;
-
+      if (cancelled) return;
+      const el = document.querySelector<HTMLElement>(`[data-tutorial-id="${currentStep.target}"]`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        // Wait for scroll to settle then capture rect
         setTimeout(() => {
+          if (cancelled) return;
           const r = el.getBoundingClientRect();
           setTargetRect({ top: r.top, left: r.left, width: r.width, height: r.height });
         }, 350);
-      } else if (attempts++ < 15) {
-        // Element not yet painted — retry
+      } else if (attempts++ < 18) {
         rafId = requestAnimationFrame(find);
       }
     };
 
-    const timer = setTimeout(find, 200);
-    return () => { clearTimeout(timer); cancelAnimationFrame(rafId); };
+    const startFind = () => {
+      if (cancelled) return;
+      // On mobile, sidebar items are hidden until the hamburger is opened.
+      // Auto-click the hamburger before spotlighting any sidebar-* target.
+      const isSidebarTarget = currentStep.target!.startsWith("sidebar-");
+      const isMobile = window.innerWidth < 768;
+      if (isSidebarTarget && isMobile) {
+        const hamburger = document.querySelector<HTMLElement>('[data-tutorial-id="sidebar-hamburger"]');
+        if (hamburger) {
+          hamburger.click();
+          // Wait for the sidebar slide-in animation (300ms), then find the element
+          setTimeout(() => { if (!cancelled) find(); }, 320);
+          return;
+        }
+      }
+      find();
+    };
+
+    const timer = setTimeout(startFind, 200);
+    return () => { cancelled = true; clearTimeout(timer); cancelAnimationFrame(rafId); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, stepIdx, pathname]);
 
-  // Keep rect in sync while user scrolls / window resizes
+  // Keep rect in sync while the user scrolls or resizes
   useEffect(() => {
     if (!active || !currentStep?.target) return;
-
     const update = () => {
-      const el = document.querySelector(
-        `[data-tutorial-id="${currentStep.target}"]`,
-      ) as HTMLElement | null;
+      const el = document.querySelector<HTMLElement>(`[data-tutorial-id="${currentStep.target}"]`);
       if (el) {
         const r = el.getBoundingClientRect();
         setTargetRect({ top: r.top, left: r.left, width: r.width, height: r.height });
       }
     };
-
     window.addEventListener("scroll", update, true);
     window.addEventListener("resize", update);
     return () => {
@@ -271,64 +336,89 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, [active, stepIdx, currentStep]);
 
   const stop = useCallback(() => {
+    // Close the mobile sidebar if the tour is stopped while highlighting a sidebar item
+    const curTarget = TUTORIAL_STEPS[stepIdx]?.target;
+    if (curTarget?.startsWith("sidebar-") && window.innerWidth < 768) {
+      const closeBtn = document.querySelector<HTMLElement>('[data-tutorial-id="sidebar-close"]');
+      if (closeBtn) closeBtn.click();
+    }
     setActive(false);
     setTargetRect(null);
     localStorage.setItem("owner_tutorial_seen", "true");
-  }, []);
+  }, [stepIdx]);
 
   const start = useCallback(() => {
     localStorage.removeItem("owner_tutorial_seen");
+    setOverlayKey(k => k + 1); // forces TutorialOverlay to remount with clean phase state
     setStepIdx(0);
     setTargetRect(null);
     setActive(true);
-    if (TUTORIAL_STEPS[0].page !== pathname) {
-      router.push(TUTORIAL_STEPS[0].page);
-    }
+    if (TUTORIAL_STEPS[0].page !== pathname) router.push(TUTORIAL_STEPS[0].page);
   }, [pathname, router]);
 
   const navigate = useCallback(
     (idx: number) => {
       const step = TUTORIAL_STEPS[idx];
       if (!step) return;
+
+      // Close the mobile sidebar when leaving a sidebar step
+      // (the next step may be on a different page or a non-sidebar element)
+      const prevTarget = TUTORIAL_STEPS[stepIdx]?.target;
+      if (prevTarget?.startsWith("sidebar-") && window.innerWidth < 768) {
+        const closeBtn = document.querySelector<HTMLElement>('[data-tutorial-id="sidebar-close"]');
+        if (closeBtn) closeBtn.click();
+      }
+
       setStepIdx(idx);
       setTargetRect(null);
-      if (step.page !== pathname) {
-        router.push(step.page);
-      }
+      if (step.page !== pathname) router.push(step.page);
     },
-    [pathname, router],
+    [pathname, router, stepIdx],
   );
 
   const next = useCallback(() => {
+    const current = TUTORIAL_STEPS[stepIdx];
     const nextIdx = stepIdx + 1;
+
+    // If this step has a postAction, click its target element before advancing.
+    // This is used to auto-open modals (e.g. the first claim row).
+    if (current?.postAction) {
+      const el = document.querySelector<HTMLElement>(`[data-tutorial-id="${current.postAction}"]`);
+      if (el) {
+        el.click();
+        setTimeout(() => {
+          if (nextIdx >= TUTORIAL_STEPS.length) { stop(); return; }
+          navigate(nextIdx);
+        }, 600);
+        return;
+      }
+    }
+
     if (nextIdx >= TUTORIAL_STEPS.length) { stop(); return; }
     navigate(nextIdx);
   }, [stepIdx, navigate, stop]);
 
   const prev = useCallback(() => {
-    if (stepIdx <= 0) return;
-    navigate(stepIdx - 1);
+    if (stepIdx > 0) navigate(stepIdx - 1);
   }, [stepIdx, navigate]);
 
-  const isCurrentPage = currentStep?.page === pathname;
-  const showOverlay = active && mounted && isCurrentPage;
+  const showOverlay = active && mounted && currentStep?.page === pathname;
 
   return (
     <TutorialContext.Provider value={{ isActive: active, start, stop }}>
       {children}
-      {showOverlay &&
-        createPortal(
-          <TutorialOverlay
-            step={currentStep}
-            stepIdx={stepIdx}
-            total={TUTORIAL_STEPS.length}
-            targetRect={targetRect}
-            onNext={next}
-            onPrev={prev}
-            onSkip={stop}
-          />,
-          document.body,
-        )}
+      {showOverlay && (
+        <TutorialOverlay
+          key={overlayKey}
+          step={currentStep}
+          stepIdx={stepIdx}
+          total={TUTORIAL_STEPS.length}
+          targetRect={targetRect}
+          onNext={next}
+          onPrev={prev}
+          onSkip={stop}
+        />
+      )}
     </TutorialContext.Provider>
   );
 }

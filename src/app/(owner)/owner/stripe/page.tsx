@@ -141,7 +141,7 @@ function StripePageInner() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 space-y-5">
+        <div data-tutorial-id="owner-payouts-section" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 space-y-5">
           {loading ? (
             <p className="text-sm text-slate-400">Checking your Stripe account…</p>
           ) : (

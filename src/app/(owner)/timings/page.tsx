@@ -195,7 +195,7 @@ export default function OwnerTimingsPage() {
       </section>
 
       {/* Timing + Warning cards */}
-      <section className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+      <section data-tutorial-id="owner-timings-section" className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
 
         {/* Timing card */}
         <div className="rounded-[18px] bg-white dark:bg-slate-800 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">

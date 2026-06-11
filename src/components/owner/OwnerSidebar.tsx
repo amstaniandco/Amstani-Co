@@ -26,8 +26,23 @@ type SidebarItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
+const SIDEBAR_TUTORIAL_IDS: Record<string, string> = {
+  "/chats":               "sidebar-chats",
+  "/orders":              "sidebar-orders",
+  "/performance":         "sidebar-performance",
+  "/products":            "sidebar-products",
+  "/timings":             "sidebar-timings",
+  "/communications":      "sidebar-communications",
+  "/owner/notifications": "sidebar-notifications",
+  "/owner/claims":        "sidebar-claims",
+  "/music":               "sidebar-music",
+  "/owner/profile":       "sidebar-profile",
+  "/owner/stripe":        "sidebar-payouts",
+};
+
 const sidebarItems: SidebarItem[] = [
-  { label: "Chats", href: "/store/chats", icon: MessageCircle },
+  { label: "Profile", href: "/owner/profile", icon: UserRound },
+  { label: "Chats", href: "/chats", icon: MessageCircle },
   { label: "Orders", href: "/orders", icon: Package },
   { label: "Performance", href: "/performance", icon: ChartLine },
   { label: "Products", href: "/products", icon: Boxes },
@@ -36,7 +51,6 @@ const sidebarItems: SidebarItem[] = [
   { label: "Notifications", href: "/owner/notifications", icon: Bell },
   { label: "Claims", href: "/owner/claims", icon: TriangleAlert },
   { label: "Music", href: "/music", icon: Music2 },
-  { label: "Profile", href: "/owner/profile", icon: UserRound },
   { label: "Payouts", href: "/owner/stripe", icon: CreditCard },
 ];
 
@@ -46,7 +60,7 @@ function getActiveLabel(pathname: string) {
   const match = sidebarItems.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
-  return match?.label ?? "Chats";
+  return match?.label ?? "Profile";
 }
 
 function buildQuery(since: Record<string, string>) {
@@ -111,6 +125,7 @@ export default function OwnerSidebar() {
     <>
       <button
         type="button"
+        data-tutorial-id="sidebar-hamburger"
         onClick={() => setIsOpen(true)}
         className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-900 shadow-md transition hover:bg-slate-50 md:hidden"
       >
@@ -139,6 +154,7 @@ export default function OwnerSidebar() {
 
           <button
             type="button"
+            data-tutorial-id="sidebar-close"
             onClick={() => setIsOpen(false)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-900 transition hover:bg-slate-50 md:hidden"
           >
@@ -152,12 +168,7 @@ export default function OwnerSidebar() {
             const isActive = item.label === activeLabel;
             const badge = BADGE_MAP[item.href] ?? 0;
 
-            const tutorialId =
-              item.href === "/products" ? "sidebar-products"
-              : item.href === "/orders" ? "sidebar-orders"
-              : item.href === "/owner/claims" ? "sidebar-claims"
-              : item.href === "/store/chats" ? "sidebar-chats"
-              : undefined;
+            const tutorialId = SIDEBAR_TUTORIAL_IDS[item.href];
 
             return (
               <Link

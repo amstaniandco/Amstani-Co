@@ -53,9 +53,13 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    // OWNER blocked from customer + admin pages → owner dashboard
+    // OWNER blocked from customer + admin pages → owner profile
     if (role === "owner" && (isCustomerOnly || isAdminOnly)) {
-      return NextResponse.redirect(new URL("/orders", req.url));
+      // Allow owners to preview the public store page (read-only customer view)
+      if (pathname === "/store" || (pathname.startsWith("/store/") && !isOwnerOnly)) {
+        return NextResponse.next();
+      }
+      return NextResponse.redirect(new URL("/owner/profile", req.url));
     }
 
     // ADMIN blocked from customer + owner pages → admin dashboard
@@ -73,7 +77,7 @@ export async function proxy(req: NextRequest) {
   if (pathname === "/login" || pathname === "/signup") {
     const role = await getRole(req);
     if (role === "admin") return NextResponse.redirect(new URL("/admin/dashboard", req.url));
-    if (role === "owner") return NextResponse.redirect(new URL("/orders", req.url));
+    if (role === "owner") return NextResponse.redirect(new URL("/owner/profile", req.url));
     if (role === "user")  return NextResponse.redirect(new URL("/home", req.url));
   }
 

@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { PenLine, Store, Loader2, CheckCircle2, XCircle, BookOpen } from "lucide-react";
+import { createPortal } from "react-dom";
+import { PenLine, Store, Loader2, CheckCircle2, XCircle, BookOpen, ExternalLink, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import { useTutorial } from "../../../../components/owner/tutorial/TutorialProvider";
 
@@ -101,6 +102,7 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const uploadImage = async (
     file: File,
@@ -130,6 +132,7 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
   };
 
   return (
+    <>
     <section className="overflow-visible rounded-[26px] bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-5">
       {/* Hidden file inputs */}
       <input
@@ -230,15 +233,49 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
             </div>
           </div>
 
-          <Link
-            href={`/store?storeId=${store?._id}`}
+          <button
+            type="button"
+            onClick={() => setShowPreview(true)}
+            data-tutorial-id="owner-user-preview"
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 dark:border-slate-600 bg-white dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 transition hover:bg-slate-50 dark:hover:bg-slate-600"
           >
-            User Preview
-          </Link>
+            <ExternalLink className="h-4 w-4" /> User Preview
+          </button>
         </div>
       </div>
     </section>
+
+      {/* Store preview modal — full-screen iframe of the customer store page */}
+      {showPreview && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9990] flex flex-col bg-black/80">
+          {/* Header bar */}
+          <div className="flex items-center justify-between gap-3 bg-slate-900 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <ExternalLink className="h-4 w-4 text-teal-400" />
+              <p className="text-sm font-semibold text-white">
+                Customer View Preview
+              </p>
+              <span className="rounded-full bg-teal-800 px-2 py-0.5 text-[10px] font-semibold text-teal-300">
+                Read-only
+              </span>
+            </div>
+            <button
+              onClick={() => setShowPreview(false)}
+              className="grid h-8 w-8 place-items-center rounded-full text-slate-400 transition hover:bg-slate-700 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {/* Preview frame */}
+          <iframe
+            src={store?._id ? `/store?storeId=${store._id}` : "/store"}
+            className="flex-1 w-full border-0 bg-white"
+            title="Store Customer Preview"
+          />
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 

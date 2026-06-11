@@ -344,7 +344,7 @@ export default function OwnerProductsPage() {
           {/* Header row */}
           <div className="flex flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-7">
             <h3 className="text-2xl font-bold text-slate-900">Products</h3>
-            <Link href="/products/add" className="relative inline-flex items-center gap-2 rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5]">
+            <Link href="/products/add" data-tutorial-id="owner-add-products-btn" className="relative inline-flex items-center gap-2 rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5]">
               <Plus className="h-4 w-4" /> Add Products
               {requestsBadge > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white">
