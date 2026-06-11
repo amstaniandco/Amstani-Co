@@ -20,7 +20,7 @@ export async function GET(req: Request) {
         .collection("stores")
         .findOne(
           { _id: new ObjectId(storeId), status: "active" },
-          { projection: { _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, isLive: 1, liveLink: 1, rating: 1, settings: 1 } }
+          { projection: { _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, isLive: 1, liveLink: 1, rating: 1, settings: 1, ownerId: 1 } }
         );
 
       if (!store) return NextResponse.json({ stores: [] }, { status: 200 });
@@ -35,6 +35,15 @@ export async function GET(req: Request) {
       );
 
       if (!profileComplete) return NextResponse.json({ stores: [] }, { status: 200 });
+
+      // Attach owner phone for WhatsApp contact
+      if (store.ownerId) {
+        const owner = await db
+          .collection("users")
+          .findOne({ _id: store.ownerId }, { projection: { phone: 1 } });
+        store.ownerPhone = owner?.phone ?? "";
+      }
+      delete store.ownerId;
 
       return NextResponse.json({ stores: [store] }, { status: 200 });
     }
@@ -84,6 +93,7 @@ export async function GET(req: Request) {
           rating: 1,
           settings: 1,
           "owner.state": 1,
+          ownerPhone: { $ifNull: ["$owner.phone", ""] },
         },
       },
       { $limit: 40 },

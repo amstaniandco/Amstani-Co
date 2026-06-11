@@ -14,6 +14,7 @@ export type StoreInfo = {
   rating?: number | string;
   followers?: number;
   productsCount?: number;
+  ownerPhone?: string;
   settings?: {
     languages?: string[];
     musicUrl?: string;
