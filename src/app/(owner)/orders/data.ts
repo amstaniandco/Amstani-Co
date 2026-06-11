@@ -184,7 +184,7 @@ export function mapOrderToRow(order: RawOrder): OrderRow {
     _mongoId: mongoId,
     customer: order.customerName ?? "Customer",
     email: order.customerEmail ?? "",
-    date: formatDate(order.createdAt),
+    date: formatDateTime(order.createdAt),
     total: formatCurrency(total),
     status,
     statusTone: getStatusTone(status),

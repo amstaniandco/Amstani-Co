@@ -86,10 +86,15 @@ const ISSUE_LABEL: Record<string, string> = {
   other: "Other",
 };
 
-function dueDate(createdAt: string): string {
-  const d = new Date(createdAt);
-  d.setDate(d.getDate() + 4);
-  return d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+function formatClaimDate(createdAt: string): string {
+  if (!createdAt) return "—";
+  return new Date(createdAt).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 const CLAIMS_PAGE_SIZE = 10;
@@ -320,7 +325,7 @@ export default function OwnerClaimsPage() {
                   <div>Claim ID</div>
                   <div>Customer</div>
                   <div>Issue Type</div>
-                  <div>Due Date</div>
+                  <div>Filed</div>
                   <div>Status</div>
                   <div>Action</div>
                 </div>
@@ -355,7 +360,7 @@ export default function OwnerClaimsPage() {
                             {ISSUE_LABEL[claim.reason] || claim.reason}
                           </span>
                         </div>
-                        <div className="text-[12px] text-slate-700">{dueDate(claim.createdAt)}</div>
+                        <div className="text-[12px] text-slate-700">{formatClaimDate(claim.createdAt)}</div>
                         <div
                           className={`text-[12px] font-bold tracking-[0.02em] ${STATUS_COLOR[claim.status] || "text-slate-500"}`}
                         >
