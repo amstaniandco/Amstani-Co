@@ -124,9 +124,14 @@ export async function PATCH(
 
   // ── REPLACEMENT (damaged / missing / other) ──────────────────────────────
   if (resolutionType === "replacement") {
-    const originalOrder = ObjectId.isValid(claim.orderId)
-      ? await db.collection("orders").findOne({ _id: new ObjectId(claim.orderId) })
-      : null;
+    const [originalOrder, claimUserDoc] = await Promise.all([
+      ObjectId.isValid(claim.orderId)
+        ? db.collection("orders").findOne({ _id: new ObjectId(claim.orderId) })
+        : Promise.resolve(null),
+      ObjectId.isValid(claim.customerId)
+        ? db.collection("users").findOne({ _id: new ObjectId(claim.customerId) }, { projection: { email: 1 } })
+        : Promise.resolve(null),
+    ]);
 
     const replacementItems = claim.items.map((item: Record<string, unknown>) => ({
       productId: item.productId,
@@ -148,6 +153,7 @@ export async function PATCH(
       orderNumber: replacementOrderNumber(),
       customerId: claim.customerId,
       customerName: claim.customerName,
+      customerEmail: originalOrder?.customerEmail || claimUserDoc?.email || "",
       storeId: claim.storeId,
       storeName: claim.storeName,
       items: replacementItems,

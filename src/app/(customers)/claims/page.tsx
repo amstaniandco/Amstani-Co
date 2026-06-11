@@ -41,6 +41,7 @@ type Claim = {
   reason: string;
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
   storeId?: string;
+  createdAt?: string;
 };
 
 function ClaimPageContent() {
