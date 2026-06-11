@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createPortal } from "react-dom";
 import { PenLine, Store, Loader2, CheckCircle2, XCircle, BookOpen, ExternalLink, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import { useTutorial } from "../../../../components/owner/tutorial/TutorialProvider";
@@ -103,6 +102,10 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  useEffect(() => {
+    return () => setShowPreview(false);
+  }, []);
 
   const uploadImage = async (
     file: File,
@@ -245,8 +248,8 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
       </div>
     </section>
 
-      {/* Store preview modal — full-screen iframe of the customer store page */}
-      {showPreview && typeof document !== "undefined" && createPortal(
+      {/* Store preview modal — inline fixed overlay; no portal needed since fixed covers viewport */}
+      {showPreview && (
         <div className="fixed inset-0 z-[9990] flex flex-col bg-black/80">
           {/* Header bar */}
           <div className="flex items-center justify-between gap-3 bg-slate-900 px-4 py-3">
@@ -266,14 +269,14 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
               <X className="h-4 w-4" />
             </button>
           </div>
-          {/* Preview frame */}
+          {/* Preview frame — sandbox prevents the iframe from navigating the parent window */}
           <iframe
             src={store?._id ? `/store?storeId=${store._id}` : "/store"}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             className="flex-1 w-full border-0 bg-white"
             title="Store Customer Preview"
           />
-        </div>,
-        document.body
+        </div>
       )}
     </>
   );
