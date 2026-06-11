@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2, Trophy } from "lucide-react";
 import { useStore } from "../../../../context/StoreContext";
 
 function formatCount(n: number): string {
@@ -20,6 +20,7 @@ export default function StoreHero() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [statsLoaded, setStatsLoaded] = useState(false);
+  const [rank, setRank] = useState<number | null>(null);
   useEffect(() => {
     if (!store?._id) return;
     fetch(`/api/stores/${store._id}/stats`)
@@ -28,6 +29,7 @@ export default function StoreHero() {
         setFollowerCount(d.followerCount ?? 0);
         setProductCount(d.productCount ?? 0);
         setIsFollowing(d.isFollowing ?? false);
+        setRank(d.rank ?? null);
         setStatsLoaded(true);
       })
       .catch(() => setStatsLoaded(true));
@@ -71,7 +73,15 @@ export default function StoreHero() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{store?.name || "Name of the store"}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{store?.name || "Name of the store"}</h2>
+              {rank !== null && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">
+                  <Trophy className="h-3 w-3" />
+                  Ranked #{rank}
+                </span>
+              )}
+            </div>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
               {store?.description || "Description of the store can be written here"}
             </p>

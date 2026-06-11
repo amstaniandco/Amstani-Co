@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
+import { getStoreRank } from "../../../../../lib/store-rank";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ storeId: string }> }) {
   try {
@@ -12,9 +13,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ stor
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
-    const [followerCount, productCount] = await Promise.all([
+    const [followerCount, productCount, rank] = await Promise.all([
       db.collection("storeFollowers").countDocuments({ storeId: new ObjectId(storeId) }),
       db.collection("products").countDocuments({ storeId: new ObjectId(storeId) }),
+      getStoreRank(db, storeId),
     ]);
 
     let isFollowing = false;
@@ -26,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ stor
       isFollowing = !!existing;
     }
 
-    return NextResponse.json({ followerCount, productCount, isFollowing });
+    return NextResponse.json({ followerCount, productCount, isFollowing, rank });
   } catch (error) {
     console.error("GET /api/stores/[storeId]/stats error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

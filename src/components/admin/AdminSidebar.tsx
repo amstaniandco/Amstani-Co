@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users } from "lucide-react";
+import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users, X } from "lucide-react";
 
 export type AdminSidebarItem = {
   label: string;
@@ -50,8 +50,19 @@ export default function AdminSidebar({
   const pathname = usePathname();
   const isLight = variant === "light";
   const [counts, setCounts] = useState<SidebarCounts>({ stores: 0, claims: 0, chats: 0 });
+  const [isOpen, setIsOpen] = useState(false);
 
   const resolvedActive = activePath ?? pathname ?? "";
+
+  // Close the mobile drawer whenever the route changes
+  useEffect(() => { setIsOpen(false); }, [pathname]);
+
+  // Open the drawer when the navbar hamburger dispatches the event
+  useEffect(() => {
+    const open = () => setIsOpen(true);
+    window.addEventListener("admin-sidebar-open", open);
+    return () => window.removeEventListener("admin-sidebar-open", open);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +95,7 @@ export default function AdminSidebar({
   };
 
   const handleLogout = async () => {
+    setIsOpen(false);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch (error) {
@@ -96,13 +108,37 @@ export default function AdminSidebar({
   };
 
   return (
+    <>
+    {/* Backdrop (mobile only) */}
+    <div
+      onClick={() => setIsOpen(false)}
+      className={`fixed inset-0 z-40 bg-slate-950/50 transition-opacity lg:hidden ${
+        isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
+    />
+
     <aside
-      className={`relative flex flex-col overflow-hidden rounded-[28px] p-5 ${
+      className={`relative flex flex-col overflow-hidden rounded-[28px] p-5 transition-transform duration-300 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-72! max-lg:max-w-[85vw] max-lg:rounded-r-2xl max-lg:shadow-2xl ${
+        isOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"
+      } ${
         isLight
           ? "border border-[#d8e0e6] bg-[#f7fafc] text-slate-700"
           : "border border-[#2b3950] bg-[#101a2f] text-slate-100"
       } ${className}`}
     >
+      {/* Mobile close button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        aria-label="Close menu"
+        className={`absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-xl border transition lg:hidden ${
+          isLight
+            ? "border-[#d8e0e6] bg-white text-slate-600 hover:bg-slate-50"
+            : "border-white/20 bg-white/10 text-slate-200 hover:bg-white/20"
+        }`}
+      >
+        <X className="h-4 w-4" />
+      </button>
       {isLight ? (
         <>
           <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-cyan-300/20 blur-3xl" />
@@ -144,6 +180,7 @@ export default function AdminSidebar({
             <Link
               key={item.label}
               href={item.href}
+              onClick={() => setIsOpen(false)}
               className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
                 isLight
                   ? isActive
@@ -191,5 +228,6 @@ export default function AdminSidebar({
         Logout
       </button>
     </aside>
+    </>
   );
 }

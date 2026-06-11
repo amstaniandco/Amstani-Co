@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { PenLine, Store, Loader2, CheckCircle2, XCircle, BookOpen, ExternalLink, X } from "lucide-react";
+import { PenLine, Store, Loader2, CheckCircle2, XCircle, BookOpen, ExternalLink, Trophy, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import { useTutorial } from "../../../../components/owner/tutorial/TutorialProvider";
 
@@ -96,7 +96,7 @@ function ApplicationsCard({ applications }: { applications: StoreApplication[] }
   );
 }
 
-function ProfileHero({ store, onRefresh, followerCount, productCount }: { store: any; onRefresh: () => void; followerCount: number; productCount: number }) {
+function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { store: any; onRefresh: () => void; followerCount: number; productCount: number; rank: number | null }) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -202,7 +202,12 @@ function ProfileHero({ store, onRefresh, followerCount, productCount }: { store:
               {store?.description || "Description of the store can be written here"}
             </p>
             <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-[#65bbc5] dark:bg-cyan-600 px-3 py-1 text-[11px] font-semibold text-white">Ranked #1</span>
+              {rank !== null && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
+                  <Trophy className="h-3 w-3" />
+                  Ranked #{rank}
+                </span>
+              )}
               <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
                 store?.status === "active"
                   ? "border-green-500 text-green-500 dark:border-green-400 dark:text-green-400"
@@ -570,6 +575,7 @@ export default function ProfilePageClient() {
   const { start: startTutorial } = useTutorial();
   const [followerCount, setFollowerCount] = useState(0);
   const [productCount, setProductCount] = useState(0);
+  const [rank, setRank] = useState<number | null>(null);
   const [applications, setApplications] = useState<StoreApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -591,6 +597,7 @@ export default function ProfilePageClient() {
         setStore(data.store);
         setFollowerCount(data.followerCount ?? 0);
         setProductCount(data.productCount ?? 0);
+        setRank(data.rank ?? null);
 
         const appsRes = await fetch("/api/owner/applications");
         if (appsRes.ok) {
@@ -680,7 +687,7 @@ export default function ProfilePageClient() {
       </section>
 
       <section className="mt-4">
-        <ProfileHero store={store} onRefresh={fetchProfile} followerCount={followerCount} productCount={productCount} />
+        <ProfileHero store={store} onRefresh={fetchProfile} followerCount={followerCount} productCount={productCount} rank={rank} />
       </section>
 
       {!isProfileComplete(store) && (

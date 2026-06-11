@@ -79,7 +79,7 @@ export async function GET(req: Request) {
             },
           },
           { $sort: { revenue: -1 } },
-          { $limit: 5 },
+          { $limit: 50 },
           // Try to join with stores collection — storeId in orders may be string or ObjectId
           {
             $lookup: {

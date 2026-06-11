@@ -1,4 +1,6 @@
-import { Bell, Download, Search, UserCircle2 } from "lucide-react";
+"use client";
+
+import { Bell, Download, Menu, Search, UserCircle2 } from "lucide-react";
 
 type AdminNavbarProps = {
   searchPlaceholder?: string;
@@ -12,7 +14,7 @@ export default function AdminNavbar({
   const isLight = variant === "light";
 
   return (
-    <header className="relative overflow-hidden rounded-2xl border border-[#d7e0e5] bg-white/95 p-3 shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur">
+    <header className="relative z-30 overflow-hidden rounded-2xl border border-[#d7e0e5] bg-white/95 p-3 shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur max-lg:sticky max-lg:top-0">
       <div
         className={`pointer-events-none absolute inset-0 ${
           isLight
@@ -22,13 +24,25 @@ export default function AdminNavbar({
       />
 
       <div className="relative flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full max-w-xl">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-          <input
-            type="search"
-            placeholder={searchPlaceholder}
-            className="h-11 w-full rounded-xl border border-[#dbe5ea] bg-white pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
-          />
+        <div className="flex w-full items-center gap-2.5 lg:max-w-xl">
+          {/* Mobile menu trigger — toggles the AdminSidebar drawer (hidden on lg) */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("admin-sidebar-open"))}
+            aria-label="Open menu"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#dbe5ea] bg-white text-slate-700 transition hover:bg-slate-50 lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type="search"
+              placeholder={searchPlaceholder}
+              className="h-11 w-full rounded-xl border border-[#dbe5ea] bg-white pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -39,7 +53,7 @@ export default function AdminNavbar({
             }`}
           >
             <Download className="h-4 w-4" />
-            Download Report
+            <span className="hidden sm:inline">Download Report</span>
           </button>
 
           <button
@@ -63,7 +77,7 @@ export default function AdminNavbar({
               <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
                 <UserCircle2 className="h-3.5 w-3.5" />
               </span>
-              <div>
+              <div className="hidden sm:block">
                 <p className="text-xs font-semibold leading-none text-slate-700">Super Admin</p>
                 <p className="mt-1 text-[11px] leading-none text-slate-500">Operations</p>
               </div>

@@ -4,6 +4,7 @@ import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
 import { User } from "../../../../models/user";
 import { Store } from "../../../../models/store";
+import { getStoreRank } from "../../../../lib/store-rank";
 
 export async function GET() {
   try {
@@ -24,16 +25,19 @@ export async function GET() {
 
     let followerCount = 0;
     let productCount = 0;
+    let rank: number | null = null;
     if (store) {
       const storeId = store._id.toString();
-      const [followers, storeProducts, legacyProducts] = await Promise.all([
+      const [followers, storeProducts, legacyProducts, storeRank] = await Promise.all([
         db.collection("storeFollowers").countDocuments({ storeId: store._id }),
         db.collection("store_products").countDocuments({ storeId }),
         db.collection("products").countDocuments({ storeId: store._id }),
+        getStoreRank(db, storeId),
       ]);
 
       followerCount = followers;
       productCount = storeProducts > 0 ? storeProducts : legacyProducts;
+      rank = storeRank;
     }
 
     return NextResponse.json(
@@ -48,6 +52,7 @@ export async function GET() {
         store,
         followerCount,
         productCount,
+        rank,
       },
       { status: 200 }
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Trophy, BarChart3, X } from "lucide-react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import AdminUsMap from "../../../../components/admin/AdminUsMap";
@@ -55,12 +55,66 @@ function SkeletonBlock({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-slate-100 ${className ?? ""}`} />;
 }
 
+function Modal({
+  title,
+  subtitle,
+  icon,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[9990] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            {icon && (
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f4f6] text-[#338ca0]">
+                {icon}
+              </span>
+            )}
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+              {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto px-5 py-4 sm:px-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedState, setSelectedState] = useState<string>("");
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const stateRevenueMap = data?.stateRevenueMap ?? {};
 
   useEffect(() => {
@@ -184,7 +238,7 @@ export default function AdminDashboardPage() {
                   </p>
                 ) : (
                   <div className="mt-6 space-y-5">
-                    {storeMetrics.map((store) => (
+                    {storeMetrics.slice(0, 4).map((store) => (
                       <div key={store.name}>
                         <div className="mb-2 flex items-center justify-between text-sm text-slate-700">
                           <span>{store.name}</span>
@@ -203,7 +257,9 @@ export default function AdminDashboardPage() {
 
                 <button
                   type="button"
-                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg border border-[#d9e3e8] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-[#f8fbfc]"
+                  onClick={() => setShowAnalytics(true)}
+                  disabled={storeMetrics.length === 0}
+                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg border border-[#d9e3e8] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-[#f8fbfc] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span>View All Analytics</span>
                   <ChevronRight className="h-4 w-4" />
@@ -215,7 +271,12 @@ export default function AdminDashboardPage() {
             <section className="mt-6 rounded-xl border border-[#dbe6ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.04)] sm:p-5">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-slate-800">Top Performing Stores</h2>
-                <button type="button" className="text-sm font-semibold text-[#338ca0] hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setShowLeaderboard(true)}
+                  disabled={leaderboard.length === 0}
+                  className="text-sm font-semibold text-[#338ca0] transition hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   View Leaderboard
                 </button>
               </div>
@@ -246,7 +307,7 @@ export default function AdminDashboardPage() {
                         </td>
                       </tr>
                     ) : (
-                      leaderboard.map((row) => (
+                      leaderboard.slice(0, 5).map((row) => (
                         <tr key={row.rank} className="border-t border-[#e5edf1] bg-white text-slate-700">
                           <td className="px-4 py-4 font-bold text-[#2e8a9c]">{row.rank}</td>
                           <td className="px-4 py-4 font-semibold">{row.name}</td>
@@ -334,6 +395,76 @@ export default function AdminDashboardPage() {
           </div>
         </main>
       </div>
+
+      {/* View All Analytics modal */}
+      {showAnalytics && (
+        <Modal
+          title="Store Revenue Analytics"
+          subtitle={`${storeMetrics.length} store${storeMetrics.length !== 1 ? "s" : ""} by revenue`}
+          icon={<BarChart3 className="h-5 w-5" />}
+          onClose={() => setShowAnalytics(false)}
+        >
+          {storeMetrics.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-400">No revenue data yet.</p>
+          ) : (
+            <div className="space-y-5">
+              {storeMetrics.map((store, i) => (
+                <div key={`${store.name}-${i}`}>
+                  <div className="mb-2 flex items-center justify-between gap-3 text-sm text-slate-700">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef5f7] text-[11px] font-bold text-[#2e8a9c]">
+                        {i + 1}
+                      </span>
+                      <span className="truncate">{store.name}</span>
+                    </span>
+                    <span className="shrink-0 font-semibold">{store.revenue}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#e5eef1]">
+                    <div className="h-2 rounded-full bg-[#4cb3c3]" style={{ width: `${store.percentage}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* View Leaderboard modal */}
+      {showLeaderboard && (
+        <Modal
+          title="Store Leaderboard"
+          subtitle={`Top ${leaderboard.length} store${leaderboard.length !== 1 ? "s" : ""} by sales volume`}
+          icon={<Trophy className="h-5 w-5" />}
+          onClose={() => setShowLeaderboard(false)}
+        >
+          {leaderboard.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-400">No data yet.</p>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-[#dbe6ea]">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="bg-[#f3f8fa] text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3">Rank</th>
+                    <th className="px-4 py-3">Store name</th>
+                    <th className="px-4 py-3">Sales volume</th>
+                    <th className="px-4 py-3">Orders</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((row) => (
+                    <tr key={row.rank} className="border-t border-[#e5edf1] bg-white text-slate-700">
+                      <td className="px-4 py-3 font-bold text-[#2e8a9c]">{row.rank}</td>
+                      <td className="px-4 py-3 font-semibold">{row.name}</td>
+                      <td className="px-4 py-3">{row.volume}</td>
+                      <td className="px-4 py-3 text-slate-500">{row.orderCount} orders</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
