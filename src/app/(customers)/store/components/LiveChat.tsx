@@ -235,9 +235,23 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
             Private Chat
           </span>
         </button>
-        <button className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white hover:bg-[#4f9ea7]">
-          Join WhatsApp Call
-        </button>
+        {store?.ownerPhone ? (
+          <a
+            href={`https://wa.me/${store.ownerPhone.replace(/\D/g, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white hover:bg-[#4f9ea7] flex items-center justify-center"
+          >
+            Join WhatsApp Call
+          </a>
+        ) : (
+          <button
+            disabled
+            className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white opacity-50 cursor-not-allowed"
+          >
+            Join WhatsApp Call
+          </button>
+        )}
       </div>
     </div>
   );
