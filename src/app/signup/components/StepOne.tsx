@@ -7,37 +7,6 @@ type StepProps = {
   onNext: () => void;
 };
 
-// Duck icon as SVG since lucide doesn't have DuckDuckGo
-const DuckDuckGoIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <circle cx="12" cy="12" r="10" fill="#DE5833" />
-    <circle cx="12" cy="11" r="6" fill="#F5F0EB" />
-    <circle cx="10.5" cy="9.5" r="1.5" fill="#1D1D1B" />
-    <circle cx="10.9" cy="9.2" r="0.5" fill="white" />
-    <path
-      d="M9 13 Q12 15 15 13"
-      stroke="#DE5833"
-      strokeWidth="1"
-      strokeLinecap="round"
-      fill="none"
-    />
-    <path
-      d="M12 5 Q14 3 16 5"
-      stroke="#F5C842"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      fill="none"
-    />
-  </svg>
-);
-
-// Google icon
 const GoogleIcon = () => (
   <svg
     width="20"
@@ -64,16 +33,18 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// Apple icon
-const AppleIcon = () => (
+const FacebookIcon = () => (
   <svg
     width="20"
     height="20"
     viewBox="0 0 24 24"
-    fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.39.07 2.35.74 3.15.77 1.2-.24 2.35-.93 3.63-.84 1.54.12 2.7.72 3.46 1.86-3.14 1.88-2.39 5.98.48 7.13-.57 1.39-1.32 2.76-2.72 3.96zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    <circle cx="12" cy="12" r="12" fill="#1877F2" />
+    <path
+      d="M16.5 8H14.25C13.836 8 13.5 8.336 13.5 8.75V11H16.5L16.05 14H13.5V22H10.5V14H8.5V11H10.5V8.75C10.5 6.679 12.179 5 14.25 5H16.5V8Z"
+      fill="white"
+    />
   </svg>
 );
 
@@ -90,21 +61,21 @@ export default function StepOne({ onNext }: StepProps) {
       {/* Auth buttons */}
       <div className="flex w-full flex-col gap-5">
         {/* Google */}
-        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
+        <button
+          onClick={() => { window.location.href = "/api/auth/google"; }}
+          className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
+        >
           <GoogleIcon />
           <span>Continue with Google</span>
         </button>
 
-        {/* Apple */}
-        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
-          <AppleIcon />
-          <span>Continue with Apple</span>
-        </button>
-
-        {/* DuckDuckGo */}
-        <button className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]">
-          <DuckDuckGoIcon />
-          <span>Continue with DuckDuckGo</span>
+        {/* Facebook */}
+        <button
+          onClick={() => { window.location.href = "/api/auth/facebook"; }}
+          className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
+        >
+          <FacebookIcon />
+          <span>Continue with Facebook</span>
         </button>
 
         {/* Email */}
