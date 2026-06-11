@@ -47,6 +47,24 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .toArray();
 
+  // Backfill customerEmail for replacement orders that are missing it
+  const missingEmailIds = orders
+    .filter((o) => o.isReplacement && !o.customerEmail && o.customerId && ObjectId.isValid(o.customerId))
+    .map((o) => new ObjectId(o.customerId));
+
+  if (missingEmailIds.length) {
+    const users = await db
+      .collection("users")
+      .find({ _id: { $in: missingEmailIds } }, { projection: { _id: 1, email: 1 } })
+      .toArray();
+    const emailMap = new Map(users.map((u) => [u._id.toString(), u.email ?? ""]));
+    for (const order of orders) {
+      if (order.isReplacement && !order.customerEmail && order.customerId) {
+        order.customerEmail = emailMap.get(order.customerId.toString()) ?? "";
+      }
+    }
+  }
+
   return NextResponse.json({ orders, storeName: store.name });
 }
 

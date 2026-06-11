@@ -2,6 +2,15 @@
 
 import type { ChangeEvent } from "react";
 import type { Address } from "../../../../models/user";
+import ProfileLocationMap from "../../profile/components/ProfileLocationMap";
+
+type MapAddressSelection = {
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+};
 
 type CheckoutFormProps = {
   savedAddresses: Address[];
@@ -16,6 +25,7 @@ type CheckoutFormProps = {
     zip: string;
   };
   onFormChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  onMapAddressSelect: (selection: MapAddressSelection) => void;
 };
 
 export default function CheckoutForm({
@@ -24,6 +34,7 @@ export default function CheckoutForm({
   onSelectAddress,
   form,
   onFormChange,
+  onMapAddressSelect,
 }: CheckoutFormProps) {
   return (
     <div className="ui-panel rounded-2xl bg-white p-8 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
@@ -135,16 +146,14 @@ export default function CheckoutForm({
         </div>
       </div>
 
-      <div className="relative mt-5 h-36 overflow-hidden rounded-xl">
-        <img
-          src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=700&h=160&fit=crop"
-          alt="Map"
-          className="w-full h-full object-cover opacity-80"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
-        <span className="absolute bottom-3 left-4 text-white text-sm font-semibold drop-shadow">
-          Los Angeles
-        </span>
+      <div className="mt-5">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-black dark:text-slate-100">
+          Or pick from map
+        </p>
+        <div style={{ height: 260 }}>
+          <ProfileLocationMap onSelectAddress={onMapAddressSelect} />
+        </div>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Click anywhere on the map to auto-fill your address fields.</p>
       </div>
     </div>
   );
