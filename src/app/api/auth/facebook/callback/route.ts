@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as jose from "jose";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development";
 
 export async function GET(request: NextRequest) {
