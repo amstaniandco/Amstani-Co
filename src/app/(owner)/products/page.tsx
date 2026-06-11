@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Search, Store, Tag, X } from "lucide-react";
+import { Eye, Plus, Search, Store, Tag, X } from "lucide-react";
 
 type ProductRow = {
   productId: string;
@@ -19,7 +19,272 @@ type ProductRow = {
   brand?: string | null;
   category?: string | null;
   description?: string | null;
+  listedAt?: string | null;
 };
+
+type CatalogDetail = {
+  _id: string;
+  name: string;
+  sku?: string;
+  category?: string;
+  price?: number;
+  compareAtPrice?: number | null;
+  costPrice?: number | null;
+  totalStock?: number;
+  stock?: number;
+  stockStatus?: string;
+  isFeatured?: boolean;
+  isPublished?: boolean;
+  description?: string;
+  fullDescription?: string;
+  imageUrls?: string[];
+  brand?: { name?: string };
+  variants?: Array<{ id?: string; size?: string; color?: string; stock?: number; stockQuantity?: number; skuVariant?: string; priceOverride?: number | null }>;
+  sizeChart?: Array<{ id?: string; size?: string; measurements?: Record<string, string>; unit?: string }>;
+  shipping?: { weight?: number | null; shippingClass?: string | null; dimensionL?: number | null; dimensionW?: number | null; dimensionH?: number | null } | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+};
+
+type StoreProductDetail = {
+  sellingPrice: number | null;
+  originalPrice: number | null;
+  discountPercent: number;
+  isOnSale: boolean;
+  isNewArrival: boolean;
+  listedAt: string | null;
+  quantity: number;
+};
+
+function ProductDetailModal({
+  productId,
+  onClose,
+}: {
+  productId: string;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [storeProduct, setStoreProduct] = useState<StoreProductDetail | null>(null);
+  const [catalog, setCatalog] = useState<CatalogDetail | null>(null);
+  const [activeImage, setActiveImage] = useState(0);
+
+  useEffect(() => {
+    fetch(`/api/owner/products/${productId}/detail`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Failed to load");
+        setStoreProduct(data.storeProduct);
+        setCatalog(data.catalog);
+        setActiveImage(0);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [productId]);
+
+  const sellingPrice = storeProduct?.sellingPrice ?? storeProduct?.originalPrice ?? 0;
+  const originalPrice = storeProduct?.originalPrice ?? 0;
+  const discount = storeProduct?.discountPercent ?? 0;
+  const effectivePrice = sellingPrice * (1 - discount / 100);
+  const images = catalog?.imageUrls ?? [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="flex w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: "92vh" }}>
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
+          <h3 className="text-lg font-bold text-slate-900">Product Detail</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto px-5 py-5 space-y-6">
+          {loading && <p className="py-12 text-center text-sm text-slate-400">Loading…</p>}
+          {error && <p className="py-12 text-center text-sm text-red-500">{error}</p>}
+
+          {!loading && !error && catalog && (
+            <>
+              {/* Images + core info */}
+              <div className="grid gap-5 sm:grid-cols-[200px_1fr]">
+                <div>
+                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    {images[activeImage] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={images[activeImage]} alt={catalog.name} className="aspect-square w-full object-cover" />
+                    ) : (
+                      <div className="flex aspect-square items-center justify-center text-xs text-slate-400">No image</div>
+                    )}
+                  </div>
+                  {images.length > 1 && (
+                    <div className="mt-2 grid grid-cols-5 gap-1">
+                      {images.slice(0, 10).map((url, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={url}
+                          src={url}
+                          alt=""
+                          onClick={() => setActiveImage(i)}
+                          className={`aspect-square cursor-pointer rounded-md border object-cover ${i === activeImage ? "border-[#65bbc5]" : "border-slate-200"}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h4 className="text-xl font-bold leading-tight text-slate-900">{catalog.name}</h4>
+                      <p className="mt-0.5 text-xs text-slate-500">{catalog.sku || "—"} · {catalog.brand?.name || "No brand"}</p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${catalog.isPublished ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                      {catalog.isPublished ? "Published" : "Draft"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Original Price</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">${originalPrice.toFixed(2)}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Your Selling Price</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">${sellingPrice.toFixed(2)}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Customer Pays</p>
+                      <p className="mt-0.5 text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Compare At</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">{catalog.compareAtPrice != null ? `$${catalog.compareAtPrice.toFixed(2)}` : "—"}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Stock</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">{storeProduct?.quantity ?? 0} units</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Category</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">{catalog.category || "—"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {storeProduct?.isOnSale && discount > 0 && (
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{discount}% Sale</span>
+                    )}
+                    {storeProduct?.isNewArrival && (
+                      <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700">✦ New Arrival</span>
+                    )}
+                    {catalog.isFeatured && (
+                      <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">★ Featured</span>
+                    )}
+                    {storeProduct?.listedAt && (
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
+                        Listed {new Date(storeProduct.listedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {(catalog.fullDescription || catalog.description) && (
+                <div>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Description</p>
+                  <p className="whitespace-pre-line text-sm leading-6 text-slate-700">{catalog.fullDescription || catalog.description}</p>
+                </div>
+              )}
+
+              {/* Catalog & Shipping info blocks */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Catalog Info</p>
+                  <p>Stock Status: {catalog.stockStatus || "—"}</p>
+                  <p>Total Stock: {catalog.totalStock ?? catalog.stock ?? 0}</p>
+                  <p>Featured: {catalog.isFeatured ? "Yes" : "No"}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Shipping</p>
+                  <p>Weight: {catalog.shipping?.weight ?? "—"}</p>
+                  <p>Class: {catalog.shipping?.shippingClass || "—"}</p>
+                  <p>Dimensions: {[catalog.shipping?.dimensionL, catalog.shipping?.dimensionW, catalog.shipping?.dimensionH].map((v) => v ?? "—").join(" × ")}</p>
+                </div>
+              </div>
+
+              {/* Variants */}
+              {(catalog.variants?.length ?? 0) > 0 && (
+                <div className="overflow-hidden rounded-xl border border-slate-200">
+                  <p className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Variants</p>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                          {["Size", "Color", "Stock", "SKU Variant", "Price Override"].map((h) => (
+                            <th key={h} className="px-4 py-3">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {catalog.variants!.map((v, i) => (
+                          <tr key={v.id ?? i}>
+                            <td className="px-4 py-3 text-slate-700">{v.size || "—"}</td>
+                            <td className="px-4 py-3 text-slate-700">{v.color || "—"}</td>
+                            <td className="px-4 py-3 text-slate-700">{v.stock ?? v.stockQuantity ?? 0}</td>
+                            <td className="px-4 py-3 font-mono text-xs text-slate-500">{v.skuVariant || "—"}</td>
+                            <td className="px-4 py-3 text-slate-700">{v.priceOverride != null ? `$${v.priceOverride.toFixed(2)}` : "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Size chart */}
+              {(catalog.sizeChart?.length ?? 0) > 0 && (
+                <div className="overflow-hidden rounded-xl border border-slate-200">
+                  <p className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Size Chart</p>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                          {["Size", "Measurements", "Unit"].map((h) => (
+                            <th key={h} className="px-4 py-3">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {catalog.sizeChart!.map((row, i) => (
+                          <tr key={row.id ?? i}>
+                            <td className="px-4 py-3 text-slate-700">{row.size || "—"}</td>
+                            <td className="px-4 py-3 text-slate-700">
+                              {Object.entries(row.measurements ?? {}).map(([k, v]) => `${k}: ${v}`).join(", ") || "—"}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700">{row.unit || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SEO */}
+              {(catalog.seoTitle || catalog.seoDescription) && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">SEO</p>
+                  <p>Title: {catalog.seoTitle || "—"}</p>
+                  <p>Description: {catalog.seoDescription || "—"}</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ProductThumb({ src, alt }: { src?: string | null; alt: string }) {
   if (src) return <img src={src} alt={alt} className="h-9 w-9 rounded-md object-cover" />;
@@ -254,6 +519,7 @@ export default function OwnerProductsPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailProduct, setDetailProduct] = useState<ProductRow | null>(null);
+  const [detailProductId, setDetailProductId] = useState<string | null>(null);
   const [requestsBadge, setRequestsBadge] = useState(0);
 
   // Filters
@@ -462,10 +728,11 @@ export default function OwnerProductsPage() {
                           <div className="text-slate-700">{product.quantity}</div>
                           <div className="flex justify-end gap-1.5">
                             <button
-                              onClick={() => setDetailProduct(product)}
-                              className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                              onClick={() => setDetailProductId(product.productId)}
+                              title="View full details"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-50"
                             >
-                              Details
+                              <Eye className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setExpandedId(isExpanded ? null : product.productId)}
@@ -489,6 +756,7 @@ export default function OwnerProductsPage() {
         </div>
       </section>
 
+      {detailProductId && <ProductDetailModal productId={detailProductId} onClose={() => setDetailProductId(null)} />}
       {detailProduct && <DetailsModal product={detailProduct} onClose={() => setDetailProduct(null)} />}
     </>
   );

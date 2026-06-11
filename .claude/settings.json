@@ -15,7 +15,11 @@
       "Bash(node _checkorder.js)",
       "Bash(node -e \"console.log\\('resend', require\\('./node_modules/resend/package.json'\\).version\\)\")",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(node _inspect.js)"
+      "Bash(node _inspect.js)",
+      "Bash(mkdir -p \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\owner\\\\products\\\\[productId]\\\\detail\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Development\\Amstani-Co\\src\\app\\api\\owner\\products\\[productId]"
     ]
   }
 }
