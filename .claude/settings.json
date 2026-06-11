@@ -14,7 +14,8 @@
       "Bash(node -e \"const{MongoClient}=require\\('mongodb'\\);\\(async\\(\\)=>{const c=new MongoClient\\('mongodb://127.0.0.1:27017/amstani'\\);await c.connect\\(\\);const o=await c.db\\('amstani'\\).collection\\('orders'\\).findOne\\({}\\);console.log\\(JSON.stringify\\(o,null,2\\).slice\\(0,1500\\)\\);await c.close\\(\\);}\\)\\(\\).catch\\(e=>console.log\\('ERR',e.message\\)\\))",
       "Bash(node _checkorder.js)",
       "Bash(node -e \"console.log\\('resend', require\\('./node_modules/resend/package.json'\\).version\\)\")",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node _inspect.js)"
     ]
   }
 }

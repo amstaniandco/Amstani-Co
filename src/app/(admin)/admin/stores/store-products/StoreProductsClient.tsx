@@ -8,6 +8,9 @@ import AdminSidebar from "../../../../../components/admin/AdminSidebar";
 import ListedProducts, { type StoreProductItem } from "./components/ListedProducts";
 import ListingRequests, { type ListingRequestItem } from "./components/ListingRequests";
 import AddNewProduct from "./components/AddNewProduct";
+import Pagination from "../../../../../components/admin/Pagination";
+
+const PAGE_SIZE = 10;
 
 export default function StoreProductsClient() {
   const router = useRouter();
@@ -112,6 +115,15 @@ export default function StoreProductsClient() {
     (r) => !search || r.orderId?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Pagination for the active list tab
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [currentTab, search]);
+  const activeList = currentTab === "listing-requests" ? filteredRequests : filteredListed;
+  const pageCount = Math.max(1, Math.ceil(activeList.length / PAGE_SIZE));
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const pagedListed = filteredListed.slice(pageStart, pageStart + PAGE_SIZE);
+  const pagedRequests = filteredRequests.slice(pageStart, pageStart + PAGE_SIZE);
+
   return (
     <div className="admin-page-shell">
       <div className="admin-page-grid">
@@ -194,7 +206,7 @@ export default function StoreProductsClient() {
             <div className="overflow-x-auto">
               {currentTab === "listing-requests" ? (
                 <ListingRequests
-                  listingRequests={filteredRequests}
+                  listingRequests={pagedRequests}
                   loading={requestsLoading}
                   onAction={handleRequestAction}
                 />
@@ -202,12 +214,22 @@ export default function StoreProductsClient() {
                 <AddNewProduct storeId={storeId} storeName={storeName} onAdded={handleProductsAdded} />
               ) : (
                 <ListedProducts
-                  products={filteredListed}
+                  products={pagedListed}
                   loading={listedLoading}
                   onRemove={handleRemoveProduct}
                 />
               )}
             </div>
+            {currentTab !== "add-new" && (
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                onChange={setPage}
+                totalItems={activeList.length}
+                pageSize={PAGE_SIZE}
+                className="border-t border-[#edf2f5]"
+              />
+            )}
           </section>
         </main>
       </div>

@@ -161,6 +161,18 @@ a, li, dd, dt, table, td, th {
   color: #94a3b8 !important;
 }
 
+/* Search-result highlight: flash a row when arriving via ?highlight=<id> */
+@keyframes adminRowFlash {
+  0%   { background-color: rgba(101, 187, 197, 0.35); box-shadow: inset 0 0 0 2px rgba(101, 187, 197, 0.85); }
+  70%  { background-color: rgba(101, 187, 197, 0.18); box-shadow: inset 0 0 0 2px rgba(101, 187, 197, 0.5); }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 2px rgba(101, 187, 197, 0); }
+}
+.admin-row-highlight {
+  animation: adminRowFlash 2.8s ease-out;
+  border-radius: 14px;
+  scroll-margin-top: 96px;
+}
+
 /* Shared admin app shell: fixed desktop sidebar, scrolling content pane. */
 .admin-page-shell {
   min-height: 100vh;

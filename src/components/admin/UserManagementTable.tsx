@@ -6,6 +6,10 @@ import {
   Trash2, ShieldCheck, UserRound, Store, Users,
   UserPlus, Check, X, AlertTriangle,
 } from "lucide-react";
+import { useHighlightRow } from "./useHighlightRow";
+import Pagination from "./Pagination";
+
+const PAGE_SIZE = 10;
 
 type Role = "user" | "owner" | "admin";
 
@@ -117,6 +121,10 @@ export default function UserManagementTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
+  // Highlight + scroll to a user when arriving from global search (?highlight=<id>)
+  useHighlightRow(!loading);
+
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
 
@@ -168,6 +176,13 @@ export default function UserManagementTable() {
     else if (sortBy === "date") v = new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime();
     return sortOrder === "asc" ? v : -v;
   });
+
+  // Pagination over the sorted list
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const pageClamped = Math.min(page, pageCount);
+  const pagedUsers = sorted.slice((pageClamped - 1) * PAGE_SIZE, pageClamped * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search, roleFilter, sortBy, sortOrder]);
 
   const handleSaveRole = async (userId: string) => {
     setSavingId(userId);
@@ -315,7 +330,7 @@ export default function UserManagementTable() {
                   <p className="text-sm font-medium">No users found</p>
                 </div>
               ) : (
-                sorted.map((user) => {
+                pagedUsers.map((user) => {
                   const RoleIcon = roleIcon[user.role];
                   const isEditing = editingId === user.id;
                   const isDeleting = deletingId === user.id;
@@ -323,6 +338,7 @@ export default function UserManagementTable() {
                   return (
                     <div
                       key={user.id}
+                      data-row-id={user.id}
                       className={`grid grid-cols-[1fr_1.6fr_0.9fr_0.8fr_0.9fr_0.7fr] items-center gap-4 px-5 py-3.5 text-sm transition ${isDeleting ? "opacity-40 pointer-events-none" : "hover:bg-slate-50/60"}`}
                     >
                       {/* Name + avatar */}
@@ -437,11 +453,11 @@ export default function UserManagementTable() {
               <p className="text-sm">No users found</p>
             </div>
           ) : (
-            sorted.map((user) => {
+            pagedUsers.map((user) => {
               const RoleIcon = roleIcon[user.role];
               const isEditing = editingId === user.id;
               return (
-                <div key={user.id} className="px-4 py-4">
+                <div key={user.id} data-row-id={user.id} className="px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${avatarColor(user.id)}`}>
@@ -501,17 +517,20 @@ export default function UserManagementTable() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer + pagination */}
         {!loading && sorted.length > 0 && (
-          <div className="flex items-center justify-between border-t border-[#e7eef2] bg-[#fbfcfd] px-5 py-3 text-xs text-slate-500">
-            <span>
-              Showing <span className="font-semibold text-slate-700">{sorted.length}</span> of{" "}
-              <span className="font-semibold text-slate-700">{stats.total}</span> users
-            </span>
-            <span className="flex items-center gap-1">
+          <div className="border-t border-[#e7eef2] bg-[#fbfcfd]">
+            <Pagination
+              page={pageClamped}
+              pageCount={pageCount}
+              onChange={setPage}
+              totalItems={sorted.length}
+              pageSize={PAGE_SIZE}
+            />
+            <div className="flex items-center justify-end gap-1 px-5 pb-3 text-xs text-slate-500">
               <UserPlus className="h-3.5 w-3.5 text-cyan-500" />
               {stats.newThisMonth} new this month
-            </span>
+            </div>
           </div>
         )}
       </div>

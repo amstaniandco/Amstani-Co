@@ -1,17 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "../../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
+import StoreManagementTabs from "../../../../../components/admin/StoreManagementTabs";
+import Pagination from "../../../../../components/admin/Pagination";
 
-const tabs = [
-  { label: "All Stores", href: "/admin/stores" },
-  { label: "Store Applications", href: "/admin/stores/applications" },
-  { label: "Signup Requests", href: "/admin/stores/signup-requests" },
-];
+const PAGE_SIZE = 10;
 
 type SignupRequestRow = {
   id: string;
@@ -43,6 +40,13 @@ export default function AdminStoreSignupRequestsPage() {
   const toast = useToast();
   const [signupRequests, setSignupRequests] = useState<SignupRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+
+  const pageCount = Math.max(1, Math.ceil(signupRequests.length / PAGE_SIZE));
+  const pagedRequests = useMemo(
+    () => signupRequests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [signupRequests, page],
+  );
 
   useEffect(() => {
     localStorage.setItem("sb_seen_admin_stores_signups", new Date().toISOString());
@@ -135,27 +139,7 @@ export default function AdminStoreSignupRequestsPage() {
               </div>
             </div>
 
-            <div className="mt-3 overflow-x-auto border-b border-[#e7edf1] text-xs font-semibold text-slate-700 sm:mt-4 sm:text-sm">
-              <div className="flex min-w-max gap-6">
-                {tabs.map((tab) => {
-                  const isActive = tab.href === "/admin/stores/signup-requests";
-
-                  return (
-                    <Link
-                      key={tab.label}
-                      href={tab.href}
-                      className={`border-b-2 pb-3 transition ${
-                        isActive
-                          ? "border-[#58b8c3] text-[#2f7f8d]"
-                          : "border-transparent text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {tab.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+            <StoreManagementTabs />
           </section>
 
           <section className="mt-4">
@@ -185,7 +169,7 @@ export default function AdminStoreSignupRequestsPage() {
                         <td className="px-4 py-4 text-slate-600" colSpan={8}>No signup requests found.</td>
                       </tr>
                     )}
-                    {signupRequests.map((request, index) => (
+                    {pagedRequests.map((request, index) => (
                       <tr key={request.id} className={index % 2 === 0 ? "bg-[#fbfcfd]" : "bg-white"}>
                         <td className="px-4 py-4 font-medium text-slate-900">{request.name}</td>
                         <td className="px-4 py-4 text-slate-600">{request.storeName}</td>
@@ -194,7 +178,7 @@ export default function AdminStoreSignupRequestsPage() {
                         <td className="px-4 py-4 text-slate-600">{request.phone}</td>
                         <td className="px-4 py-4 text-slate-600">{request.state}</td>
                         <td className="px-4 py-4">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
                             request.status === "approved"
                               ? "bg-green-100 text-green-700"
                               : request.status === "denied"
@@ -205,32 +189,44 @@ export default function AdminStoreSignupRequestsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => updateStatus(request.id, "approve")}
-                              disabled={request.status === "approved"}
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8faf7] text-[#0f766e] transition hover:bg-[#d4f1ec] disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label="Approve signup request"
-                            >
-                              <CheckCircle2 className="h-5 w-5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => updateStatus(request.id, "deny")}
-                              disabled={request.status === "denied"}
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1f3] text-[#b91c1c] transition hover:bg-[#fee2e2] disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label="Reject signup request"
-                            >
-                              <XCircle className="h-5 w-5" />
-                            </button>
-                          </div>
+                          {request.status === "pending" ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => updateStatus(request.id, "approve")}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8faf7] text-[#0f766e] transition hover:bg-[#d4f1ec]"
+                                aria-label="Approve signup request"
+                              >
+                                <CheckCircle2 className="h-5 w-5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateStatus(request.id, "deny")}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1f3] text-[#b91c1c] transition hover:bg-[#fee2e2]"
+                                aria-label="Reject signup request"
+                              >
+                                <XCircle className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs font-medium text-slate-400">
+                              {request.status === "approved" ? "Approved" : "Rejected"} — no further action
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                onChange={setPage}
+                totalItems={signupRequests.length}
+                pageSize={PAGE_SIZE}
+                className="border-t border-[#eef2f5]"
+              />
             </div>
           </section>
         </main>

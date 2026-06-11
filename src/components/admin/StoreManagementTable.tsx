@@ -214,6 +214,7 @@ export default function StoreManagementTable({
         {rows.map((row, index) => (
           <div
             key={`${row.id}-${index}`}
+            data-row-id={row.id}
             className={`px-3 py-3 transition ${
               selectedStoreId === row.id ? "bg-cyan-50/40" : "hover:bg-slate-50"
             }`}
@@ -274,6 +275,7 @@ export default function StoreManagementTable({
             {rows.map((row, index) => (
               <div
                 key={`${row.id}-${index}`}
+                data-row-id={row.id}
                 className={`grid cursor-pointer grid-cols-[0.9fr_1.6fr_1fr_1.4fr_1fr_1fr_0.8fr] items-center px-5 py-4 text-sm text-slate-800 transition ${
                   selectedStoreId === row.id ? "bg-cyan-50/45" : "hover:bg-slate-50"
                 }`}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import GlobalCatalogTable from "../../../../components/admin/GlobalCatalogTable";
@@ -11,6 +12,16 @@ import TaxPricingPage from "./tax-pricing/page";
 
 export default function AdminGlobalCatalogPage() {
   const [activeTab, setActiveTab] = useState<"products" | "tax-pricing" | "brands" | "category" | "add-product">("products");
+  const searchParams = useSearchParams();
+
+  // Deep-link to a tab via ?tab=brands|category|products (used by global admin search)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "brands" || tab === "category" || tab === "products" || tab === "tax-pricing") {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productsRefreshKey, setProductsRefreshKey] = useState(0);
   const [syncing, setSyncing] = useState(false);

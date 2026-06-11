@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import StoreManagementTabs from "../../../../components/admin/StoreManagementTabs";
+import { useHighlightRow } from "../../../../components/admin/useHighlightRow";
 import { CircleCheck, CircleSlash, Mail, Package, ShieldX, TriangleAlert, Trash2, Megaphone } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
@@ -71,6 +72,9 @@ export default function AdminStoresPage() {
     storeId: string; storeName: string; warnings: number;
     warningsResetAt: string | null; ownerName: string; ownerEmail: string;
   }[]>([]);
+
+  // Highlight + scroll to a store when arriving from global search (?highlight=<id>)
+  useHighlightRow(!isLoading && activeTab === "stores");
 
   // Get unique states from stores
   const uniqueStates = Array.from(new Set(stores.map(s => s.location).filter(Boolean)));
@@ -259,7 +263,8 @@ export default function AdminStoresPage() {
             <StoreManagementTabs
               warningCount={liveWarnings.length}
               activeWarningsTab={activeTab === "warnings"}
-              onWarningsTabClick={() => setActiveTab(activeTab === "warnings" ? "stores" : "warnings")}
+              onWarningsTabClick={() => setActiveTab("warnings")}
+              onAllStoresClick={() => setActiveTab("stores")}
             />
           </section>
 

@@ -79,8 +79,10 @@ export async function GET() {
 
     if (!doc) return NextResponse.json(DEFAULT_CONFIG);
 
+    // Merge saved rates over the full default set so every state always appears,
+    // with any admin-saved overrides taking precedence.
     const config: PricingConfig = {
-      taxRates: doc.taxRates ?? DEFAULT_CONFIG.taxRates,
+      taxRates: { ...DEFAULT_CONFIG.taxRates, ...(doc.taxRates ?? {}) },
       markupPercent: doc.markupPercent ?? DEFAULT_CONFIG.markupPercent,
       discountCap: doc.discountCap ?? DEFAULT_CONFIG.discountCap,
     };

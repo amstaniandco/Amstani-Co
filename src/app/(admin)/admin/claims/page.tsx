@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
+import { useHighlightRow } from "../../../../components/admin/useHighlightRow";
 
 type ClaimMessage = {
   senderId: string;
@@ -104,6 +105,9 @@ export default function AdminClaimsPage() {
   const [intervening, setIntervening] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  // Highlight + scroll to a claim when arriving from global search (?highlight=<id>)
+  useHighlightRow(!loading);
 
   async function loadClaims() {
     try {
@@ -287,6 +291,7 @@ export default function AdminClaimsPage() {
                     filtered.map((row) => (
                       <div
                         key={row._id}
+                        data-row-id={row._id}
                         onClick={() => setSelectedClaim(row)}
                         className="rounded-lg border border-[#e6edf2] bg-[#f8fbfd] p-3 cursor-pointer hover:bg-slate-50"
                       >
@@ -377,6 +382,7 @@ export default function AdminClaimsPage() {
                         filtered.map((row) => (
                           <tr
                             key={row._id}
+                            data-row-id={row._id}
                             onClick={() => setSelectedClaim(row)}
                             className={`border-b border-[#edf2f6] text-slate-700 cursor-pointer hover:bg-slate-50 ${
                               selectedClaim?._id === row._id ? "bg-slate-50" : ""

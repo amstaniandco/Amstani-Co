@@ -77,6 +77,7 @@ export default function FormPageClient() {
           name: fullName,
           email,
           phone,
+          state,
           message: `State: ${state}${address ? ` | Address: ${address}` : ""}`,
         }),
       });

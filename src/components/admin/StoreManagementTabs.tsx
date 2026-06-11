@@ -8,11 +8,12 @@ type Props = {
   warningCount?: number;
   activeWarningsTab?: boolean;
   onWarningsTabClick?: () => void;
+  onAllStoresClick?: () => void;
 };
 
 type TabCounts = { applications: number; signups: number };
 
-export default function StoreManagementTabs({ warningCount = 0, activeWarningsTab = false, onWarningsTabClick }: Props) {
+export default function StoreManagementTabs({ warningCount = 0, activeWarningsTab = false, onWarningsTabClick, onAllStoresClick }: Props) {
   const pathname = usePathname();
   const [tabCounts, setTabCounts] = useState<TabCounts>({ applications: 0, signups: 0 });
 
@@ -51,11 +52,14 @@ export default function StoreManagementTabs({ warningCount = 0, activeWarningsTa
     <div className="mt-3 overflow-x-auto border-b border-[#e7edf1] text-xs font-semibold text-slate-700 sm:mt-4 sm:text-sm">
       <div className="flex min-w-max gap-6">
         {HREF_TABS.map((tab) => {
-          const isActive = pathname === tab.href;
+          // "All Stores" should NOT look active while the in-page Live Warnings tab is open.
+          const isAllStores = tab.href === "/admin/stores";
+          const isActive = pathname === tab.href && !(isAllStores && activeWarningsTab);
           return (
             <Link
               key={tab.href}
               href={tab.href}
+              onClick={isAllStores ? () => onAllStoresClick?.() : undefined}
               className={`flex items-center gap-1.5 border-b-2 pb-3 transition ${
                 isActive ? "border-[#58b8c3] text-[#2f7f8d]" : "border-transparent text-slate-500 hover:text-slate-700"
               }`}

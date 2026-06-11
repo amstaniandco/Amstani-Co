@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Filter, Pencil, Search, X } from "lucide-react";
 import { US_STATES } from "../../lib/us-states";
+import Pagination from "./Pagination";
+
+const PAGE_SIZE = 10;
 
 export type ApplicationRow = {
   id: string;
@@ -36,6 +39,7 @@ function ApplicationsTable() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetch("/api/admin/stores/applications")
@@ -68,6 +72,12 @@ function ApplicationsTable() {
     const matchesStatus = statusFilter === "all" || r.status === statusFilter;
     return matchesSearch && matchesStatus;
   }), [rows, search, statusFilter]);
+
+  // Reset to first page whenever the filters change
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const updateStatus = async (applicationId: string, action: "approve" | "deny") => {
     const res = await fetch(`/api/admin/stores/applications/${applicationId}`, {
@@ -130,7 +140,7 @@ function ApplicationsTable() {
           <div className="divide-y divide-[#edf2f5]">
             {loading && <div className="px-5 py-8 text-sm text-slate-500">Loading…</div>}
             {!loading && filtered.length === 0 && <div className="px-5 py-8 text-sm text-slate-500">No applications found.</div>}
-            {filtered.map((row, index) => (
+            {paged.map((row, index) => (
               <div key={`${row.id}-${index}`} className={`grid grid-cols-[1.2fr_1.2fr_1fr_1.6fr_1fr_0.7fr_0.9fr] items-center px-5 py-4 text-sm text-slate-800 ${index % 2 === 1 ? "bg-[#fff8f8]" : "bg-white"}`}>
                 <div className="font-medium text-slate-700">{row.name}</div>
                 <div className="text-slate-600 truncate">{row.email}</div>
@@ -162,6 +172,14 @@ function ApplicationsTable() {
           </div>
         </div>
       </div>
+      <Pagination
+        page={page}
+        pageCount={pageCount}
+        onChange={setPage}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        className="border-t border-[#edf2f5]"
+      />
     </div>
   );
 }

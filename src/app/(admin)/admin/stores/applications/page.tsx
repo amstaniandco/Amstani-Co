@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
+import StoreManagementTabs from "../../../../../components/admin/StoreManagementTabs";
 import StoreApplicationsTables from "../../../../../components/admin/StoreApplicationsTable";
 
 export default function AdminStoreApplicationsPage() {
@@ -73,17 +73,7 @@ export default function AdminStoreApplicationsPage() {
               </p>
             </div>
 
-            <div className="mt-3 flex gap-4 border-b border-[#e7edf1] text-xs font-semibold text-slate-700 sm:gap-6 sm:text-sm">
-              <Link href="/admin/stores" className="border-b-2 border-transparent pb-2 text-slate-500 transition hover:text-slate-700 sm:pb-3">
-                All Stores
-              </Link>
-              <Link href="/admin/stores/applications" className="border-b-2 border-[#58b8c3] pb-2 text-[#2f7f8d] sm:pb-3">
-                Store Applications
-              </Link>
-              <Link href="/admin/stores/signup-requests" className="border-b-2 border-transparent pb-2 text-slate-500 transition hover:text-slate-700 sm:pb-3">
-                Signup Requests
-              </Link>
-            </div>
+            <StoreManagementTabs />
           </section>
 
           <section className="mt-3 md:mt-4">
