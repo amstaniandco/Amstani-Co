@@ -116,6 +116,17 @@ export default function CheckoutPage() {
     }));
   }
 
+  function handleMapAddressSelect(selection: { street?: string; city?: string; state?: string; zip?: string }) {
+    setSelectedAddress("");
+    setForm((prev) => ({
+      ...prev,
+      street: selection.street || prev.street,
+      city: selection.city || prev.city,
+      state: selection.state || prev.state,
+      zip: selection.zip || prev.zip,
+    }));
+  }
+
   // Client-side subtotal (from raw cart prices, before server-side discount resolution)
   const cartSubtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
@@ -206,6 +217,7 @@ export default function CheckoutPage() {
             onSelectAddress={applySavedAddress}
             form={form}
             onFormChange={handleChange}
+            onMapAddressSelect={handleMapAddressSelect}
           />
         ) : (
           <div className="ui-panel rounded-2xl bg-white p-8 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
