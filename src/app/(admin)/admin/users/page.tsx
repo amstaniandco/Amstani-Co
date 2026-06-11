@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import UserManagementTable from "../../../../components/admin/UserManagementTable";
@@ -16,7 +17,9 @@ export default function UserManagementPage() {
             <p className="mt-1 text-sm text-slate-500">Manage accounts, assign roles, and remove users.</p>
           </div>
 
-          <UserManagementTable />
+          <Suspense fallback={null}>
+            <UserManagementTable />
+          </Suspense>
         </main>
       </div>
     </div>
