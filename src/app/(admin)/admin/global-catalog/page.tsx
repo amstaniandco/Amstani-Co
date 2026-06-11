@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
@@ -11,6 +11,14 @@ import AddGlobalProductForm from "../../../../components/admin/AddGlobalProductF
 import TaxPricingPage from "./tax-pricing/page";
 
 export default function AdminGlobalCatalogPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminGlobalCatalogPageContent />
+    </Suspense>
+  );
+}
+
+function AdminGlobalCatalogPageContent() {
   const [activeTab, setActiveTab] = useState<"products" | "tax-pricing" | "brands" | "category" | "add-product">("products");
   const searchParams = useSearchParams();
 

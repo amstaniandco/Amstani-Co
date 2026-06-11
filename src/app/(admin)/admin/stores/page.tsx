@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -49,6 +50,14 @@ function convertStoreToRow(store: StoreData & { rating?: number }): StoreRow {
 }
 
 export default function AdminStoresPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminStoresPageContent />
+    </Suspense>
+  );
+}
+
+function AdminStoresPageContent() {
   const router = useRouter();
   const toast = useToast();
   const [selectedStore, setSelectedStore] = useState<StoreRow | null>(null);
