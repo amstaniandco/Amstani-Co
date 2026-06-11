@@ -45,7 +45,7 @@ function formatCurrency(n: number) {
 
 function formatDate(val?: string) {
   if (!val) return "—";
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(val));
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(val));
 }
 
 function getTotal(order: Order) {

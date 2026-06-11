@@ -7,7 +7,13 @@ type Claim = {
   reason: string;
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
   storeId?: string;
+  createdAt?: string;
 };
+
+function formatClaimDate(val?: string) {
+  if (!val) return "—";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(val));
+}
 
 const STATUS_LABEL: Record<string, string> = {
   open: "OPEN",
@@ -61,7 +67,7 @@ export default function ClaimsTable({ claims }: ClaimsTableProps) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100">
-                {["Claim ID", "Issue Type", "Status", "Action"].map((h) => (
+                {["Claim ID", "Issue Type", "Filed", "Status", "Action"].map((h) => (
                   <th
                     key={h}
                     className="pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide pr-3"
@@ -83,6 +89,9 @@ export default function ClaimsTable({ claims }: ClaimsTableProps) {
                     </td>
                     <td className="py-3 text-sm text-gray-600 pr-3 whitespace-nowrap">
                       {ISSUE_LABEL[claim.reason] || claim.reason}
+                    </td>
+                    <td className="py-3 text-xs text-gray-500 pr-3 whitespace-nowrap">
+                      {formatClaimDate(claim.createdAt)}
                     </td>
                     <td className={`py-3 text-[10px] font-bold tracking-wide pr-3 whitespace-nowrap ${STATUS_CLASS[claim.status] || "text-gray-400"}`}>
                       • {STATUS_LABEL[claim.status] || claim.status.toUpperCase()}
