@@ -201,8 +201,8 @@ export async function GET(req: NextRequest) {
   };
   const REFERRAL_BONUS = 100;
 
-  const curReferralCount  = referralAppsInRange.filter(a => inReviewedRange(a, curStart, curEnd)).length;
-  const prevReferralCount = referralAppsInRange.filter(a => inReviewedRange(a, prevStart, prevEnd)).length;
+  const curReferralCount  = referralAppsInRange.filter(a => inReviewedRange(a as { reviewedAt?: unknown }, curStart, curEnd)).length;
+  const prevReferralCount = referralAppsInRange.filter(a => inReviewedRange(a as { reviewedAt?: unknown }, prevStart, prevEnd)).length;
 
   const curRevenue  = curOrders.reduce((s, o) => s + totalOf(o), 0);
   const prevRevenue = prevOrders.reduce((s, o) => s + totalOf(o), 0);

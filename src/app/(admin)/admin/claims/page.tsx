@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Clock3,
@@ -98,6 +98,14 @@ function interveneButtonMeta(reason: string): { label: string; cls: string } {
 }
 
 export default function AdminClaimsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminClaimsPageContent />
+    </Suspense>
+  );
+}
+
+function AdminClaimsPageContent() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, escalated: 0, avgResolutionHours: 0 });
   const [loading, setLoading] = useState(true);
