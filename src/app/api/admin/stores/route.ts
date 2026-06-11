@@ -74,7 +74,7 @@ export async function PATCH(req: Request) {
     if (!storeId || !status) {
       return NextResponse.json({ error: "storeId and status are required" }, { status: 400 });
     }
-    if (!["pending", "active", "suspended"].includes(status)) {
+    if (!["pending", "active", "suspended", "inactive"].includes(status)) {
       return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
     }
 

@@ -32,7 +32,7 @@ export type Store = {
   
   settings?: StoreSettings;
   
-  status: "pending" | "active" | "suspended";
+  status: "pending" | "active" | "suspended" | "inactive";
   isLive?: boolean;
   liveLink?: string | null;
   liveSessionStartedAt?: Date | string | null;

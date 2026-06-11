@@ -211,6 +211,8 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
               <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
                 store?.status === "active"
                   ? "border-green-500 text-green-500 dark:border-green-400 dark:text-green-400"
+                  : store?.status === "inactive"
+                  ? "border-slate-400 text-slate-500 dark:border-slate-500 dark:text-slate-400"
                   : store?.status === "suspended"
                   ? "border-red-500 text-red-500 dark:border-red-400 dark:text-red-400"
                   : !isProfileComplete(store)
@@ -219,6 +221,8 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
               }`}>
                 {store?.status === "active"
                   ? "Live"
+                  : store?.status === "inactive"
+                  ? "Inactive"
                   : store?.status === "suspended"
                   ? "Suspended"
                   : !isProfileComplete(store)
@@ -578,6 +582,8 @@ export default function ProfilePageClient() {
   const [rank, setRank] = useState<number | null>(null);
   const [applications, setApplications] = useState<StoreApplication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const toast = useToast();
 
   const showToast = (type: "success" | "error", message: string) => {
@@ -638,6 +644,22 @@ export default function ProfilePageClient() {
     }
   };
 
+  const handleToggleStatus = async () => {
+    try {
+      setIsTogglingStatus(true);
+      setShowStatusConfirm(false);
+      const res = await fetch("/api/owner/store/toggle-status", { method: "PATCH" });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setStore((prev: any) => ({ ...prev, status: data.status }));
+      toast.success(data.status === "active" ? "Store is now active" : "Store is now inactive");
+    } catch {
+      toast.error("Failed to update store status");
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
+
   const selectedForwardApplication = applications.find((app) => app.id === forwardAppId);
 
   if (loading) {
@@ -666,23 +688,40 @@ export default function ProfilePageClient() {
             <BookOpen className="h-3.5 w-3.5" /> See Tutorial
           </button>
 
-        <span className={`inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-semibold ${
-          store?.status === "active"
-            ? "border-green-500 text-green-600 dark:border-green-400 dark:text-green-400"
-            : store?.status === "suspended"
-            ? "border-red-400 text-red-500 dark:border-red-400 dark:text-red-400"
-            : !isProfileComplete(store)
-            ? "border-amber-400 text-amber-600 dark:border-amber-400 dark:text-amber-400"
-            : "border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400"
-        }`}>
-          {store?.status === "active"
-            ? "Active"
-            : store?.status === "suspended"
-            ? "Suspended"
-            : !isProfileComplete(store)
-            ? "Incomplete Profile"
-            : "Awaiting Activation"}
-        </span>
+        {(store?.status === "active" || store?.status === "inactive") ? (
+          <button
+            type="button"
+            onClick={() => setShowStatusConfirm(true)}
+            disabled={isTogglingStatus}
+            title={store?.status === "active" ? "Click to deactivate your store" : "Click to reactivate your store"}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold transition hover:opacity-80 disabled:opacity-60 ${
+              store?.status === "active"
+                ? "border-green-500 text-green-600 dark:border-green-400 dark:text-green-400"
+                : "border-slate-400 text-slate-500 dark:border-slate-500 dark:text-slate-400"
+            }`}
+          >
+            {isTogglingStatus ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <span className={`h-2 w-2 rounded-full ${store?.status === "active" ? "bg-green-500 dark:bg-green-400" : "bg-slate-400"}`} />
+            )}
+            {store?.status === "active" ? "Active" : "Inactive"}
+          </button>
+        ) : (
+          <span className={`inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-semibold ${
+            store?.status === "suspended"
+              ? "border-red-400 text-red-500 dark:border-red-400 dark:text-red-400"
+              : !isProfileComplete(store)
+              ? "border-amber-400 text-amber-600 dark:border-amber-400 dark:text-amber-400"
+              : "border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400"
+          }`}>
+            {store?.status === "suspended"
+              ? "Suspended"
+              : !isProfileComplete(store)
+              ? "Incomplete Profile"
+              : "Awaiting Activation"}
+          </span>
+        )}
         </div>
       </section>
 
@@ -718,6 +757,51 @@ export default function ProfilePageClient() {
       <section className="mt-4">
         <StoreCustomizationCard user={user} store={store} onSave={handleSaveStore} />
       </section>
+
+      {showStatusConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-2xl dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                {store?.status === "active" ? "Deactivate Store?" : "Reactivate Store?"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowStatusConfirm(false)}
+                className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              {store?.status === "active"
+                ? "Your store will become invisible to customers. You can reactivate it at any time."
+                : "Your store will become visible to customers again."}
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowStatusConfirm(false)}
+                className="flex-1 rounded-xl border border-slate-300 dark:border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleStatus}
+                disabled={isTogglingStatus}
+                className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60 ${
+                  store?.status === "active"
+                    ? "bg-slate-500 hover:bg-slate-600"
+                    : "bg-[#65bbc5] hover:bg-[#53aab5]"
+                }`}
+              >
+                {isTogglingStatus ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : store?.status === "active" ? "Deactivate" : "Reactivate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

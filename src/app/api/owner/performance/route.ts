@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
   const qStart = new Date(Math.min(...allDates.map(d => d.getTime())));
   const qEnd   = new Date(Math.max(...allDates.map(d => d.getTime())));
 
-  const [orders, products, curVisits, prevVisits, productViews, visitsByUnit] = await Promise.all([
+  const [orders, products, curVisits, prevVisits, productViews, visitsByUnit, referralAppsInRange, allReferralApps] = await Promise.all([
     db.collection<OrderDoc>("orders")
       .find({ $or: [{ storeId }, { storeId: store._id }], createdAt: { $gte: qStart, $lt: qEnd } })
       .toArray(),
@@ -178,6 +178,13 @@ export async function GET(req: NextRequest) {
       { $group: { _id: { $dateToString: { format: lineGroupFormat, date: "$createdAt" } }, visits: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]).toArray(),
+    db.collection("store_applications")
+      .find({ ownerId: new ObjectId(user.id), status: "approved_by_admin", referralBonusPaid: true, reviewedAt: { $gte: qStart, $lt: qEnd } })
+      .toArray(),
+    db.collection("store_applications")
+      .find({ ownerId: new ObjectId(user.id), status: "approved_by_admin", referralBonusPaid: true })
+      .sort({ reviewedAt: -1 })
+      .toArray(),
   ]);
 
   // ── Metrics for current vs previous period ────────────────────────────────
@@ -187,6 +194,15 @@ export async function GET(req: NextRequest) {
   };
   const curOrders  = orders.filter(o => inRange(o, curStart, curEnd));
   const prevOrders = orders.filter(o => inRange(o, prevStart, prevEnd));
+
+  const inReviewedRange = (a: { reviewedAt?: unknown }, s: Date, e: Date) => {
+    const d = a.reviewedAt ? new Date(a.reviewedAt as string | Date) : null;
+    return d !== null && d >= s && d < e;
+  };
+  const REFERRAL_BONUS = 100;
+
+  const curReferralCount  = referralAppsInRange.filter(a => inReviewedRange(a, curStart, curEnd)).length;
+  const prevReferralCount = referralAppsInRange.filter(a => inReviewedRange(a, prevStart, prevEnd)).length;
 
   const curRevenue  = curOrders.reduce((s, o) => s + totalOf(o), 0);
   const prevRevenue = prevOrders.reduce((s, o) => s + totalOf(o), 0);
@@ -200,9 +216,7 @@ export async function GET(req: NextRequest) {
   // ── Revenue bars ──────────────────────────────────────────────────────────
   const revenueBars = barDefs.map(({ start, end, label }) => ({
     label,
-    value: orders
-      .filter(o => inRange(o, start, end))
-      .reduce((s, o) => s + totalOf(o), 0),
+    value: orders.filter(o => inRange(o, start, end)).reduce((s, o) => s + totalOf(o), 0),
   }));
 
   // ── Visits sparkline ──────────────────────────────────────────────────────
@@ -238,21 +252,34 @@ export async function GET(req: NextRequest) {
     };
   });
 
+  const referralEarnings = allReferralApps.map((a: any) => ({
+    id:            a._id.toString(),
+    applicantName: a.applicant?.name ?? "Applicant",
+    applicantEmail: a.applicant?.email ?? "",
+    storeName:     a.storeName ?? "",
+    approvedAt:    a.reviewedAt ? new Date(a.reviewedAt).toISOString() : null,
+    amount:        REFERRAL_BONUS,
+  }));
+
   return NextResponse.json({
     storeName:   store.name ?? "My Store",
     periodLabel,
     metrics: {
-      revenue:          curRevenue,
-      revenueChange:    percentChange(curRevenue, prevRevenue),
-      visits:           curVisits,
-      visitsChange:     percentChange(curVisits, prevVisits),
-      conversionRate:   convRate,
-      conversionChange: convRate - prevConvRate,
-      orders:           curOrders.length,
-      unitsSold:        curUnits,
+      revenue:              curRevenue,
+      revenueChange:        percentChange(curRevenue, prevRevenue),
+      referralEarnings:     curReferralCount * REFERRAL_BONUS,
+      referralEarningsChange: percentChange(curReferralCount, prevReferralCount),
+      visits:               curVisits,
+      visitsChange:         percentChange(curVisits, prevVisits),
+      conversionRate:       convRate,
+      conversionChange:     convRate - prevConvRate,
+      orders:               curOrders.length,
+      unitsSold:            curUnits,
     },
     revenueBars,
     visitsLine,
     products: productRows,
+    referralEarnings,
+    totalReferralEarnings: allReferralApps.length * REFERRAL_BONUS,
   });
 }

@@ -17,12 +17,23 @@ const PERIODS: { value: Period; label: string }[] = [
 type MetricData = {
   revenue: number;
   revenueChange: number;
+  referralEarnings: number;
+  referralEarningsChange: number;
   visits: number;
   visitsChange: number;
   conversionRate: number;
   conversionChange: number;
   orders: number;
   unitsSold: number;
+};
+
+type ReferralEarning = {
+  id: string;
+  applicantName: string;
+  applicantEmail: string;
+  storeName: string;
+  approvedAt: string | null;
+  amount: number;
 };
 
 type ChartPoint = { label: string; value: number };
@@ -47,6 +58,8 @@ type PerformancePayload = {
   revenueBars: ChartPoint[];
   visitsLine: ChartPoint[];
   products: ProductRow[];
+  referralEarnings: ReferralEarning[];
+  totalReferralEarnings: number;
 };
 
 type ReviewItem = {
@@ -142,38 +155,60 @@ function ConversionDonut({ value }: { value: number }) {
 
 function MetricsCards({ metrics, revenueBars, visitsLine }: { metrics: MetricData; revenueBars: ChartPoint[]; visitsLine: ChartPoint[] }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-3">
-      <div className="rounded-2xl bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-500">Revenue</p>
-            <p className="mt-2 text-4xl font-bold text-slate-900">{formatCurrency(metrics.revenue)}</p>
-            <Trend value={metrics.revenueChange} />
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {/* Orders Revenue */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">Revenue from Orders</p>
+              <p className="mt-2 text-4xl font-bold text-slate-900">{formatCurrency(metrics.revenue)}</p>
+              <Trend value={metrics.revenueChange} />
+            </div>
+            <RevenueBarsChart points={revenueBars} />
           </div>
-          <RevenueBarsChart points={revenueBars} />
+        </div>
+
+        {/* Referral Earnings */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">Referral Earnings</p>
+              <p className="mt-2 text-4xl font-bold text-slate-900">{formatCurrency(metrics.referralEarnings)}</p>
+              <Trend value={metrics.referralEarningsChange} />
+              <p className="mt-2 text-xs text-slate-400">$100 per accepted application this period</p>
+            </div>
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50">
+              <span className="text-2xl font-bold text-emerald-600">$100</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-500">Store Visits</p>
-            <p className="mt-2 text-4xl font-bold text-slate-900">{metrics.visits.toLocaleString()}</p>
-            <Trend value={metrics.visitsChange} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {/* Store Visits */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">Store Visits</p>
+              <p className="mt-2 text-4xl font-bold text-slate-900">{metrics.visits.toLocaleString()}</p>
+              <Trend value={metrics.visitsChange} />
+            </div>
+            <VisitsSparkline points={visitsLine} />
           </div>
-          <VisitsSparkline points={visitsLine} />
         </div>
-      </div>
 
-      <div className="rounded-2xl bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-500">Conversion Rate</p>
-            <p className="mt-2 text-4xl font-bold text-slate-900">{metrics.conversionRate}%</p>
-            <Trend value={metrics.conversionChange} />
-            <p className="mt-2 text-xs text-slate-400">{metrics.unitsSold} units from tracked product views</p>
+        {/* Conversion Rate */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">Conversion Rate</p>
+              <p className="mt-2 text-4xl font-bold text-slate-900">{metrics.conversionRate}%</p>
+              <Trend value={metrics.conversionChange} />
+              <p className="mt-2 text-xs text-slate-400">{metrics.unitsSold} units from tracked product views</p>
+            </div>
+            <ConversionDonut value={metrics.conversionRate} />
           </div>
-          <ConversionDonut value={metrics.conversionRate} />
         </div>
       </div>
     </div>
@@ -373,6 +408,68 @@ function StoreReviewsSection() {
   );
 }
 
+// ─── Referral Earnings Section ────────────────────────────────────────────────
+
+function ReferralEarningsSection({ earnings, total }: { earnings: ReferralEarning[]; total: number }) {
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? earnings : earnings.slice(0, 5);
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-6 sm:px-7">
+        <div>
+          <h3 className="text-2xl font-bold text-slate-900">Referral Earnings</h3>
+          <p className="mt-1 text-sm text-slate-500">$100 earned for each application accepted by admin.</p>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-bold text-emerald-600">{formatCurrency(total)}</p>
+          <p className="mt-0.5 text-xs text-slate-400">{earnings.length} accepted application{earnings.length !== 1 ? "s" : ""}</p>
+        </div>
+      </div>
+
+      {earnings.length === 0 ? (
+        <p className="px-7 py-10 text-center text-sm text-slate-400">No referral earnings yet. Forward applications to admin to earn $100 per acceptance.</p>
+      ) : (
+        <>
+          <div className="divide-y divide-slate-100">
+            {visible.map(item => (
+              <div key={item.id} className="flex items-center gap-4 px-5 py-4 sm:px-7">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-sm font-bold text-emerald-600">
+                  {item.applicantName.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-800">{item.applicantName}</p>
+                  <p className="truncate text-xs text-slate-400">{item.applicantEmail || item.storeName}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-emerald-600">+{formatCurrency(item.amount)}</p>
+                  {item.approvedAt && (
+                    <p className="text-xs text-slate-400">
+                      {new Date(item.approvedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {earnings.length > 5 && (
+            <div className="border-t border-slate-100 px-5 py-3 sm:px-7">
+              <button
+                type="button"
+                onClick={() => setShowAll(p => !p)}
+                className="text-sm font-semibold text-[#65bbc5] transition hover:text-[#53aab5]"
+              >
+                {showAll ? "Show less" : `Show all ${earnings.length} earnings`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OwnerPerformancePage() {
@@ -396,7 +493,7 @@ export default function OwnerPerformancePage() {
   }, [period]);
 
   const metrics = useMemo(
-    () => data?.metrics ?? { revenue: 0, revenueChange: 0, visits: 0, visitsChange: 0, conversionRate: 0, conversionChange: 0, orders: 0, unitsSold: 0 },
+    () => data?.metrics ?? { revenue: 0, revenueChange: 0, referralEarnings: 0, referralEarningsChange: 0, visits: 0, visitsChange: 0, conversionRate: 0, conversionChange: 0, orders: 0, unitsSold: 0 },
     [data],
   );
 
@@ -465,6 +562,13 @@ export default function OwnerPerformancePage() {
 
           <section className="mt-4">
             <ProductPerformanceTable products={data?.products ?? []} />
+          </section>
+
+          <section className="mt-4">
+            <ReferralEarningsSection
+              earnings={data?.referralEarnings ?? []}
+              total={data?.totalReferralEarnings ?? 0}
+            />
           </section>
         </>
       )}
