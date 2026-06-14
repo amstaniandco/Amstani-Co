@@ -3,16 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
-  CreditCard,
   Download,
   List,
-  MapPin,
-  PackageSearch,
   Search,
   Store,
   Square,
-  Truck,
 } from "lucide-react";
 import {
   getStatusTone,
@@ -341,208 +336,196 @@ export default function OwnerOrdersPage() {
         )}
 
         {selectedOrder && (
-          <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_35px_rgba(15,23,42,0.04)] sm:p-6">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-500">Order Summary</p>
-                <h3 className="text-xl font-bold text-slate-900">{selectedOrder.id}</h3>
-                <p className="mt-1 text-sm text-slate-500">Placed on {selectedOrder.date}</p>
+          <aside className="rounded-2xl border border-slate-200 bg-white shadow-[0_14px_35px_rgba(15,23,42,0.04)] overflow-hidden">
+            {/* Header bar */}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Order Summary</p>
+                <h3 className="mt-0.5 text-lg font-bold text-slate-900 truncate">{selectedOrder.id}</h3>
+                <p className="text-xs text-slate-500">Placed on {selectedOrder.date}</p>
               </div>
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-3 flex-shrink-0">
                 <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[selectedOrder.statusTone]}`}>
                   {selectedOrder.status}
                 </span>
-                <label className="text-xs font-semibold text-slate-500">
-                  Status
-                  <select
-                    value={selectedOrder.status}
-                    onChange={(event) => handleStatusChange(selectedOrder.id, event.target.value as OrderStatus)}
-                    className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 outline-none"
-                  >
-                    {ownerStatusOptions.map((statusOption) => (
-                      <option key={statusOption} value={statusOption}>
-                        {statusOption}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <select
+                  value={selectedOrder.status}
+                  onChange={(event) => handleStatusChange(selectedOrder.id, event.target.value as OrderStatus)}
+                  className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 outline-none shadow-sm"
+                >
+                  {ownerStatusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 text-sm text-slate-700 xl:grid-cols-[0.9fr_1.1fr_0.9fr]">
-              <div className="space-y-3">
-              <div className="flex items-start gap-2">
-                <CreditCard className="mt-0.5 h-4 w-4 text-slate-500" />
-                <div>
-                  <p className="font-semibold text-slate-900">Payment</p>
-                  <p>{selectedOrder.paymentMethod}</p>
-                  <p className={`text-xs font-medium ${
-                    selectedOrder.paymentStatus === "Paid" ? "text-emerald-600" :
-                    selectedOrder.paymentStatus === "Failed" ? "text-red-500" :
-                    "text-amber-600"
-                  }`}>
-                    {selectedOrder.paymentStatus}
-                  </p>
+            {/* Body: 2-col at lg+ */}
+            <div className="grid gap-0 lg:grid-cols-[260px_1fr]">
+
+              {/* LEFT SIDEBAR — meta info */}
+              <div className="border-b border-slate-100 lg:border-b-0 lg:border-r lg:border-slate-100 p-5 space-y-4 text-sm">
+
+                {/* Payment */}
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payment</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-700">{selectedOrder.paymentMethod}</span>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      selectedOrder.paymentStatus === "Paid" ? "bg-emerald-100 text-emerald-700" :
+                      selectedOrder.paymentStatus === "Failed" ? "bg-red-100 text-red-600" :
+                      "bg-amber-100 text-amber-700"
+                    }`}>{selectedOrder.paymentStatus}</span>
+                  </div>
                   {selectedOrder.transactionId !== "-" && (
-                    <p className="text-xs text-slate-400 font-mono break-all">{selectedOrder.transactionId}</p>
+                    <p className="text-[11px] text-slate-400 font-mono break-all">{selectedOrder.transactionId}</p>
                   )}
                 </div>
-              </div>
 
-              <div className="flex items-start gap-2">
-                <Truck className="mt-0.5 h-4 w-4 text-slate-500" />
+                {/* Fulfillment */}
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fulfillment</p>
+                  <p className="text-slate-700">
+                    {selectedOrder.shippingMethod}{selectedOrder.carrier !== "-" ? ` via ${selectedOrder.carrier}` : ""}
+                  </p>
+                  {selectedOrder.trackingNumber !== "-" && (
+                    <p className="text-[11px] text-slate-500">Tracking: <span className="font-mono">{selectedOrder.trackingNumber}</span></p>
+                  )}
+                  {selectedOrder.estimatedDelivery !== "-" && (
+                    <p className="text-[11px] text-slate-500">Est. delivery: {selectedOrder.estimatedDelivery}</p>
+                  )}
+                </div>
+
+                {/* Ship-to address */}
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Ship to</p>
+                  <p className="font-semibold text-slate-900 text-sm">{selectedOrder.shippingAddress.fullName}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {[selectedOrder.shippingAddress.line1, selectedOrder.shippingAddress.city,
+                      [selectedOrder.shippingAddress.state, selectedOrder.shippingAddress.zip].filter(Boolean).join(" "),
+                      selectedOrder.shippingAddress.country].filter(Boolean).join(", ")}
+                  </p>
+                  {selectedOrder.shippingAddress.phone && (
+                    <p className="text-xs text-slate-500">{selectedOrder.shippingAddress.phone}</p>
+                  )}
+                </div>
+
+                {/* Billing address — only when different */}
+                {selectedOrder.billingAddress.line1 !== selectedOrder.shippingAddress.line1 && (
+                  <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-0.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Bill to</p>
+                    <p className="font-semibold text-slate-900 text-sm">{selectedOrder.billingAddress.fullName}</p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {[selectedOrder.billingAddress.line1, selectedOrder.billingAddress.city,
+                        [selectedOrder.billingAddress.state, selectedOrder.billingAddress.zip].filter(Boolean).join(" "),
+                        selectedOrder.billingAddress.country].filter(Boolean).join(", ")}
+                    </p>
+                    {selectedOrder.billingAddress.phone && (
+                      <p className="text-xs text-slate-500">{selectedOrder.billingAddress.phone}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Timeline */}
                 <div>
-                  <p className="font-semibold text-slate-900">Shipping</p>
-                  <p>
-                    {selectedOrder.shippingMethod} via {selectedOrder.carrier}
-                  </p>
-                  <p className="text-xs text-slate-500">Tracking: {selectedOrder.trackingNumber}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <CalendarDays className="mt-0.5 h-4 w-4 text-slate-500" />
-                <div>
-                  <p className="font-semibold text-slate-900">Estimated Delivery</p>
-                  <p>{selectedOrder.estimatedDelivery}</p>
-                </div>
-              </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <MapPin className="h-3.5 w-3.5" />
-                    Shipping Address
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{selectedOrder.shippingAddress.fullName}</p>
-                  <p className="text-sm text-slate-600">
-                    {selectedOrder.shippingAddress.line1}, {selectedOrder.shippingAddress.city}
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.zip}, {selectedOrder.shippingAddress.country}
-                  </p>
-                  <p className="text-xs text-slate-500">{selectedOrder.shippingAddress.phone}</p>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <MapPin className="h-3.5 w-3.5" />
-                    Billing Address
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{selectedOrder.billingAddress.fullName}</p>
-                  <p className="text-sm text-slate-600">
-                    {selectedOrder.billingAddress.line1}, {selectedOrder.billingAddress.city}
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    {selectedOrder.billingAddress.state} {selectedOrder.billingAddress.zip}, {selectedOrder.billingAddress.country}
-                  </p>
-                  <p className="text-xs text-slate-500">{selectedOrder.billingAddress.phone}</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-              <div>
-                <p className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <PackageSearch className="h-3.5 w-3.5" />
-                  Items
-                </p>
-                <div className="space-y-2">
-                  {selectedOrder.items.map((item, idx) => {
-                    const cod = item.customOrderDetails;
-                    return (
-                      <div key={`${selectedOrder.id}-${item.sku}-${idx}`} className={`rounded-2xl border overflow-hidden ${cod ? "border-purple-200 bg-purple-50/30" : "border-slate-200 bg-white"}`}>
-                        {/* Item row */}
-                        <div className="flex gap-3 p-3">
-                          {item.mainImage ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={item.mainImage} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-slate-100" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex-shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-sm font-semibold text-slate-900 leading-snug">{item.name}</p>
-                              <p className="text-sm font-bold text-slate-900 flex-shrink-0 tabular-nums">${(item.unitPrice * item.quantity).toFixed(2)}</p>
-                            </div>
-                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                              {item.variant && (
-                                <span className="text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{item.variant}</span>
-                              )}
-                              {item.sku && (
-                                <span className="text-[11px] text-slate-400">SKU {item.sku}</span>
-                              )}
-                              <span className="text-[11px] font-semibold text-slate-500">× {item.quantity}</span>
-                              {cod && (
-                                <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">✎ Custom Order</span>
-                              )}
-                            </div>
-                          </div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Timeline</p>
+                  <div className="space-y-1.5">
+                    {selectedOrder.timeline.map((step) => (
+                      <div key={step.label} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${step.complete ? "bg-emerald-400" : "bg-slate-300"}`} />
+                          <p className="text-xs font-medium text-slate-800">{step.label}</p>
                         </div>
-                        {/* Custom order panel */}
-                        {cod && (
-                          <div className="mx-3 mb-3 rounded-xl bg-white border border-purple-200 p-3 space-y-2.5">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400">Customer&apos;s Request</p>
-                            <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{cod.description}</p>
-                            {cod.mediaUrls?.length > 0 && (
-                              <div className="flex flex-wrap gap-2 pt-0.5">
-                                {cod.mediaUrls.map((url, mi) => (
-                                  <button key={mi} onClick={() => setLightboxSrc(url)} className="focus:outline-none group">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={url} alt="" className="h-20 w-20 rounded-xl object-cover border-2 border-purple-100 group-hover:border-purple-400 group-hover:scale-105 transition-all" />
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <p className={`text-[11px] ${step.complete ? "text-slate-500" : "text-amber-600"}`}>{step.dateTime}</p>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>${itemsSubtotal.toFixed(2)}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between text-sm">
-                  <span>Shipping</span>
-                  <span>${selectedOrder.shippingFee.toFixed(2)}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between text-sm">
-                  <span>Tax</span>
-                  <span>${selectedOrder.taxAmount.toFixed(2)}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between text-sm text-green-700">
-                  <span>Discount</span>
-                  <span>- ${selectedOrder.discountAmount.toFixed(2)}</span>
-                </div>
-                <div className="mt-2 border-t border-slate-200 pt-2 text-base font-bold text-slate-900">
-                  <div className="flex items-center justify-between">
-                    <span>Total</span>
-                    <span>${grandTotal.toFixed(2)}</span>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Order Notes</p>
-                <p className="mt-1 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">{selectedOrder.notes}</p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Timeline</p>
-                <div className="mt-2 space-y-2">
-                  {selectedOrder.timeline.map((step) => (
-                    <div key={step.label} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2">
-                      <p className="text-sm font-medium text-slate-900">{step.label}</p>
-                      <p className={`text-xs ${step.complete ? "text-slate-600" : "text-amber-700"}`}>{step.dateTime}</p>
-                    </div>
-                  ))}
+              {/* RIGHT — items + totals + notes */}
+              <div className="p-5 space-y-4">
+                {/* Items */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                    Items ({selectedOrder.items.length})
+                  </p>
+                  <div className="space-y-2">
+                    {selectedOrder.items.map((item, idx) => {
+                      const cod = item.customOrderDetails;
+                      return (
+                        <div key={`${selectedOrder.id}-${item.sku}-${idx}`}
+                          className={`rounded-2xl border overflow-hidden ${cod ? "border-purple-200 bg-purple-50/30" : "border-slate-100 bg-slate-50/50"}`}>
+                          <div className="flex gap-3 p-3">
+                            {item.mainImage ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={item.mainImage} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-white shadow-sm" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-slate-200 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm font-semibold text-slate-900 leading-snug">{item.name}</p>
+                                <p className="text-sm font-bold text-slate-900 flex-shrink-0 tabular-nums">${(item.unitPrice * item.quantity).toFixed(2)}</p>
+                              </div>
+                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                {item.variant && (
+                                  <span className="text-[11px] font-medium bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-full">{item.variant}</span>
+                                )}
+                                {item.sku && <span className="text-[11px] text-slate-400">SKU {item.sku}</span>}
+                                <span className="text-[11px] font-semibold text-slate-500">× {item.quantity}</span>
+                                {cod && <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">✎ Custom</span>}
+                              </div>
+                            </div>
+                          </div>
+                          {cod && (
+                            <div className="mx-3 mb-3 rounded-xl bg-white border border-purple-200 p-3 space-y-2">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400">Customer&apos;s Request</p>
+                              <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{cod.description}</p>
+                              {cod.mediaUrls?.length > 0 && (
+                                <div className="flex flex-wrap gap-2 pt-0.5">
+                                  {cod.mediaUrls.map((url, mi) => (
+                                    <button key={mi} onClick={() => setLightboxSrc(url)} className="focus:outline-none group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={url} alt="" className="h-20 w-20 rounded-xl object-cover border-2 border-purple-100 group-hover:border-purple-400 group-hover:scale-105 transition-all" />
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+
+                {/* Totals */}
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-1.5 text-sm">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal</span><span className="tabular-nums">${itemsSubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Shipping</span><span className="tabular-nums">${selectedOrder.shippingFee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Tax</span><span className="tabular-nums">${selectedOrder.taxAmount.toFixed(2)}</span>
+                  </div>
+                  {selectedOrder.discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-600">
+                      <span>Discount</span><span className="tabular-nums">− ${selectedOrder.discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-slate-200 pt-2 font-bold text-slate-900 text-base">
+                    <span>Total</span><span className="tabular-nums">${grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {selectedOrder.notes && selectedOrder.notes !== "No notes for this order." && (
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Order Notes</p>
+                    <p className="text-xs text-slate-600 leading-relaxed">{selectedOrder.notes}</p>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
