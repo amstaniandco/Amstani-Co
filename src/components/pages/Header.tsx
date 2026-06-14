@@ -281,7 +281,7 @@ export default function Header() {
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, pathname]);
+  }, [isLoggedIn]);
 
   useEffect(() => subscribeSelectedState((state) => setUserState(state)), []);
 
