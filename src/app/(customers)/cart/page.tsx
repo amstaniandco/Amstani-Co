@@ -120,18 +120,34 @@ export default function CartPage() {
     }
   }
 
-  async function updateQty(productId: string, storeId: string, quantity: number, selectedVariants?: Record<string, string>) {
-    const key = variantKey(selectedVariants);
-    await fetch("/api/cart", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, storeId, quantity, selectedVariants }),
-    });
-    setItems((prev) =>
-      quantity <= 0
-        ? prev.filter((i) => !(i.productId === productId && i.storeId === storeId && variantKey(i.selectedVariants) === key))
-        : prev.map((i) => i.productId === productId && i.storeId === storeId && variantKey(i.selectedVariants) === key ? { ...i, quantity } : i)
-    );
+  async function updateQty(idx: number, quantity: number) {
+    const item = items[idx];
+    const isCustom = !!item.customOrderDetails;
+
+    if (isCustom) {
+      if (quantity <= 0) {
+        await removeItem(idx);
+        return;
+      }
+      await fetch("/api/cart", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemIndex: idx, quantity }),
+      });
+      setItems((prev) => prev.map((i, j) => j === idx ? { ...i, quantity } : i));
+    } else {
+      const key = variantKey(item.selectedVariants);
+      await fetch("/api/cart", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: item.productId, storeId: item.storeId, quantity, selectedVariants: item.selectedVariants }),
+      });
+      setItems((prev) =>
+        quantity <= 0
+          ? prev.filter((i) => !(i.productId === item.productId && i.storeId === item.storeId && variantKey(i.selectedVariants) === key))
+          : prev.map((i) => i.productId === item.productId && i.storeId === item.storeId && variantKey(i.selectedVariants) === key ? { ...i, quantity } : i)
+      );
+    }
   }
 
   async function removeItem(idx: number) {
@@ -214,15 +230,13 @@ export default function CartPage() {
                           )}
                         </div>
                         <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end sm:gap-3">
-                          {!isCustom && (
-                            <div className="flex items-center rounded-lg border border-[#d8e5ea] bg-white dark:border-slate-600 dark:bg-slate-800">
-                              <button onClick={() => updateQty(item.productId, item.storeId, item.quantity - 1, item.selectedVariants)}
-                                className="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">−</button>
-                              <span className="w-8 text-center text-xs font-medium text-slate-900 dark:text-slate-100">{item.quantity}</span>
-                              <button onClick={() => updateQty(item.productId, item.storeId, item.quantity + 1, item.selectedVariants)}
-                                className="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">+</button>
-                            </div>
-                          )}
+                          <div className="flex items-center rounded-lg border border-[#d8e5ea] bg-white dark:border-slate-600 dark:bg-slate-800">
+                            <button onClick={() => updateQty(idx, item.quantity - 1)}
+                              className="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">−</button>
+                            <span className="w-8 text-center text-xs font-medium text-slate-900 dark:text-slate-100">{item.quantity}</span>
+                            <button onClick={() => updateQty(idx, item.quantity + 1)}
+                              className="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">+</button>
+                          </div>
                           <div className="flex items-center gap-2">
                             <span className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">
                               ${(item.price * item.quantity).toLocaleString()}
