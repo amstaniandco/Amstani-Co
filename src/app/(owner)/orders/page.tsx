@@ -451,36 +451,45 @@ export default function OwnerOrdersPage() {
                   {selectedOrder.items.map((item, idx) => {
                     const cod = item.customOrderDetails;
                     return (
-                      <div key={`${selectedOrder.id}-${item.sku}-${idx}`} className="rounded-xl border border-slate-200 overflow-hidden">
-                        <div className="flex items-start justify-between px-3 py-2">
-                          <div className="flex items-start gap-2 min-w-0">
-                            {item.mainImage && (
-                              <img src={item.mainImage} alt={item.name} className="w-9 h-9 rounded-lg object-cover flex-shrink-0 mt-0.5" />
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-900 truncate">{item.name}</p>
-                              <p className="text-xs text-slate-500">
-                                {[item.variant, `SKU ${item.sku}`, `Qty ${item.quantity}`].filter(Boolean).join(" - ")}
-                              </p>
+                      <div key={`${selectedOrder.id}-${item.sku}-${idx}`} className={`rounded-2xl border overflow-hidden ${cod ? "border-purple-200 bg-purple-50/30" : "border-slate-200 bg-white"}`}>
+                        {/* Item row */}
+                        <div className="flex gap-3 p-3">
+                          {item.mainImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={item.mainImage} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-slate-100" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-semibold text-slate-900 leading-snug">{item.name}</p>
+                              <p className="text-sm font-bold text-slate-900 flex-shrink-0 tabular-nums">${(item.unitPrice * item.quantity).toFixed(2)}</p>
+                            </div>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              {item.variant && (
+                                <span className="text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{item.variant}</span>
+                              )}
+                              {item.sku && (
+                                <span className="text-[11px] text-slate-400">SKU {item.sku}</span>
+                              )}
+                              <span className="text-[11px] font-semibold text-slate-500">× {item.quantity}</span>
                               {cod && (
-                                <span className="inline-block mt-0.5 text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                  Custom Order
-                                </span>
+                                <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">✎ Custom Order</span>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm font-semibold text-slate-900 flex-shrink-0 ml-2">${(item.unitPrice * item.quantity).toFixed(2)}</p>
                         </div>
+                        {/* Custom order panel */}
                         {cod && (
-                          <div className="border-t border-purple-100 bg-purple-50 px-3 py-2.5 space-y-2">
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-purple-400">Customer&apos;s Custom Request</p>
-                            <p className="text-xs text-slate-700 whitespace-pre-wrap">{cod.description}</p>
+                          <div className="mx-3 mb-3 rounded-xl bg-white border border-purple-200 p-3 space-y-2.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400">Customer&apos;s Request</p>
+                            <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{cod.description}</p>
                             {cod.mediaUrls?.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 pt-1">
+                              <div className="flex flex-wrap gap-2 pt-0.5">
                                 {cod.mediaUrls.map((url, mi) => (
                                   <button key={mi} onClick={() => setLightboxSrc(url)} className="focus:outline-none group">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={url} alt="" className="h-16 w-16 rounded-lg object-cover border border-purple-200 group-hover:opacity-90 transition" />
+                                    <img src={url} alt="" className="h-20 w-20 rounded-xl object-cover border-2 border-purple-100 group-hover:border-purple-400 group-hover:scale-105 transition-all" />
                                   </button>
                                 ))}
                               </div>
