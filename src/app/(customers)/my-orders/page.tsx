@@ -5,17 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Package } from "lucide-react";
 
-type CustomOrder = {
-  _id: string;
-  orderNumber?: string;
-  productName?: string;
-  storeName?: string;
-  description?: string;
-  mediaUrls?: string[];
-  status?: string;
-  createdAt?: string;
-};
-
 type OrderItem = {
   productId?: string;
   name?: string;
@@ -23,6 +12,7 @@ type OrderItem = {
   quantity?: number;
   mainImage?: string | null;
   selectedVariants?: Record<string, string>;
+  customOrderDetails?: { description: string; mediaUrls: string[] };
 };
 
 type Order = {
@@ -73,37 +63,23 @@ function statusBadge(status?: string) {
   return "bg-amber-100 text-amber-700";
 }
 
-function customOrderBadge(status?: string) {
-  const s = status?.toLowerCase() ?? "";
-  if (s === "completed") return "bg-emerald-100 text-emerald-700";
-  if (s === "in progress") return "bg-blue-100 text-blue-700";
-  if (s === "rejected") return "bg-red-100 text-red-700";
-  return "bg-amber-100 text-amber-700";
-}
-
 function OrdersPageContent() {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("orderId");
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(highlightId);
-  const [expandedCustom, setExpandedCustom] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/orders").then((r) => r.json()),
-      fetch("/api/custom-orders").then((r) => r.json()),
-    ]).then(([ordersData, customData]) => {
-      setOrders(ordersData.orders ?? []);
-      setCustomOrders(customData.orders ?? []);
-    }).finally(() => setLoading(false));
+    fetch("/api/orders")
+      .then((r) => r.json())
+      .then((data) => setOrders(data.orders ?? []))
+      .finally(() => setLoading(false));
   }, []);
 
-  // Auto-expand and scroll to the highlighted order once loaded
   useEffect(() => {
     if (highlightId && orders.length) {
       setExpanded(highlightId);
@@ -143,12 +119,9 @@ function OrdersPageContent() {
                 key={order._id}
                 ref={isHighlighted ? highlightRef : undefined}
                 className={`bg-white rounded-2xl shadow-sm border transition-all ${
-                  isHighlighted
-                    ? "border-teal-400 ring-2 ring-teal-200"
-                    : "border-slate-100"
+                  isHighlighted ? "border-teal-400 ring-2 ring-teal-200" : "border-slate-100"
                 }`}
               >
-                {/* Row header */}
                 <button
                   onClick={() => setExpanded(isExpanded ? null : order._id)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left"
@@ -173,40 +146,60 @@ function OrdersPageContent() {
                       {order.status ?? "Incoming"}
                     </span>
                     <span className="text-sm font-bold text-slate-800">{formatCurrency(total)}</span>
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-slate-400" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
-                    )}
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
                   </div>
                 </button>
 
-                {/* Expanded detail */}
                 {isExpanded && (
                   <div className="border-t border-slate-100 px-5 pb-5 pt-4 space-y-4">
                     {/* Items */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {(order.items ?? []).map((item, i) => {
                         const variantStr = item.selectedVariants
                           ? Object.values(item.selectedVariants).filter(Boolean).join(" / ")
                           : "";
+                        const cod = item.customOrderDetails;
                         return (
-                          <div key={i} className="flex items-center gap-3">
-                            {item.mainImage && (
-                              <img
-                                src={item.mainImage}
-                                alt={item.name}
-                                className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                              />
+                          <div key={i}>
+                            <div className="flex items-center gap-3">
+                              {item.mainImage && (
+                                <img
+                                  src={item.mainImage}
+                                  alt={item.name}
+                                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-slate-800 truncate">{item.name ?? "Product"}</p>
+                                {variantStr && <p className="text-xs text-slate-400">{variantStr}</p>}
+                                {cod && (
+                                  <span className="inline-block mt-0.5 text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                    Custom Order
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="text-sm font-bold text-slate-800">{formatCurrency(Number(item.price ?? 0))}</p>
+                                <p className="text-xs text-slate-400">× {item.quantity ?? 1}</p>
+                              </div>
+                            </div>
+                            {/* Custom order details inline */}
+                            {cod && (
+                              <div className="mt-2 ml-15 rounded-xl bg-purple-50 border border-purple-100 px-3 py-2.5 space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-purple-400">Your Custom Request</p>
+                                <p className="text-xs text-slate-700 whitespace-pre-wrap">{cod.description}</p>
+                                {cod.mediaUrls?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {cod.mediaUrls.map((url, mi) => (
+                                      <button key={mi} onClick={() => setLightboxSrc(url)} className="focus:outline-none">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={url} alt="" className="h-16 w-16 rounded-lg object-cover border border-purple-200 hover:opacity-90 transition" />
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-slate-800 truncate">{item.name ?? "Product"}</p>
-                              {variantStr && <p className="text-xs text-slate-400">{variantStr}</p>}
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <p className="text-sm font-bold text-slate-800">{formatCurrency(Number(item.price ?? 0))}</p>
-                              <p className="text-xs text-slate-400">× {item.quantity ?? 1}</p>
-                            </div>
                           </div>
                         );
                       })}
@@ -222,9 +215,7 @@ function OrdersPageContent() {
                     )}
 
                     {/* Notes */}
-                    {order.notes && (
-                      <p className="text-xs text-slate-500 italic">{order.notes}</p>
-                    )}
+                    {order.notes && <p className="text-xs text-slate-500 italic">{order.notes}</p>}
 
                     {/* Totals */}
                     <div className="flex justify-between items-center border-t border-slate-100 pt-3">
@@ -249,66 +240,7 @@ function OrdersPageContent() {
         </div>
       )}
 
-      {/* Custom Orders Section */}
-      {customOrders.length > 0 && (
-        <div className="mt-8">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">✎</span>
-            <h2 className="text-lg font-bold text-slate-900">Custom Orders</h2>
-          </div>
-          <div className="flex flex-col gap-3">
-            {customOrders.map((co) => {
-              const isExpanded = expandedCustom === co._id;
-              return (
-                <div key={co._id} className="bg-white rounded-2xl shadow-sm border border-slate-100">
-                  <button
-                    onClick={() => setExpandedCustom(isExpanded ? null : co._id)}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">
-                        {co.orderNumber || co._id}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {co.productName} · {co.storeName} · {formatDate(co.createdAt)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 ml-3 flex-shrink-0">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${customOrderBadge(co.status)}`}>
-                        {co.status ?? "Pending"}
-                      </span>
-                      {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
-                    </div>
-                  </button>
-                  {isExpanded && (
-                    <div className="border-t border-slate-100 px-5 pb-5 pt-4 space-y-3">
-                      <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
-                        <p className="font-semibold text-xs text-slate-400 mb-1 uppercase tracking-wide">Description</p>
-                        <p className="whitespace-pre-wrap">{co.description}</p>
-                      </div>
-                      {co.mediaUrls && co.mediaUrls.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Attached Images</p>
-                          <div className="flex flex-wrap gap-2">
-                            {co.mediaUrls.map((url, i) => (
-                              <button key={i} onClick={() => setLightboxSrc(url)} className="focus:outline-none">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={url} alt={`media-${i}`} className="h-20 w-20 rounded-xl object-cover border border-slate-200 hover:opacity-90 transition" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Lightbox */}
+      {/* Image lightbox */}
       {lightboxSrc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxSrc(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
