@@ -75,9 +75,11 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { orderId, status } = await req.json();
-  if (!orderId || !ObjectId.isValid(orderId) || !validStatuses.includes(status)) {
-    return NextResponse.json({ error: "Invalid orderId or status" }, { status: 400 });
+  const body = await req.json();
+  const { orderId, status, shipping } = body;
+
+  if (!orderId || !ObjectId.isValid(orderId)) {
+    return NextResponse.json({ error: "Invalid orderId" }, { status: 400 });
   }
 
   const client = await clientPromise;
@@ -85,14 +87,48 @@ export async function PATCH(req: Request) {
   const store = await db.collection("stores").findOne({ ownerId: new ObjectId(user.id) });
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
-  const result = await db.collection("orders").updateOne(
-    { _id: new ObjectId(orderId), $or: [{ storeId: store._id.toString() }, { storeId: store._id }] },
-    { $set: { status, updatedAt: new Date() } }
-  );
+  const orderFilter = { _id: new ObjectId(orderId), $or: [{ storeId: store._id.toString() }, { storeId: store._id }] };
 
-  if (!result.matchedCount) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  // ── Shipping details update ──────────────────────────────────────────
+  if (shipping) {
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (typeof shipping.trackingNumber === "string") updates.trackingNumber = shipping.trackingNumber;
+    if (typeof shipping.carrier === "string") updates.carrier = shipping.carrier;
+    if (typeof shipping.shippingMethod === "string") updates.shippingMethod = shipping.shippingMethod;
+    if (typeof shipping.estimatedDelivery === "string") updates.estimatedDelivery = shipping.estimatedDelivery;
+
+    const result = await db.collection("orders").updateOne(orderFilter, { $set: updates });
+    if (!result.matchedCount) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+    // Notify the customer if a tracking number was provided
+    if (shipping.trackingNumber) {
+      const order = await db.collection("orders").findOne({ _id: new ObjectId(orderId) });
+      if (order?.customerId && ObjectId.isValid(order.customerId)) {
+        const parts = [`Your order ${order.orderNumber ?? orderId} has been shipped.`];
+        parts.push(`Tracking: ${shipping.trackingNumber}${shipping.carrier ? ` via ${shipping.carrier}` : ""}.`);
+        if (shipping.estimatedDelivery) parts.push(`Estimated delivery: ${shipping.estimatedDelivery}.`);
+        await db.collection("notifications").insertOne({
+          userId: new ObjectId(order.customerId),
+          title: "Your order has shipped",
+          message: parts.join(" "),
+          type: "order_tracking",
+          isRead: false,
+          orderId,
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    return NextResponse.json({ ok: true });
   }
+
+  // ── Status update ────────────────────────────────────────────────────
+  if (!status || !validStatuses.includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  const result = await db.collection("orders").updateOne(orderFilter, { $set: { status, updatedAt: new Date() } });
+  if (!result.matchedCount) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   // Send the automated customer email for this status change, if the store has the
   // matching template toggle enabled. Non-blocking — email failures never fail the request.
