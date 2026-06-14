@@ -5,6 +5,17 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Package } from "lucide-react";
 
+type CustomOrder = {
+  _id: string;
+  orderNumber?: string;
+  productName?: string;
+  storeName?: string;
+  description?: string;
+  mediaUrls?: string[];
+  status?: string;
+  createdAt?: string;
+};
+
 type OrderItem = {
   productId?: string;
   name?: string;
@@ -62,20 +73,34 @@ function statusBadge(status?: string) {
   return "bg-amber-100 text-amber-700";
 }
 
+function customOrderBadge(status?: string) {
+  const s = status?.toLowerCase() ?? "";
+  if (s === "completed") return "bg-emerald-100 text-emerald-700";
+  if (s === "in progress") return "bg-blue-100 text-blue-700";
+  if (s === "rejected") return "bg-red-100 text-red-700";
+  return "bg-amber-100 text-amber-700";
+}
+
 function OrdersPageContent() {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("orderId");
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(highlightId);
+  const [expandedCustom, setExpandedCustom] = useState<string | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/orders")
-      .then((r) => r.json())
-      .then((data) => setOrders(data.orders ?? []))
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/orders").then((r) => r.json()),
+      fetch("/api/custom-orders").then((r) => r.json()),
+    ]).then(([ordersData, customData]) => {
+      setOrders(ordersData.orders ?? []);
+      setCustomOrders(customData.orders ?? []);
+    }).finally(() => setLoading(false));
   }, []);
 
   // Auto-expand and scroll to the highlighted order once loaded
@@ -221,6 +246,73 @@ function OrdersPageContent() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Custom Orders Section */}
+      {customOrders.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">✎</span>
+            <h2 className="text-lg font-bold text-slate-900">Custom Orders</h2>
+          </div>
+          <div className="flex flex-col gap-3">
+            {customOrders.map((co) => {
+              const isExpanded = expandedCustom === co._id;
+              return (
+                <div key={co._id} className="bg-white rounded-2xl shadow-sm border border-slate-100">
+                  <button
+                    onClick={() => setExpandedCustom(isExpanded ? null : co._id)}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">
+                        {co.orderNumber || co._id}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {co.productName} · {co.storeName} · {formatDate(co.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 ml-3 flex-shrink-0">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${customOrderBadge(co.status)}`}>
+                        {co.status ?? "Pending"}
+                      </span>
+                      {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="border-t border-slate-100 px-5 pb-5 pt-4 space-y-3">
+                      <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+                        <p className="font-semibold text-xs text-slate-400 mb-1 uppercase tracking-wide">Description</p>
+                        <p className="whitespace-pre-wrap">{co.description}</p>
+                      </div>
+                      {co.mediaUrls && co.mediaUrls.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Attached Images</p>
+                          <div className="flex flex-wrap gap-2">
+                            {co.mediaUrls.map((url, i) => (
+                              <button key={i} onClick={() => setLightboxSrc(url)} className="focus:outline-none">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt={`media-${i}`} className="h-20 w-20 rounded-xl object-cover border border-slate-200 hover:opacity-90 transition" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxSrc(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightboxSrc} alt="Preview" className="max-h-[90vh] max-w-full rounded-2xl shadow-2xl" />
         </div>
       )}
     </div>
