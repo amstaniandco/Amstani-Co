@@ -221,13 +221,13 @@ export default function ProductPageClient() {
     setCustomMediaPreviews(next.map((f) => URL.createObjectURL(f)));
   }
 
-  async function handleCustomOrderSubmit() {
+  async function handleCustomOrderAddToCart() {
     if (!customDesc.trim()) { setCustomOrderMsg("Please add a description."); return; }
     if (customMediaFiles.length === 0) { setCustomOrderMsg("Please attach at least one image."); return; }
+    if (!product || !storeId) return;
     setCustomOrderSubmitting(true);
     setCustomOrderMsg("Uploading images…");
     try {
-      // Upload each image to Cloudinary via existing /api/upload
       const uploadedUrls: string[] = [];
       for (const file of customMediaFiles) {
         const fd = new FormData();
@@ -238,21 +238,34 @@ export default function ProductPageClient() {
         uploadedUrls.push(d.url);
       }
 
-      setCustomOrderMsg("Submitting order…");
-      const res = await fetch("/api/custom-orders", {
+      setCustomOrderMsg("Adding to cart…");
+      const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId,
           storeId,
-          productName: product?.name ?? "",
-          storeName: product?.storeName ?? "",
-          description: customDesc.trim(),
-          mediaUrls: uploadedUrls,
+          storeName: product.storeName ?? "",
+          name: product.name,
+          sku: product.sku ?? "",
+          price: product.price,
+          mainImage: images[0] ?? null,
+          quantity: 1,
+          selectedVariants:
+            selectedSize == null && !selectedColor
+              ? undefined
+              : {
+                  ...(selectedSize != null ? { size: String(selectedSize) } : {}),
+                  ...(selectedColor ? { color: selectedColor } : {}),
+                },
+          customOrderDetails: {
+            description: customDesc.trim(),
+            mediaUrls: uploadedUrls,
+          },
         }),
       });
       if (res.ok) {
-        toast.success("Custom order submitted!");
+        toast.success("Custom order added to cart!");
         setCustomOrderOpen(false);
         setCustomDesc("");
         setCustomMediaFiles([]);
@@ -260,10 +273,10 @@ export default function ProductPageClient() {
         setCustomOrderMsg("");
       } else {
         const d = await res.json();
-        setCustomOrderMsg(d.error || "Failed to submit.");
+        setCustomOrderMsg(d.error || "Failed to add to cart.");
       }
     } catch (err) {
-      setCustomOrderMsg(err instanceof Error ? err.message : "Failed to submit.");
+      setCustomOrderMsg(err instanceof Error ? err.message : "Failed.");
     } finally {
       setCustomOrderSubmitting(false);
     }
@@ -694,11 +707,11 @@ export default function ProductPageClient() {
               Cancel
             </button>
             <button
-              onClick={handleCustomOrderSubmit}
+              onClick={handleCustomOrderAddToCart}
               disabled={customOrderSubmitting}
-              className="flex-1 py-3 rounded-xl font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-60 transition"
+              className="flex-1 py-3 rounded-xl font-bold text-white bg-[#68B8C1] hover:bg-[#4f9ea7] disabled:opacity-60 transition"
             >
-              {customOrderSubmitting ? "Submitting…" : "Submit Request"}
+              {customOrderSubmitting ? "Please wait…" : "Add to Cart"}
             </button>
           </div>
         </div>
