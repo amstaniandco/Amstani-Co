@@ -13,6 +13,7 @@ type ProductRow = {
   discountPercent?: number;
   isOnSale?: boolean;
   isNewArrival?: boolean;
+  isCustomOrderEnabled?: boolean;
   price: number;
   quantity: number;
   mainImage?: string | null;
@@ -366,6 +367,13 @@ function PriceEditor({
     if (ok) onUpdated(product.productId, { isNewArrival: newVal });
   }
 
+  const isCustomOrderEnabled = product.isCustomOrderEnabled ?? false;
+  async function toggleCustomOrder() {
+    const newVal = !isCustomOrderEnabled;
+    const ok = await patch({ isCustomOrderEnabled: newVal });
+    if (ok) onUpdated(product.productId, { isCustomOrderEnabled: newVal });
+  }
+
   const effectivePrice = currentSelling * (1 - currentDiscount / 100);
 
   return (
@@ -427,13 +435,19 @@ function PriceEditor({
           {isOnSale && currentDiscount > 0 && <p className="text-[11px] text-slate-400 line-through">${currentSelling.toFixed(2)}</p>}
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-3 border-t border-slate-200 pt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
         <span className="text-xs font-semibold text-slate-500">Product Tags:</span>
         <button onClick={toggleNewArrival} disabled={saving}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isNewArrival ? "bg-[#68B8C1] border-[#68B8C1] text-white" : "border-slate-300 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
           ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
         </button>
-        <span className="text-[11px] text-slate-400">{isNewArrival ? "Visible on the New Arrivals page." : "Off — not shown on New Arrivals."}</span>
+        <button onClick={toggleCustomOrder} disabled={saving}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isCustomOrderEnabled ? "bg-purple-600 border-purple-600 text-white" : "border-slate-300 text-slate-500 hover:border-purple-500 hover:text-purple-600"}`}>
+          ✎ {isCustomOrderEnabled ? "Custom Orders (ON)" : "Enable Custom Orders"}
+        </button>
+        <span className="text-[11px] text-slate-400">
+          {isCustomOrderEnabled ? "Customers can request a custom order for this product." : "Custom orders off."}
+        </span>
       </div>
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
     </div>
