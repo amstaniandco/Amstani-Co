@@ -28,27 +28,35 @@ export async function GET(_req: Request, { params }: Ctx) {
   const mergedProducts = storeProducts.map((sp) => {
     const global = productMap.get(sp.productId);
 
-    // Resolve selling price: sellingPrice > price > global.price
     const sellingPrice: number = sp.sellingPrice ?? sp.price ?? global?.price ?? 0;
-
-    // Effective price after discount
     const discountPercent: number = (sp.isOnSale && sp.discountPercent > 0) ? sp.discountPercent : 0;
     const effectivePrice = sellingPrice * (1 - discountPercent / 100);
+
+    // Build explicit category tags from the global product definition
+    const categoryTags: string[] = [];
+    if (Array.isArray(global?.categories)) {
+      for (const c of global.categories) {
+        const name = c?.category?.name;
+        if (name && !categoryTags.includes(name)) categoryTags.push(name);
+      }
+    }
+    if (categoryTags.length === 0 && global?.category) {
+      categoryTags.push(String(global.category));
+    }
 
     return {
       ...(global ?? {}),
       ...sp,
       name: sp.name ?? global?.name,
       sku: sp.sku ?? global?.sku,
-      // What the customer sees and pays
       price: Math.round(effectivePrice * 100) / 100,
       compareAtPrice: discountPercent > 0 ? sellingPrice : (global?.compareAtPrice ?? null),
       mainImage: sp.mainImage ?? global?.mainImage ?? global?.images?.[0]?.imageUrl ?? null,
-      // Keep meta for cart/checkout
       originalPrice: sp.originalPrice ?? global?.price ?? 0,
       sellingPrice,
       discountPercent,
       isOnSale: sp.isOnSale ?? false,
+      categoryTags,
     };
   });
 
