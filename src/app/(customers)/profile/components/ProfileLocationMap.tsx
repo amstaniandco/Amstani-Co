@@ -204,7 +204,7 @@ export default function ProfileLocationMap({ onSelectAddress }: { onSelectAddres
   }, [onSelectAddress]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg bg-gray-300 dark:bg-slate-700">
+    <div className="relative h-full w-full overflow-hidden rounded-lg bg-gray-300 dark:bg-slate-700" style={{ zIndex: 0 }}>
       <div ref={mapElementRef} className="h-full w-full" />
       {status !== "ready" && (
         <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-900/90 dark:text-slate-200">
