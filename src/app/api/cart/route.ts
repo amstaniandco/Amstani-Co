@@ -15,6 +15,7 @@ type CartItemInput = {
   mainImage?: string | null;
   quantity?: number;
   selectedVariants?: SelectedVariants;
+  customOrderDetails?: { description: string; mediaUrls: string[] };
 };
 
 type ProductVariant = {
@@ -108,6 +109,7 @@ export async function POST(req: Request) {
     mainImage,
     quantity = 1,
     selectedVariants,
+    customOrderDetails,
   }: CartItemInput = await req.json();
   if (!productId || !storeId) return NextResponse.json({ error: "productId and storeId required" }, { status: 400 });
   if (!ObjectId.isValid(productId) || !ObjectId.isValid(storeId)) {
@@ -138,7 +140,7 @@ export async function POST(req: Request) {
   const derivedSku = matchedVariant?.skuVariant ?? matchedVariant?.sku ?? product.sku ?? sku ?? "";
   const derivedImage = product.mainImage ?? mainImage ?? product.images?.[0]?.url ?? product.images?.[0]?.imageUrl ?? product.images?.[0] ?? null;
 
-  const normalizedItem = {
+  const normalizedItem: Record<string, unknown> = {
     productId,
     storeId,
     storeName: store.name ?? storeName ?? "Store",
@@ -150,9 +152,15 @@ export async function POST(req: Request) {
     selectedVariants: variantSnapshot,
     addedAt: now,
   };
+  if (customOrderDetails?.description) {
+    normalizedItem.customOrderDetails = {
+      description: customOrderDetails.description,
+      mediaUrls: Array.isArray(customOrderDetails.mediaUrls) ? customOrderDetails.mediaUrls : [],
+    };
+  }
 
   const cart = await db.collection("carts").findOne({ userId: user.id });
-  const itemKey = selectedVariantsKey(normalizedItem.selectedVariants);
+  const itemKey = selectedVariantsKey(normalizedItem.selectedVariants as SelectedVariants);
 
   if (!cart) {
     await db.collection("carts").insertOne({
@@ -161,15 +169,18 @@ export async function POST(req: Request) {
       updatedAt: now,
     });
   } else {
-    const idx = cart.items.findIndex((i: { productId: string; storeId: string; selectedVariants?: SelectedVariants }) =>
-      i.productId === productId &&
-      i.storeId === storeId &&
-      selectedVariantsKey(i.selectedVariants) === itemKey
-    );
+    // Custom order items always get their own cart row (never merge)
+    const idx = customOrderDetails?.description
+      ? -1
+      : cart.items.findIndex((i: { productId: string; storeId: string; selectedVariants?: SelectedVariants }) =>
+          i.productId === productId &&
+          i.storeId === storeId &&
+          selectedVariantsKey(i.selectedVariants) === itemKey
+        );
     if (idx >= 0) {
       await db.collection("carts").updateOne(
         { userId: user.id },
-        { $inc: { [`items.${idx}.quantity`]: normalizedItem.quantity }, $set: { updatedAt: now } }
+        { $inc: { [`items.${idx}.quantity`]: normalizedItem.quantity as number }, $set: { updatedAt: now } }
       );
     } else {
       await db.collection("carts").updateOne(
