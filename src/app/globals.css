@@ -287,6 +287,15 @@ a, li, dd, dt, table, td, th {
   transform: scale(1.4);
 }
 
+/* Hide scrollbar while keeping scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes toast-enter {
   from {
     opacity: 0;
