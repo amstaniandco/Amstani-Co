@@ -30,6 +30,9 @@ type Order = {
   paymentMethod?: string;
   notes?: string;
   isReplacement?: boolean;
+  trackingNumber?: string;
+  carrier?: string;
+  estimatedDelivery?: string;
   items?: OrderItem[];
   shippingAddress?: {
     fullName?: string;
@@ -204,6 +207,20 @@ function OrdersPageContent() {
                         );
                       })}
                     </div>
+
+                    {/* Tracking info */}
+                    {order.trackingNumber && (
+                      <div className="rounded-xl bg-teal-50 border border-teal-100 px-3 py-2.5 text-xs space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-teal-500">Shipment Tracking</p>
+                        <p className="text-slate-700">
+                          Tracking: <span className="font-mono font-semibold text-slate-900">{order.trackingNumber}</span>
+                          {order.carrier && <span className="text-slate-500"> via {order.carrier}</span>}
+                        </p>
+                        {order.estimatedDelivery && (
+                          <p className="text-slate-500">Est. delivery: <span className="font-medium text-slate-700">{order.estimatedDelivery}</span></p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Shipping */}
                     {order.shippingAddress?.line1 && (
