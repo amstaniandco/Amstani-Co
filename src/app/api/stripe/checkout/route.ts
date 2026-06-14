@@ -43,6 +43,7 @@ type CartItem = {
   mainImage?: string | null;
   quantity: number;
   selectedVariants?: Record<string, string>;
+  customOrderDetails?: { description: string; mediaUrls: string[] };
 };
 
 function normalizeVariants(selectedVariants?: Record<string, string>) {
@@ -148,6 +149,7 @@ export async function POST(req: Request) {
       selectedVariants,
       effectivePrice,
       discountAmount: Math.round((basePrice - effectivePrice) * qty * 100) / 100,
+      ...(item.customOrderDetails?.description ? { customOrderDetails: item.customOrderDetails } : {}),
     };
 
     if (!storeMap.has(item.storeId)) {
@@ -195,6 +197,7 @@ export async function POST(req: Request) {
         mainImage: i.mainImage ?? null,
         quantity: i.quantity,
         selectedVariants: i.selectedVariants,
+        ...(i.customOrderDetails ? { customOrderDetails: i.customOrderDetails } : {}),
       })),
       subtotal,
       shippingFee: 0,
