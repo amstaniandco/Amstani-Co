@@ -264,8 +264,8 @@ export default function CheckoutPage() {
               {Object.entries(storeGroups).map(([store, items]) => (
                 <div key={store}>
                   <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 mb-2">{store}</p>
-                  {items.map((item) => (
-                    <div key={`${item.productId}-${item.storeId}-${item.sku}`} className="flex justify-between mb-1">
+                  {items.map((item, idx) => (
+                    <div key={`${item.productId}-${item.storeId}-${idx}`} className="flex justify-between mb-1">
                       <span className="truncate max-w-[200px]">{item.name} ×{item.quantity}</span>
                       <span className="font-medium text-black dark:text-slate-100">
                         ${(item.price * item.quantity).toFixed(2)}
