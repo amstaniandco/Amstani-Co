@@ -172,6 +172,20 @@ function OrdersTable({
 
 type ShippingEdit = { trackingNumber: string; carrier: string; shippingMethod: string; estimatedDelivery: string };
 
+function toDateInputValue(str: string): string {
+  if (!str || str === "-") return "";
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDeliveryDisplay(str: string): string {
+  if (!str || str === "-") return str;
+  const d = new Date(str.includes("T") ? str : `${str}T00:00:00`);
+  if (isNaN(d.getTime())) return str;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function OwnerOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -433,7 +447,7 @@ export default function OwnerOrdersPage() {
                             trackingNumber: selectedOrder.trackingNumber !== "-" ? selectedOrder.trackingNumber : "",
                             carrier: selectedOrder.carrier !== "-" ? selectedOrder.carrier : "",
                             shippingMethod: selectedOrder.shippingMethod !== "Standard" ? selectedOrder.shippingMethod : "",
-                            estimatedDelivery: selectedOrder.estimatedDelivery !== "-" ? selectedOrder.estimatedDelivery : "",
+                            estimatedDelivery: toDateInputValue(selectedOrder.estimatedDelivery),
                           })
                         }
                         className="text-[11px] font-semibold text-[#65bbc5] hover:underline"
@@ -465,13 +479,15 @@ export default function OwnerOrdersPage() {
                         onChange={(e) => setShippingEdit((s) => s && { ...s, shippingMethod: e.target.value })}
                         className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#65bbc5]"
                       />
-                      <input
-                        type="text"
-                        placeholder="Est. Delivery (e.g. Dec 20, 2025)"
-                        value={shippingEdit.estimatedDelivery}
-                        onChange={(e) => setShippingEdit((s) => s && { ...s, estimatedDelivery: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#65bbc5]"
-                      />
+                      <div className="space-y-0.5">
+                        <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Est. Delivery</label>
+                        <input
+                          type="date"
+                          value={shippingEdit.estimatedDelivery}
+                          onChange={(e) => setShippingEdit((s) => s && { ...s, estimatedDelivery: e.target.value })}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#65bbc5]"
+                        />
+                      </div>
                       <div className="flex gap-2 pt-0.5">
                         <button
                           onClick={saveShipping}
@@ -498,7 +514,7 @@ export default function OwnerOrdersPage() {
                         <p className="text-[11px] text-slate-500">Tracking: <span className="font-mono">{selectedOrder.trackingNumber}</span></p>
                       )}
                       {selectedOrder.estimatedDelivery !== "-" && (
-                        <p className="text-[11px] text-slate-500">Est. delivery: {selectedOrder.estimatedDelivery}</p>
+                        <p className="text-[11px] text-slate-500">Est. delivery: {formatDeliveryDisplay(selectedOrder.estimatedDelivery)}</p>
                       )}
                     </>
                   )}
