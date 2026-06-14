@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import BrowseStoresSection from "./components/BrowseStoresSection";
+import CategoriesSection from "./components/CategoriesSection";
 import LiveStoresSection from "./components/LiveStoresSection";
+import NewArrivalsSection from "./components/NewArrivalsSection";
 import OnSaleSection from "./components/OnSaleSection";
 import Sidebar from "./components/Sidebar";
 import type { OnSaleStore, ActiveOrder } from "./mockData";
@@ -17,11 +19,29 @@ export default function Home() {
   const [stateFilter, setStateFilter] = useState("");
   const [onSaleProducts, setOnSaleProducts] = useState<OnSaleStore[]>([]);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [newArrivals, setNewArrivals] = useState<any[]>([]);
 
   // Init from localStorage after mount (avoids SSR/client hydration mismatch)
   useEffect(() => {
     setStateFilter(getSelectedState());
     return subscribeSelectedState((s) => setStateFilter(s));
+  }, []);
+
+  // Fetch categories
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.ok ? r.json() : { categories: [] })
+      .then((data) => setCategories(data.categories || []))
+      .catch(() => {});
+  }, []);
+
+  // Fetch new arrivals
+  useEffect(() => {
+    fetch("/api/products/new-arrivals")
+      .then((r) => r.ok ? r.json() : { products: [] })
+      .then((data) => setNewArrivals((data.products || []).slice(0, 12)))
+      .catch(() => {});
   }, []);
 
   // Fetch on-sale products
@@ -133,6 +153,8 @@ export default function Home() {
       <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-5 px-2 py-4 sm:px-3 lg:gap-7 lg:px-4 lg:flex-row">
         <div className="flex-1 min-w-0">
           <LiveStoresSection liveStores={liveStores} />
+          <CategoriesSection categories={categories} />
+          <NewArrivalsSection products={newArrivals} />
           <div className="lg:hidden">
             <OnSaleSection onSaleStores={onSaleProducts} />
           </div>
