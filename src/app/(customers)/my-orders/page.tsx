@@ -52,6 +52,13 @@ function formatDate(val?: string) {
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(val));
 }
 
+function formatDeliveryDate(val?: string) {
+  if (!val) return val;
+  const d = new Date(val.includes("T") ? val : `${val}T00:00:00`);
+  if (isNaN(d.getTime())) return val;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 function getTotal(order: Order) {
   if (typeof order.total === "number") return order.total;
   const sub = order.subtotal ?? (order.items ?? []).reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity ?? 1), 0);
@@ -217,7 +224,7 @@ function OrdersPageContent() {
                           {order.carrier && <span className="text-slate-500"> via {order.carrier}</span>}
                         </p>
                         {order.estimatedDelivery && (
-                          <p className="text-slate-500">Est. delivery: <span className="font-medium text-slate-700">{order.estimatedDelivery}</span></p>
+                          <p className="text-slate-500">Est. delivery: <span className="font-medium text-slate-700">{formatDeliveryDate(order.estimatedDelivery)}</span></p>
                         )}
                       </div>
                     )}
