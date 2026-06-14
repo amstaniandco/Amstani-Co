@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "../../../components/global/ToastProvider";
+import { useWishlist } from "../../../hooks/useWishlist";
 
 type Review = {
   _id: string;
@@ -29,6 +31,9 @@ type ProductDetail = {
   variants?: ProductVariant[];
   storeName?: string;
   brand?: { name?: string };
+  category?: string;
+  categories?: Array<{ category: { name: string; slug?: string }; isPrimary?: boolean }>;
+  isCustomOrderEnabled?: boolean;
 };
 
 function StarRating({ rating, interactive = false, onRate }: { rating: number; interactive?: boolean; onRate?: (s: number) => void }) {
@@ -85,15 +90,25 @@ export default function ProductPageClient() {
 
   const [cartMsg, setCartMsg] = useState("");
   const [wishlistMsg, setWishlistMsg] = useState("");
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+
+  // Custom order modal state
+  const [customOrderOpen, setCustomOrderOpen] = useState(false);
+  const [customDesc, setCustomDesc] = useState("");
+  const [customMediaFiles, setCustomMediaFiles] = useState<File[]>([]);
+  const [customMediaPreviews, setCustomMediaPreviews] = useState<string[]>([]);
+  const [customOrderSubmitting, setCustomOrderSubmitting] = useState(false);
+  const [customOrderMsg, setCustomOrderMsg] = useState("");
 
   useEffect(() => {
     if (!productId) { setProductLoading(false); return; }
-    fetch(`/api/products/${productId}`)
+    const url = storeId ? `/api/products/${productId}?storeId=${storeId}` : `/api/products/${productId}`;
+    fetch(url)
       .then((r) => r.json())
       .then((d) => setProduct(d.product ?? null))
       .catch(() => {})
       .finally(() => setProductLoading(false));
-  }, [productId]);
+  }, [productId, storeId]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -178,25 +193,79 @@ export default function ProductPageClient() {
 
   async function handleWishlist() {
     if (!product || !storeId) return;
-    const res = await fetch("/api/wishlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        productId, storeId,
-        storeName: product.storeName ?? "",
-        name: product.name,
-        sku: product.sku ?? "",
-        price: product.price,
-        mainImage: images[0] ?? null,
-      }),
+    await toggleWishlist({
+      productId, storeId,
+      storeName: product.storeName ?? "",
+      name: product.name,
+      sku: product.sku ?? "",
+      price: product.price,
+      mainImage: images[0] ?? null,
     });
-    if (res.ok) {
-      const d = await res.json();
-      setWishlistMsg("");
-      toast.success(d.action === "added" ? "Added to wishlist!" : "Removed from wishlist.");
-    } else {
-      setWishlistMsg("");
-      toast.error("Sign in to use wishlist.");
+    setWishlistMsg("");
+  }
+
+  const wishlisted = productId && storeId ? isWishlisted(productId, storeId) : false;
+
+  function handleCustomMediaSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    const combined = [...customMediaFiles, ...files].slice(0, 5);
+    setCustomMediaFiles(combined);
+    setCustomMediaPreviews(combined.map((f) => URL.createObjectURL(f)));
+    e.target.value = "";
+  }
+
+  function removeCustomMedia(idx: number) {
+    const next = customMediaFiles.filter((_, i) => i !== idx);
+    setCustomMediaFiles(next);
+    setCustomMediaPreviews(next.map((f) => URL.createObjectURL(f)));
+  }
+
+  async function handleCustomOrderSubmit() {
+    if (!customDesc.trim()) { setCustomOrderMsg("Please add a description."); return; }
+    if (customMediaFiles.length === 0) { setCustomOrderMsg("Please attach at least one image."); return; }
+    setCustomOrderSubmitting(true);
+    setCustomOrderMsg("Uploading images…");
+    try {
+      // Upload each image to Cloudinary via existing /api/upload
+      const uploadedUrls: string[] = [];
+      for (const file of customMediaFiles) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!res.ok) throw new Error("Image upload failed.");
+        const d = await res.json();
+        uploadedUrls.push(d.url);
+      }
+
+      setCustomOrderMsg("Submitting order…");
+      const res = await fetch("/api/custom-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          storeId,
+          productName: product?.name ?? "",
+          storeName: product?.storeName ?? "",
+          description: customDesc.trim(),
+          mediaUrls: uploadedUrls,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Custom order submitted!");
+        setCustomOrderOpen(false);
+        setCustomDesc("");
+        setCustomMediaFiles([]);
+        setCustomMediaPreviews([]);
+        setCustomOrderMsg("");
+      } else {
+        const d = await res.json();
+        setCustomOrderMsg(d.error || "Failed to submit.");
+      }
+    } catch (err) {
+      setCustomOrderMsg(err instanceof Error ? err.message : "Failed to submit.");
+    } finally {
+      setCustomOrderSubmitting(false);
     }
   }
 
@@ -251,7 +320,20 @@ export default function ProductPageClient() {
 
   const pct = (n: number) => reviewTotal ? Math.round((n / reviewTotal) * 100) : 0;
 
+  const categoryTags: string[] = (() => {
+    const tags: string[] = [];
+    if (product?.categories?.length) {
+      for (const c of product.categories) {
+        const n = c.category?.name;
+        if (n && !tags.includes(n)) tags.push(n);
+      }
+    }
+    if (tags.length === 0 && product?.category) tags.push(product.category);
+    return tags;
+  })();
+
   return (
+    <>
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b1220]">
       <div className="mx-auto max-w-[1480px] px-4 py-4 md:px-6 md:py-10 lg:px-10">
 
@@ -286,6 +368,19 @@ export default function ProductPageClient() {
             </div>
             {product.description && (
               <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 mb-4 dark:text-slate-400">{product.description}</p>
+            )}
+            {categoryTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {categoryTags.map((tag) => (
+                  <Link
+                    key={tag}
+                    href={`/our-products?category=${encodeURIComponent(tag)}`}
+                    className="rounded-full bg-[#68B8C1]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#68B8C1] hover:bg-[#68B8C1]/20 transition border border-[#68B8C1]/20"
+                  >
+                    {tag}
+                  </Link>
+                ))}
+              </div>
             )}
 
             {sizes.length > 0 && (
@@ -331,9 +426,14 @@ export default function ProductPageClient() {
             <button onClick={handleAddToCart} className="w-full py-3 rounded-xl font-bold text-white text-sm bg-[#68B8C1] active:scale-95 hover:bg-[#4f9ea7]">
               Add to cart
             </button>
-            <button onClick={handleWishlist} className="mt-2 w-full py-3 rounded-xl font-bold text-gray-700 text-sm border-2 border-gray-200 bg-white hover:bg-gray-50">
-              ♡ Wishlist
+            <button onClick={handleWishlist} className={`mt-2 w-full py-3 rounded-xl font-bold text-sm border-2 transition-all ${wishlisted ? "border-red-400 bg-red-50 text-red-500" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}>
+              {wishlisted ? "♥ Wishlisted" : "♡ Wishlist"}
             </button>
+            {product.isCustomOrderEnabled && (
+              <button onClick={() => setCustomOrderOpen(true)} className="mt-2 w-full py-3 rounded-xl font-bold text-sm border-2 border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all">
+                ✎ Custom Order
+              </button>
+            )}
           </div>
 
           {/* Reviews */}
@@ -413,7 +513,20 @@ export default function ProductPageClient() {
                 <p className="text-sm text-gray-500 mb-3 dark:text-slate-400">SKU: {product.sku}</p>
               )}
               {product.description && (
-                <p className="text-[13px] text-gray-500 leading-relaxed mb-5 dark:text-slate-400">{product.description}</p>
+                <p className="text-[13px] text-gray-500 leading-relaxed mb-4 dark:text-slate-400">{product.description}</p>
+              )}
+              {categoryTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {categoryTags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/our-products?category=${encodeURIComponent(tag)}`}
+                      className="rounded-full bg-[#68B8C1]/10 px-3 py-1 text-xs font-semibold text-[#68B8C1] hover:bg-[#68B8C1]/20 transition border border-[#68B8C1]/20"
+                    >
+                      {tag}
+                    </Link>
+                  ))}
+                </div>
               )}
 
               {sizes.length > 0 && (
@@ -454,12 +567,14 @@ export default function ProductPageClient() {
                 <button onClick={handleAddToCart} className="w-full py-3.5 rounded-2xl font-bold text-white transition-all text-base bg-[#68B8C1] hover:bg-[#4f9ea7] active:scale-[0.98]">
                   Add to cart
                 </button>
-                <button onClick={handleWishlist} className="w-full py-3.5 rounded-2xl font-bold text-gray-800 border-2 border-gray-300 bg-white hover:border-gray-500 transition-all text-base dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
-                  ♡ Add to Wishlist
+                <button onClick={handleWishlist} className={`w-full py-3.5 rounded-2xl font-bold border-2 transition-all text-base ${wishlisted ? "border-red-400 bg-red-50 text-red-500 dark:bg-red-950/30 dark:border-red-500 dark:text-red-400" : "border-gray-300 bg-white text-gray-800 hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"}`}>
+                  {wishlisted ? "♥ Wishlisted" : "♡ Add to Wishlist"}
                 </button>
-                <button className="w-full py-3.5 rounded-2xl font-bold text-gray-800 border-2 border-gray-300 bg-white hover:border-gray-500 transition-all text-base dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
-                  Custom Order
-                </button>
+                {product.isCustomOrderEnabled && (
+                  <button className="w-full py-3.5 rounded-2xl font-bold text-gray-800 border-2 border-gray-300 bg-white hover:border-gray-500 transition-all text-base dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
+                    Custom Order
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -510,5 +625,85 @@ export default function ProductPageClient() {
         </div>
       </div>
     </div>
+
+    {/* ═══ CUSTOM ORDER MODAL ═══ */}
+    {customOrderOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={(e) => { if (e.target === e.currentTarget) setCustomOrderOpen(false); }}>
+        <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh] dark:bg-slate-900">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Custom Order Request</h3>
+            <button onClick={() => setCustomOrderOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">×</button>
+          </div>
+          <div className="overflow-y-auto px-5 py-4 flex flex-col gap-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Describe what you need and attach images. Both are required.
+            </p>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                Description <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                rows={4}
+                value={customDesc}
+                onChange={(e) => setCustomDesc(e.target.value)}
+                placeholder="Describe your custom order requirements…"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm outline-none focus:border-[#68B8C1] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                Images <span className="text-red-400">*</span>
+                <span className="ml-1 font-normal text-slate-400">(up to 5, max 5 MB each)</span>
+              </label>
+              {customMediaPreviews.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {customMediaPreviews.map((src, i) => (
+                    <div key={i} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="" className="h-20 w-20 rounded-xl object-cover border border-slate-200" />
+                      <button
+                        type="button"
+                        onClick={() => removeCustomMedia(i)}
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs leading-none shadow"
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {customMediaFiles.length < 5 && (
+                <label className="flex cursor-pointer items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1] transition dark:border-slate-600 dark:text-slate-400">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleCustomMediaSelect}
+                  />
+                  + Add images
+                </label>
+              )}
+            </div>
+            {customOrderMsg && (
+              <p className={`text-sm ${customOrderMsg.includes("failed") || customOrderMsg.includes("required") ? "text-red-500" : "text-slate-500"}`}>
+                {customOrderMsg}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-3 px-5 py-4 border-t border-slate-100 dark:border-slate-700">
+            <button onClick={() => setCustomOrderOpen(false)} className="flex-1 py-3 rounded-xl font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300">
+              Cancel
+            </button>
+            <button
+              onClick={handleCustomOrderSubmit}
+              disabled={customOrderSubmitting}
+              className="flex-1 py-3 rounded-xl font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-60 transition"
+            >
+              {customOrderSubmitting ? "Submitting…" : "Submit Request"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
