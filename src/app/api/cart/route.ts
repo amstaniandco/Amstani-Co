@@ -197,20 +197,26 @@ export async function PATCH(req: Request) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { productId, storeId, quantity, selectedVariants } = await req.json();
-  if (!productId || !storeId || quantity == null) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const { productId, storeId, quantity, selectedVariants, itemIndex } = await req.json();
+  if (quantity == null) return NextResponse.json({ error: "Missing quantity" }, { status: 400 });
 
   const client = await clientPromise;
   const db = client.db(DB_NAME);
   const cart = await db.collection("carts").findOne({ userId: user.id });
   if (!cart) return NextResponse.json({ error: "Cart not found" }, { status: 404 });
 
-  const itemKey = selectedVariantsKey(selectedVariants);
-  const idx = cart.items.findIndex((i: { productId: string; storeId: string; selectedVariants?: SelectedVariants }) =>
-    i.productId === productId &&
-    i.storeId === storeId &&
-    selectedVariantsKey(i.selectedVariants) === itemKey
-  );
+  let idx: number;
+  if (typeof itemIndex === "number" && itemIndex >= 0) {
+    idx = itemIndex;
+  } else {
+    if (!productId || !storeId) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    const itemKey = selectedVariantsKey(selectedVariants);
+    idx = cart.items.findIndex((i: { productId: string; storeId: string; selectedVariants?: SelectedVariants }) =>
+      i.productId === productId &&
+      i.storeId === storeId &&
+      selectedVariantsKey(i.selectedVariants) === itemKey
+    );
+  }
   if (idx < 0) return NextResponse.json({ error: "Item not in cart" }, { status: 404 });
 
   if (quantity <= 0) {
