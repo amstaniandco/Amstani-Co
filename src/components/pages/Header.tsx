@@ -291,6 +291,16 @@ export default function Header() {
     return () => window.removeEventListener("notifications-read", handler);
   }, []);
 
+  // Listen for wishlist toggle events from useWishlist hook so count stays current without re-fetching
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const count = (e as CustomEvent<{ count: number }>).detail?.count;
+      if (typeof count === "number") setWishlistCount(count);
+    };
+    window.addEventListener("wishlist-updated", handler);
+    return () => window.removeEventListener("wishlist-updated", handler);
+  }, []);
+
   useEffect(() => {
     setStateMenuOpen(false);
   }, [pathname]);
@@ -345,7 +355,8 @@ export default function Header() {
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, pathname]);
+  // Only re-fetch on login state change, not on every route — events handle incremental updates
+  }, [isLoggedIn]);
 
   const showAuthenticatedNavbar = isLoggedIn;
   const isCustomer = !role || role === "user";
