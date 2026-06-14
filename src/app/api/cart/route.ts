@@ -230,12 +230,17 @@ export async function DELETE(req: Request) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { productId, storeId, clearAll, selectedVariants } = await req.json();
+  const { productId, storeId, clearAll, selectedVariants, itemIndex } = await req.json();
   const client = await clientPromise;
   const db = client.db(DB_NAME);
 
   if (clearAll) {
     await db.collection("carts").updateOne({ userId: user.id }, { $set: { items: [], updatedAt: new Date() } });
+  } else if (typeof itemIndex === "number" && itemIndex >= 0) {
+    const cart = await db.collection("carts").findOne({ userId: user.id });
+    if (!cart) return NextResponse.json({ ok: true });
+    const newItems = cart.items.filter((_: unknown, i: number) => i !== itemIndex);
+    await db.collection("carts").updateOne({ userId: user.id }, { $set: { items: newItems, updatedAt: new Date() } });
   } else {
     const cart = await db.collection("carts").findOne({ userId: user.id });
     if (!cart) return NextResponse.json({ ok: true });
