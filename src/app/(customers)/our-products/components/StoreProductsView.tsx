@@ -1,10 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Box, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
+import { useWishlist } from "../../../../hooks/useWishlist";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  tops: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop",
+  bottoms: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200&h=200&fit=crop",
+  pants: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200&h=200&fit=crop",
+  jeans: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=200&fit=crop",
+  shoes: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop",
+  sneakers: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop",
+  accessories: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=200&h=200&fit=crop",
+  dresses: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=200&h=200&fit=crop",
+  outerwear: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=200&h=200&fit=crop",
+  jackets: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=200&h=200&fit=crop",
+  bags: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&h=200&fit=crop",
+  men: "https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=200&h=200&fit=crop",
+  women: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=200&h=200&fit=crop",
+  kids: "https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=200&h=200&fit=crop",
+  others: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&h=200&fit=crop",
+};
+const FALLBACK_CAT_IMG = "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&h=200&fit=crop";
+function getCatImage(name: string) {
+  return CATEGORY_IMAGES[name.toLowerCase().trim()] ?? FALLBACK_CAT_IMG;
+}
 
 type ProductVariant = {
   size?: string | number;
@@ -26,6 +49,7 @@ type CatalogProduct = {
   images?: string[];
   variants?: ProductVariant[];
   description?: string;
+  categoryTags?: string[];
 };
 
 function isHex(str: string) {
@@ -248,14 +272,24 @@ function QuickViewModal({
 export default function StoreProductsView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const mode: "all" | "sale" | "new-arrivals" =
     pathname === "/new-arrivals" ? "new-arrivals" : pathname === "/sale" ? "sale" : "all";
 
   const searchQuery = searchParams.get("q") ?? "";
+  const categoryParam = searchParams.get("category") ?? "";
 
-  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [allProducts, setAllProducts] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [quickView, setQuickView] = useState<CatalogProduct | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+
+  // Sync URL → state when navigating from category strip on home page
+  useEffect(() => {
+    setSelectedCategory(categoryParam);
+  }, [categoryParam]);
 
   useEffect(() => {
     let endpoint: string;
@@ -264,25 +298,56 @@ export default function StoreProductsView() {
     } else if (mode === "new-arrivals") {
       endpoint = "/api/products/new-arrivals";
     } else {
-      endpoint = searchQuery
-        ? `/api/products/all?q=${encodeURIComponent(searchQuery)}`
-        : "/api/products/all";
+      const params = new URLSearchParams();
+      if (searchQuery) params.set("q", searchQuery);
+      endpoint = `/api/products/all${params.toString() ? `?${params}` : ""}`;
     }
     setLoading(true);
     fetch(endpoint)
       .then((r) => r.json())
-      .then((data) => setProducts(data.products ?? []))
-      .catch(() => setProducts([]))
+      .then((data) => setAllProducts(data.products ?? []))
+      .catch(() => setAllProducts([]))
       .finally(() => setLoading(false));
   }, [mode, searchQuery]);
 
-  const pageTitle = mode === "sale" ? "Sale" : mode === "new-arrivals" ? "New Arrivals" : "All Products";
-  const pageIcon = mode === "sale" ? "" : mode === "new-arrivals" ? "" : "";
+  // Derive unique categories from the fetched products
+  const categoryNames = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const p of allProducts) {
+      for (const tag of p.categoryTags ?? []) {
+        if (!seen.has(tag)) { seen.add(tag); result.push(tag); }
+      }
+    }
+    return result;
+  }, [allProducts]);
+
+  // Client-side category filter
+  const products = useMemo(() => {
+    if (!selectedCategory) return allProducts;
+    const lc = selectedCategory.toLowerCase();
+    return allProducts.filter((p) =>
+      (p.categoryTags ?? []).some((t) => t.toLowerCase() === lc)
+    );
+  }, [allProducts, selectedCategory]);
+
+  function selectCategory(cat: string) {
+    setSelectedCategory(cat);
+    // Update URL param so the page is shareable
+    const params = new URLSearchParams(searchParams.toString());
+    if (cat) params.set("category", cat);
+    else params.delete("category");
+    router.replace(`${pathname}?${params}`, { scroll: false });
+  }
+
+  const pageTitle = mode === "sale" ? "Sale" : mode === "new-arrivals" ? "New Arrivals" : "Our Products";
   const emptyMsg =
     mode === "sale"
       ? "No sale products right now. Check back soon!"
       : mode === "new-arrivals"
-      ? "No new arrivals yet. Store owners can tag their products as New Arrivals."
+      ? "No new arrivals yet."
+      : selectedCategory
+      ? `No products found in "${selectedCategory}".`
       : searchQuery
       ? `No products found for "${searchQuery}".`
       : "No products available yet.";
@@ -290,14 +355,85 @@ export default function StoreProductsView() {
   return (
     <div className="flex min-h-screen items-start justify-center p-4 pt-10 dark:bg-slate-950">
       <div className="ui-panel w-full rounded-3xl bg-gray-50 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] dark:border dark:border-slate-700 dark:bg-slate-900">
+
+        {/* Header */}
         <div className="flex items-center gap-2 mb-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-100 dark:bg-slate-800">
             <Box className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
           </div>
           <h2 className="text-xl font-semibold text-black dark:text-slate-100 sm:text-2xl">
-            {pageIcon} {pageTitle}
+            {pageTitle}
           </h2>
         </div>
+
+        {/* Browse by categories — only for "all" mode with categories present */}
+        {mode === "all" && !loading && categoryNames.length > 0 && (
+          <div className="mb-6">
+            <p className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Browse by categories
+            </p>
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+              {categoryNames.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => selectCategory(selectedCategory === cat ? "" : cat)}
+                  className="group relative min-w-[110px] flex-shrink-0 cursor-pointer overflow-hidden rounded-xl focus:outline-none"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={getCatImage(cat)}
+                    alt={cat}
+                    className={`h-[110px] w-full object-cover transition-all duration-300 ${
+                      selectedCategory === cat
+                        ? "brightness-50 scale-105"
+                        : "brightness-75 group-hover:brightness-90 group-hover:scale-105"
+                    }`}
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_CAT_IMG; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  {selectedCategory === cat && (
+                    <div className="absolute inset-0 ring-2 ring-[#68B8C1] rounded-xl pointer-events-none" />
+                  )}
+                  <span className="absolute bottom-2 left-0 right-0 px-2 text-center text-[11px] font-bold text-white drop-shadow">
+                    {cat}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Filter tabs */}
+        {mode === "all" && !loading && categoryNames.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => selectCategory("")}
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                !selectedCategory
+                  ? "bg-[#68B8C1] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+              }`}
+            >
+              All Products
+            </button>
+            {categoryNames.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => selectCategory(selectedCategory === cat ? "" : cat)}
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                  selectedCategory === cat
+                    ? "bg-[#68B8C1] text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div className="py-16 text-center text-sm text-slate-400">Loading products…</div>
@@ -315,7 +451,6 @@ export default function StoreProductsView() {
                   key={`${product.storeId}-${product.productId}`}
                   className="ui-subpanel rounded-3xl bg-white shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 overflow-hidden"
                 >
-                  {/* Image → product page */}
                   <Link
                     href={`/product?productId=${product.productId}&storeId=${product.storeId}`}
                     className="relative block w-full h-56 overflow-hidden bg-slate-100 dark:bg-slate-900"
@@ -338,7 +473,6 @@ export default function StoreProductsView() {
                   </Link>
 
                   <div className="p-4">
-                    {/* Name + store */}
                     <Link
                       href={`/product?productId=${product.productId}&storeId=${product.storeId}`}
                       className="font-semibold text-slate-800 hover:text-[#68B8C1] dark:text-slate-100 dark:hover:text-cyan-300 text-sm leading-snug"
@@ -347,7 +481,6 @@ export default function StoreProductsView() {
                     </Link>
                     <p className="mt-0.5 text-xs text-[#68B8C1] font-semibold">{product.storeName}</p>
 
-                    {/* Price row + cart */}
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <div>
                         <span className="text-base font-bold text-slate-900 dark:text-slate-100">
@@ -359,19 +492,41 @@ export default function StoreProductsView() {
                           </span>
                         )}
                       </div>
-
-                      {/* Cart button → quick-view popup */}
-                      <button
-                        type="button"
-                        onClick={() => setQuickView(product)}
-                        className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#68B8C1] hover:bg-[#4f9ea7] text-white transition flex-shrink-0"
-                        title="Add to cart"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M8 6V4a2 2 0 114 0v2m4 0V4a2 2 0 114 0v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleWishlist({
+                            productId: product.productId,
+                            storeId: product.storeId,
+                            storeName: product.storeName,
+                            name: product.name,
+                            sku: product.sku,
+                            price: product.price,
+                            mainImage: product.images?.[0] ?? product.mainImage ?? null,
+                          })}
+                          className={`flex h-9 w-9 items-center justify-center rounded-2xl border transition ${
+                            isWishlisted(product.productId, product.storeId)
+                              ? "border-red-300 bg-red-50 text-red-500 dark:border-red-500/50 dark:bg-red-500/10 dark:text-red-400"
+                              : "border-gray-200 bg-white text-slate-400 hover:border-red-200 hover:text-red-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          }`}
+                          title={isWishlisted(product.productId, product.storeId) ? "Remove from wishlist" : "Add to wishlist"}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill={isWishlisted(product.productId, product.storeId) ? "currentColor" : "none"}>
+                            <path d="M12.1 21.55l-.1.1-.11-.1C7.14 17.24 4 14.39 4 10.5 4 7.42 6.42 5 9.5 5c1.74 0 3.41.81 4.5 2.09C15.09 5.81 16.76 5 18.5 5 21.58 5 24 7.42 24 10.5c0 3.89-3.14 6.74-7.9 11.05z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setQuickView(product)}
+                          className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#68B8C1] hover:bg-[#4f9ea7] text-white transition"
+                          title="Add to cart"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M8 6V4a2 2 0 114 0v2m4 0V4a2 2 0 114 0v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
