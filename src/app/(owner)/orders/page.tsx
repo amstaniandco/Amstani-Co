@@ -170,6 +170,8 @@ function OrdersTable({
   );
 }
 
+type ShippingEdit = { trackingNumber: string; carrier: string; shippingMethod: string; estimatedDelivery: string };
+
 export default function OwnerOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -180,6 +182,8 @@ export default function OwnerOrdersPage() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [error, setError] = useState("");
+  const [shippingEdit, setShippingEdit] = useState<ShippingEdit | null>(null);
+  const [shippingSaving, setShippingSaving] = useState(false);
 
   const fetchOrders = useCallback(() => {
     fetch("/api/owner/orders")
@@ -272,6 +276,44 @@ export default function OwnerOrdersPage() {
     }
   };
 
+  const saveShipping = async () => {
+    if (!selectedOrder || !shippingEdit) return;
+    setShippingSaving(true);
+    try {
+      const res = await fetch("/api/owner/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: selectedOrder._mongoId ?? selectedOrder.id,
+          shipping: shippingEdit,
+        }),
+      });
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === selectedOrder.id
+              ? {
+                  ...o,
+                  trackingNumber: shippingEdit.trackingNumber || "-",
+                  carrier: shippingEdit.carrier || "-",
+                  shippingMethod: shippingEdit.shippingMethod || "Standard",
+                  estimatedDelivery: shippingEdit.estimatedDelivery || "-",
+                }
+              : o
+          )
+        );
+        setShippingEdit(null);
+      }
+    } finally {
+      setShippingSaving(false);
+    }
+  };
+
+  // Reset shipping edit form when a different order is selected
+  useEffect(() => {
+    setShippingEdit(null);
+  }, [selectedOrderId]);
+
   return (
     <>
       <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -359,7 +401,7 @@ export default function OwnerOrdersPage() {
             </div>
 
             {/* Body: 2-col at lg+ */}
-            <div className="grid gap-0 lg:grid-cols-[260px_1fr]">
+            <div className="grid gap-0 lg:grid-cols-[320px_1fr]">
 
               {/* LEFT SIDEBAR — meta info */}
               <div className="border-b border-slate-100 lg:border-b-0 lg:border-r lg:border-slate-100 p-5 space-y-4 text-sm">
@@ -380,17 +422,85 @@ export default function OwnerOrdersPage() {
                   )}
                 </div>
 
-                {/* Fulfillment */}
-                <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fulfillment</p>
-                  <p className="text-slate-700">
-                    {selectedOrder.shippingMethod}{selectedOrder.carrier !== "-" ? ` via ${selectedOrder.carrier}` : ""}
-                  </p>
-                  {selectedOrder.trackingNumber !== "-" && (
-                    <p className="text-[11px] text-slate-500">Tracking: <span className="font-mono">{selectedOrder.trackingNumber}</span></p>
-                  )}
-                  {selectedOrder.estimatedDelivery !== "-" && (
-                    <p className="text-[11px] text-slate-500">Est. delivery: {selectedOrder.estimatedDelivery}</p>
+                {/* Fulfillment / Shipping */}
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fulfillment</p>
+                    {!shippingEdit && (
+                      <button
+                        onClick={() =>
+                          setShippingEdit({
+                            trackingNumber: selectedOrder.trackingNumber !== "-" ? selectedOrder.trackingNumber : "",
+                            carrier: selectedOrder.carrier !== "-" ? selectedOrder.carrier : "",
+                            shippingMethod: selectedOrder.shippingMethod !== "Standard" ? selectedOrder.shippingMethod : "",
+                            estimatedDelivery: selectedOrder.estimatedDelivery !== "-" ? selectedOrder.estimatedDelivery : "",
+                          })
+                        }
+                        className="text-[11px] font-semibold text-[#65bbc5] hover:underline"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  {shippingEdit ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Tracking Number"
+                        value={shippingEdit.trackingNumber}
+                        onChange={(e) => setShippingEdit((s) => s && { ...s, trackingNumber: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#65bbc5]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Carrier (e.g. DHL, FedEx)"
+                        value={shippingEdit.carrier}
+                        onChange={(e) => setShippingEdit((s) => s && { ...s, carrier: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#65bbc5]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Shipping Method"
+                        value={shippingEdit.shippingMethod}
+                        onChange={(e) => setShippingEdit((s) => s && { ...s, shippingMethod: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#65bbc5]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Est. Delivery (e.g. Dec 20, 2025)"
+                        value={shippingEdit.estimatedDelivery}
+                        onChange={(e) => setShippingEdit((s) => s && { ...s, estimatedDelivery: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#65bbc5]"
+                      />
+                      <div className="flex gap-2 pt-0.5">
+                        <button
+                          onClick={saveShipping}
+                          disabled={shippingSaving}
+                          className="flex-1 rounded-lg bg-[#65bbc5] px-2 py-1.5 text-xs font-semibold text-white hover:bg-[#53aab5] disabled:opacity-60"
+                        >
+                          {shippingSaving ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          onClick={() => setShippingEdit(null)}
+                          disabled={shippingSaving}
+                          className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-slate-700">
+                        {selectedOrder.shippingMethod}{selectedOrder.carrier !== "-" ? ` via ${selectedOrder.carrier}` : ""}
+                      </p>
+                      {selectedOrder.trackingNumber !== "-" && (
+                        <p className="text-[11px] text-slate-500">Tracking: <span className="font-mono">{selectedOrder.trackingNumber}</span></p>
+                      )}
+                      {selectedOrder.estimatedDelivery !== "-" && (
+                        <p className="text-[11px] text-slate-500">Est. delivery: {selectedOrder.estimatedDelivery}</p>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -408,21 +518,23 @@ export default function OwnerOrdersPage() {
                   )}
                 </div>
 
-                {/* Billing address — only when different */}
-                {selectedOrder.billingAddress.line1 !== selectedOrder.shippingAddress.line1 && (
-                  <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-0.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Bill to</p>
-                    <p className="font-semibold text-slate-900 text-sm">{selectedOrder.billingAddress.fullName}</p>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      {[selectedOrder.billingAddress.line1, selectedOrder.billingAddress.city,
-                        [selectedOrder.billingAddress.state, selectedOrder.billingAddress.zip].filter(Boolean).join(" "),
-                        selectedOrder.billingAddress.country].filter(Boolean).join(", ")}
-                    </p>
-                    {selectedOrder.billingAddress.phone && (
-                      <p className="text-xs text-slate-500">{selectedOrder.billingAddress.phone}</p>
-                    )}
-                  </div>
-                )}
+                {/* Billing address */}
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5 space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Bill to</p>
+                  <p className="font-semibold text-slate-900 text-sm">{selectedOrder.billingAddress.fullName || selectedOrder.shippingAddress.fullName}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {[
+                      selectedOrder.billingAddress.line1 || selectedOrder.shippingAddress.line1,
+                      selectedOrder.billingAddress.city || selectedOrder.shippingAddress.city,
+                      [(selectedOrder.billingAddress.state || selectedOrder.shippingAddress.state),
+                       (selectedOrder.billingAddress.zip || selectedOrder.shippingAddress.zip)].filter(Boolean).join(" "),
+                      selectedOrder.billingAddress.country || selectedOrder.shippingAddress.country,
+                    ].filter(Boolean).join(", ")}
+                  </p>
+                  {(selectedOrder.billingAddress.phone || selectedOrder.shippingAddress.phone) && (
+                    <p className="text-xs text-slate-500">{selectedOrder.billingAddress.phone || selectedOrder.shippingAddress.phone}</p>
+                  )}
+                </div>
 
                 {/* Timeline */}
                 <div>
