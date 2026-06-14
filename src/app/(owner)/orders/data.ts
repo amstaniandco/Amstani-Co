@@ -25,6 +25,8 @@ export type OrderLineItem = {
   variant: string;
   quantity: number;
   unitPrice: number;
+  mainImage?: string | null;
+  customOrderDetails?: { description: string; mediaUrls: string[] };
 };
 
 export type OrderTimelineStep = {
@@ -65,7 +67,9 @@ type RawOrderItem = {
   quantity?: number;
   price?: number;
   unitPrice?: number;
+  mainImage?: string | null;
   selectedVariants?: Record<string, string>;
+  customOrderDetails?: { description: string; mediaUrls: string[] };
 };
 
 type RawOrder = {
@@ -203,6 +207,8 @@ export function mapOrderToRow(order: RawOrder): OrderRow {
       variant: item.selectedVariants ? Object.values(item.selectedVariants).join(" / ") : "",
       quantity: Number(item.quantity ?? 1),
       unitPrice: Number(item.price ?? item.unitPrice ?? 0),
+      mainImage: item.mainImage ?? null,
+      ...(item.customOrderDetails?.description ? { customOrderDetails: item.customOrderDetails } : {}),
     })),
     shippingFee,
     taxAmount,
