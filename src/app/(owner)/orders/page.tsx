@@ -175,8 +175,34 @@ function OrdersTable({
   );
 }
 
+type CustomOrder = {
+  _id: string;
+  orderNumber?: string;
+  customerName?: string;
+  customerEmail?: string;
+  productName?: string;
+  description?: string;
+  mediaUrls?: string[];
+  status?: string;
+  createdAt?: string;
+};
+
+const CUSTOM_STATUSES = ["Pending", "Accepted", "Rejected", "In Progress", "Completed"];
+
+function customOrderBadgeClass(status?: string) {
+  const s = status?.toLowerCase() ?? "";
+  if (s === "completed") return "bg-emerald-100 text-emerald-700";
+  if (s === "in progress") return "bg-blue-100 text-blue-700";
+  if (s === "rejected") return "bg-red-100 text-red-700";
+  if (s === "accepted") return "bg-teal-100 text-teal-700";
+  return "bg-amber-100 text-amber-700";
+}
+
 export default function OwnerOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [expandedCustomId, setExpandedCustomId] = useState<string | null>(null);
   const [storeName, setStoreName] = useState("My Store");
   const [loading, setLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState("");
@@ -186,16 +212,16 @@ export default function OwnerOrdersPage() {
   const [error, setError] = useState("");
 
   const fetchOrders = useCallback(() => {
-    fetch("/api/owner/orders")
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to load orders");
-        return data;
-      })
-      .then((data) => {
+    Promise.all([
+      fetch("/api/owner/orders").then((r) => r.json()),
+      fetch("/api/owner/custom-orders").then((r) => r.json()),
+    ])
+      .then(([data, customData]) => {
+        if (!data.orders) throw new Error(data.error || "Failed to load orders");
         const mapped = (data.orders ?? []).map(mapOrderToRow);
         setOrders(mapped);
         setStoreName(data.storeName ?? "My Store");
+        setCustomOrders(customData.orders ?? []);
 
         const params = new URLSearchParams(window.location.search);
         const targetMongoId = params.get("orderId");
@@ -215,6 +241,19 @@ export default function OwnerOrdersPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load orders"))
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleCustomStatusChange(orderId: string, status: string) {
+    setCustomOrders((prev) => prev.map((o) => o._id === orderId ? { ...o, status } : o));
+    const res = await fetch("/api/owner/custom-orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, status }),
+    });
+    if (!res.ok) {
+      // revert
+      fetchOrders();
+    }
+  }
 
   useEffect(() => {
     fetchOrders();
@@ -517,6 +556,86 @@ export default function OwnerOrdersPage() {
           {filteredOrders.length !== orders.length && ` (filtered from ${orders.length} total)`}
         </p>
       </section>
+
+      {/* Custom Orders Section */}
+      {customOrders.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-3">✎ Custom Order Requests</h2>
+          <div className="space-y-3">
+            {customOrders.map((co) => {
+              const isExpanded = expandedCustomId === co._id;
+              return (
+                <div key={co._id} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <button
+                    onClick={() => setExpandedCustomId(isExpanded ? null : co._id)}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{co.orderNumber || co._id}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {co.customerName || co.customerEmail} · {co.productName}
+                        {co.createdAt ? ` · ${new Date(co.createdAt).toLocaleDateString()}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 ml-3 flex-shrink-0">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${customOrderBadgeClass(co.status)}`}>
+                        {co.status ?? "Pending"}
+                      </span>
+                      <select
+                        value={co.status ?? "Pending"}
+                        onChange={(e) => { e.stopPropagation(); handleCustomStatusChange(co._id, e.target.value); }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 outline-none"
+                      >
+                        {CUSTOM_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="border-t border-slate-100 px-5 pb-5 pt-4 space-y-4">
+                      <div className="rounded-xl bg-slate-50 px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Description</p>
+                        <p className="text-sm text-slate-700 whitespace-pre-wrap">{co.description}</p>
+                      </div>
+                      {co.mediaUrls && co.mediaUrls.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">Attached Images</p>
+                          <div className="flex flex-wrap gap-2">
+                            {co.mediaUrls.map((url, i) => (
+                              <button key={i} onClick={() => setLightboxSrc(url)} className="focus:outline-none group">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={url}
+                                  alt={`custom-media-${i}`}
+                                  className="h-24 w-24 rounded-xl object-cover border border-slate-200 group-hover:opacity-90 transition shadow-sm"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-400">
+                        Customer: {co.customerName} · {co.customerEmail}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Lightbox */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxSrc(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightboxSrc} alt="Preview" className="max-h-[90vh] max-w-full rounded-2xl shadow-2xl" />
+        </div>
+      )}
     </>
   );
 }
