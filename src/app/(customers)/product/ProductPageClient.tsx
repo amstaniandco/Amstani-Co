@@ -571,8 +571,8 @@ export default function ProductPageClient() {
                   {wishlisted ? "♥ Wishlisted" : "♡ Add to Wishlist"}
                 </button>
                 {product.isCustomOrderEnabled && (
-                  <button className="w-full py-3.5 rounded-2xl font-bold text-gray-800 border-2 border-gray-300 bg-white hover:border-gray-500 transition-all text-base dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
-                    Custom Order
+                  <button onClick={() => setCustomOrderOpen(true)} className="w-full py-3.5 rounded-2xl font-bold border-2 border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all text-base dark:border-purple-700 dark:bg-purple-950/30 dark:text-purple-400">
+                    ✎ Custom Order
                   </button>
                 )}
               </div>
