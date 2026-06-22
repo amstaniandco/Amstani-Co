@@ -51,14 +51,17 @@ export async function GET(request: Request) {
         .toArray(),
       db
         .collection("products")
-        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) } })
+        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) }, brandSuspended: { $ne: true } })
         .toArray(),
     ]);
 
     const storeMap = new Map(stores.map((s) => [s._id.toString(), s]));
     const productMap = new Map(globalProducts.map((p) => [p._id.toString(), p]));
 
-    let products = rows.map((row) => {
+    // Exclude store_products whose brand is suspended (global product filtered out)
+    const activeRows = rows.filter((row) => productMap.has(row.productId));
+
+    let products = activeRows.map((row) => {
       const global = productMap.get(row.productId);
       const store = storeMap.get(row.storeId);
       const sellingPrice: number = row.sellingPrice ?? row.price ?? global?.price ?? 0;

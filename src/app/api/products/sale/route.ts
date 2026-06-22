@@ -31,14 +31,16 @@ export async function GET() {
         .toArray(),
       db
         .collection("products")
-        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) } })
+        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) }, brandSuspended: { $ne: true } })
         .toArray(),
     ]);
 
     const storeMap = new Map(stores.map((s) => [s._id.toString(), s]));
     const productMap = new Map(globalProducts.map((p) => [p._id.toString(), p]));
 
-    const products = saleRows.map((sp) => {
+    const activeRows = saleRows.filter((sp) => productMap.has(sp.productId));
+
+    const products = activeRows.map((sp) => {
       const global = productMap.get(sp.productId);
       const store = storeMap.get(sp.storeId);
       const sellingPrice: number = sp.sellingPrice ?? sp.price ?? global?.price ?? 0;
