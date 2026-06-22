@@ -193,6 +193,33 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
   }
 }
 
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
+    const { id } = await context.params;
+    const objectId = getObjectId(id);
+    if (!objectId) return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
+
+    const body = await req.json();
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+    if (typeof body.allowCustomOrders === "boolean") {
+      updates.allowCustomOrders = body.allowCustomOrders;
+    }
+
+    const client = await clientPromise;
+    const result = await client.db(DB_NAME).collection("products").updateOne({ _id: objectId }, { $set: updates });
+    if (!result.matchedCount) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (error) {
+    console.error("PATCH /api/admin/global-catalog/products/[id] error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin();
