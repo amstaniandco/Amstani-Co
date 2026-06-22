@@ -168,20 +168,31 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim();
+    const brandExact = searchParams.get("brand")?.trim();
     const limit = Math.min(toNumber(searchParams.get("limit"), 100), 500);
     const page = Math.max(toNumber(searchParams.get("page"), 1), 1);
     const skip = (page - 1) * limit;
 
-    const query = q
-      ? {
-          $or: [
-            { name: { $regex: q, $options: "i" } },
-            { sku: { $regex: q, $options: "i" } },
-            { category: { $regex: q, $options: "i" } },
-            { "brand.name": { $regex: q, $options: "i" } },
-          ],
-        }
-      : {};
+    const brandSourceId = searchParams.get("brandSourceId")?.trim();
+
+    let query: Record<string, unknown> = {};
+    if (brandSourceId) {
+      // Supabase brand: match by UUID or name so both product types are covered
+      const conditions: Record<string, unknown>[] = [{ "brand.id": brandSourceId }];
+      if (brandExact) conditions.push({ "brand.name": brandExact });
+      query = { $or: conditions };
+    } else if (brandExact) {
+      query = { "brand.name": brandExact };
+    } else if (q) {
+      query = {
+        $or: [
+          { name: { $regex: q, $options: "i" } },
+          { sku: { $regex: q, $options: "i" } },
+          { category: { $regex: q, $options: "i" } },
+          { "brand.name": { $regex: q, $options: "i" } },
+        ],
+      };
+    }
 
     const client = await clientPromise;
     const collection = client.db(DB_NAME).collection("products");
