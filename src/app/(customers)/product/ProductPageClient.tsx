@@ -188,7 +188,8 @@ export default function ProductPageClient() {
       toast.success("Added to cart!");
     } else {
       setCartMsg("");
-      toast.error("Sign in to add to cart.");
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Could not add to cart.");
     }
   }
 

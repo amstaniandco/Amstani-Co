@@ -137,7 +137,8 @@ function QuickViewModal({
         toast.success("Added to cart!");
         onClose();
       } else {
-        toast.error("Sign in to add items to cart.");
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Could not add to cart.");
       }
     } finally {
       setAdding(false);
