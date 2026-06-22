@@ -292,16 +292,18 @@ function ProductThumb({ src, alt }: { src?: string | null; alt: string }) {
   return <div className="h-9 w-9 rounded-md bg-slate-200" />;
 }
 
-function PriceEditor({
+function PricingModal({
   product,
   markupPercent,
   discountCap,
   onUpdated,
+  onClose,
 }: {
   product: ProductRow;
   markupPercent: number;
   discountCap: number;
   onUpdated: (productId: string, changes: Partial<ProductRow>) => void;
+  onClose: () => void;
 }) {
   const originalPrice = useRef<number>(
     product.originalPrice != null && product.originalPrice > 0
@@ -314,17 +316,17 @@ function PriceEditor({
   const currentDiscount = product.discountPercent ?? 0;
   const isOnSale = product.isOnSale ?? false;
 
-  const [editingPrice, setEditingPrice] = useState(false);
-  const [editingDiscount, setEditingDiscount] = useState(false);
   const [priceInput, setPriceInput] = useState(currentSelling.toFixed(2));
   const [discountInput, setDiscountInput] = useState(String(currentDiscount));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!editingPrice) setPriceInput((product.sellingPrice ?? originalPrice).toFixed(2));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.sellingPrice]);
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [onClose]);
 
   async function patch(body: Record<string, unknown>) {
     setSaving(true); setError("");
@@ -344,14 +346,14 @@ function PriceEditor({
     const sp = parseFloat(priceInput);
     if (isNaN(sp) || sp < 0) { setError("Enter a valid price."); return; }
     const ok = await patch({ sellingPrice: sp });
-    if (ok) { onUpdated(product.productId, { sellingPrice: sp }); setEditingPrice(false); }
+    if (ok) onUpdated(product.productId, { sellingPrice: sp });
   }
 
   async function saveDiscount() {
     const dp = parseFloat(discountInput);
-    if (isNaN(dp) || dp < 0) { setError("Enter a valid discount."); return; }
+    if (isNaN(dp) || dp < 0 || dp > discountCap) { setError(`Discount must be 0–${discountCap}%.`); return; }
     const ok = await patch({ discountPercent: dp, isOnSale: dp > 0 });
-    if (ok) { onUpdated(product.productId, { discountPercent: dp, isOnSale: dp > 0 }); setEditingDiscount(false); }
+    if (ok) onUpdated(product.productId, { discountPercent: dp, isOnSale: dp > 0 });
   }
 
   async function toggleSale() {
@@ -367,75 +369,108 @@ function PriceEditor({
     if (ok) onUpdated(product.productId, { isNewArrival: newVal });
   }
 
-  const effectivePrice = currentSelling * (1 - currentDiscount / 100);
+  const effectivePrice = parseFloat(priceInput || "0") * (1 - parseFloat(discountInput || "0") / 100);
 
   return (
-    <div className="mx-4 mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:mx-7">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Original Price (Catalog)</p>
-          <p className="text-sm font-bold text-slate-600">${originalPrice.toFixed(2)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">
-            Your Selling Price <span className="ml-1 font-normal">(max ${maxSellingPrice.toFixed(2)})</span>
-          </p>
-          {editingPrice ? (
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-                <input type="number" min="0" max={maxSellingPrice} step="0.01" value={priceInput}
-                  onChange={(e) => setPriceInput(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 pl-5 pr-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400" autoFocus />
-              </div>
-              <button onClick={savePrice} disabled={saving} className="px-2.5 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-xs font-semibold disabled:opacity-60">{saving ? "…" : "Save"}</button>
-              <button onClick={() => { setEditingPrice(false); setError(""); }} className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-600 hover:bg-slate-100">✕</button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-bold text-slate-800">${currentSelling.toFixed(2)}</p>
-              <button onClick={() => { setPriceInput(currentSelling.toFixed(2)); setEditingPrice(true); setError(""); }} className="text-[11px] font-semibold text-teal-600 hover:underline">Edit</button>
-            </div>
-          )}
-        </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Sale Discount <span className="ml-1 font-normal">(max {discountCap}%)</span></p>
-          <div className="flex items-center gap-2">
-            <button onClick={toggleSale} disabled={saving} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-60 ${isOnSale ? "bg-amber-500 hover:bg-amber-600 text-white" : "border border-slate-300 text-slate-600 hover:bg-slate-100"}`}>
-              <Tag className="h-3 w-3" />{isOnSale ? "Sale ON" : "Sale OFF"}
-            </button>
-            {isOnSale && (editingDiscount ? (
-              <div className="flex items-center gap-1.5">
-                <div className="relative w-16">
-                  <input type="number" min="0" max={discountCap} step="1" value={discountInput} onChange={(e) => setDiscountInput(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400" autoFocus />
-                </div>
-                <span className="text-xs text-slate-500">%</span>
-                <button onClick={saveDiscount} disabled={saving} className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold disabled:opacity-60">{saving ? "…" : "OK"}</button>
-                <button onClick={() => { setEditingDiscount(false); setError(""); }} className="text-xs text-slate-400 hover:text-slate-600">✕</button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-amber-600">{currentDiscount}% off</span>
-                <button onClick={() => { setDiscountInput(String(currentDiscount)); setEditingDiscount(true); setError(""); }} className="text-[11px] font-semibold text-amber-600 hover:underline">Edit</button>
-              </div>
-            ))}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="min-w-0">
+            <h3 className="font-bold text-slate-900 truncate">{product.name}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Pricing & Tags</p>
           </div>
+          <button onClick={onClose} className="ml-3 flex-shrink-0 text-slate-400 hover:text-slate-700 transition">
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <div className="sm:col-span-2 lg:col-span-1">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Customer Pays</p>
-          <p className="text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
-          {isOnSale && currentDiscount > 0 && <p className="text-[11px] text-slate-400 line-through">${currentSelling.toFixed(2)}</p>}
+
+        <div className="px-5 py-5 space-y-5">
+          {/* Price row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Catalog Price</p>
+              <p className="text-base font-bold text-slate-600">${originalPrice.toFixed(2)}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">max ${maxSellingPrice.toFixed(2)}</p>
+            </div>
+            <div className="rounded-xl bg-teal-50 border border-teal-100 px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-teal-500 mb-1">Customer Pays</p>
+              <p className="text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
+              {isOnSale && parseFloat(discountInput) > 0 && (
+                <p className="text-[10px] text-slate-400 line-through mt-0.5">${parseFloat(priceInput).toFixed(2)}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Selling price input */}
+          <div>
+            <label className="text-xs font-semibold text-slate-600 block mb-1.5">
+              Your Selling Price <span className="font-normal text-slate-400">(max ${maxSellingPrice.toFixed(2)})</span>
+            </label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                <input
+                  type="number" min="0" max={maxSellingPrice} step="0.01"
+                  value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                />
+              </div>
+              <button onClick={savePrice} disabled={saving}
+                className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold disabled:opacity-60 transition">
+                {saving ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+
+          {/* Discount */}
+          <div>
+            <label className="text-xs font-semibold text-slate-600 block mb-1.5">
+              Sale Discount <span className="font-normal text-slate-400">(max {discountCap}%)</span>
+            </label>
+            <div className="flex gap-2">
+              <button onClick={toggleSale} disabled={saving}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border transition disabled:opacity-60 flex-shrink-0 ${isOnSale ? "bg-amber-500 border-amber-500 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                <Tag className="h-3.5 w-3.5" />{isOnSale ? "ON" : "OFF"}
+              </button>
+              <div className="relative flex-1">
+                <input
+                  type="number" min="0" max={discountCap} step="1"
+                  value={discountInput} onChange={(e) => setDiscountInput(e.target.value)}
+                  disabled={!isOnSale}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
+              </div>
+              <button onClick={saveDiscount} disabled={saving || !isOnSale}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold disabled:opacity-40 transition">
+                {saving ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-xs font-semibold text-slate-500 mb-2">Product Tags</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={toggleNewArrival} disabled={saving}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isNewArrival ? "bg-[#68B8C1] border-[#68B8C1] text-white" : "border-slate-200 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
+                ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
+              </button>
+              {product.allowCustomOrders && (
+                <span className="flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700">
+                  ✎ Custom Orders (set by admin)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-        <span className="text-xs font-semibold text-slate-500">Product Tags:</span>
-        <button onClick={toggleNewArrival} disabled={saving}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isNewArrival ? "bg-[#68B8C1] border-[#68B8C1] text-white" : "border-slate-300 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
-          ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
-        </button>
-      </div>
-      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -517,7 +552,7 @@ export default function OwnerProductsPage() {
   const [markupPercent, setMarkupPercent] = useState(20);
   const [discountCap, setDiscountCap] = useState(20);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pricingProductId, setPricingProductId] = useState<string | null>(null);
   const [detailProduct, setDetailProduct] = useState<ProductRow | null>(null);
   const [detailProductId, setDetailProductId] = useState<string | null>(null);
   const [requestsBadge, setRequestsBadge] = useState(0);
@@ -715,8 +750,6 @@ export default function OwnerProductsPage() {
                     const sellP = product.sellingPrice ?? origP;
                     const isOnSale = product.isOnSale ?? false;
                     const discount = product.discountPercent ?? 0;
-                    const isExpanded = expandedId === product.productId;
-
                     return (
                       <div key={product.productId}>
                         <div className="grid grid-cols-[48px_1.6fr_0.65fr_0.7fr_0.7fr_0.8fr_0.9fr] items-center px-4 py-4 text-sm sm:px-7">
@@ -750,17 +783,14 @@ export default function OwnerProductsPage() {
                               <Eye className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => setExpandedId(isExpanded ? null : product.productId)}
+                              onClick={() => setPricingProductId(product.productId)}
                               className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                             >
-                              {isExpanded ? "Close" : "Pricing"}
+                              Pricing
                             </button>
                           </div>
                         </div>
 
-                        {isExpanded && (
-                          <PriceEditor product={product} markupPercent={markupPercent} discountCap={discountCap} onUpdated={handleUpdated} />
-                        )}
                       </div>
                     );
                   })}
@@ -773,6 +803,10 @@ export default function OwnerProductsPage() {
 
       {detailProductId && <ProductDetailModal productId={detailProductId} onClose={() => setDetailProductId(null)} />}
       {detailProduct && <DetailsModal product={detailProduct} onClose={() => setDetailProduct(null)} />}
+      {pricingProductId && (() => {
+        const p = products.find((x) => x.productId === pricingProductId);
+        return p ? <PricingModal product={p} markupPercent={markupPercent} discountCap={discountCap} onUpdated={handleUpdated} onClose={() => setPricingProductId(null)} /> : null;
+      })()}
     </>
   );
 }
