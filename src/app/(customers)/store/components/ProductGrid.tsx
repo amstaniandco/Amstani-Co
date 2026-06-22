@@ -100,10 +100,30 @@ function QuickViewModal({
 
   const [selectedSize, setSelectedSize] = useState<string | number | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
 
+  const availableColors: string[] = selectedSize != null
+    ? [...new Set(
+        (product.variants ?? [])
+          .filter((v) => v.size != null && String(v.size) === String(selectedSize))
+          .map((v) => v.color)
+          .filter(Boolean)
+          .map(String)
+      )]
+    : colors;
+
+  function handleSizeSelect(size: string | number) {
+    setSelectedSize(size);
+    setQty(1);
+    const colorsForSize = (product.variants ?? [])
+      .filter((v) => v.size != null && String(v.size) === String(size))
+      .map((v) => v.color).filter(Boolean).map(String);
+    if (selectedColor && !colorsForSize.includes(selectedColor)) setSelectedColor(null);
+  }
+
   const needsSize = sizes.length > 0;
-  const needsColor = colors.length > 0;
+  const needsColor = availableColors.length > 0;
   const canAdd = (!needsSize || selectedSize !== null) && (!needsColor || selectedColor !== null);
 
   const missingMsg = !canAdd
@@ -111,6 +131,22 @@ function QuickViewModal({
         .filter(Boolean)
         .join(" and ")
     : "";
+
+  // Dynamic price based on selected variant
+  const storeDiscount: number = (product.isOnSale && (product.discountPercent ?? 0) > 0) ? (product.discountPercent ?? 0) : 0;
+  const activeVariant = (selectedSize != null || selectedColor != null)
+    ? (product.variants ?? []).find((v) => {
+        const sizeMatch = selectedSize == null || String(v.size) === String(selectedSize);
+        const colorMatch = selectedColor == null || v.color === selectedColor;
+        return sizeMatch && colorMatch;
+      }) ?? null
+    : null;
+  const rawVariantPrice = activeVariant?.priceOverride ?? null;
+  const discountedVariantPrice = rawVariantPrice != null
+    ? Math.round(rawVariantPrice * (1 - storeDiscount / 100) * 100) / 100
+    : null;
+  const displayPrice = discountedVariantPrice ?? product.price;
+  const variantCompareAtPrice = discountedVariantPrice != null && storeDiscount > 0 ? rawVariantPrice : null;
 
   async function handleAddToCart() {
     if (!canAdd) return;
@@ -125,9 +161,9 @@ function QuickViewModal({
           storeName,
           name: product.name,
           sku: product.sku ?? "",
-          price: product.price,
+          price: displayPrice,
           mainImage: images[0] ?? null,
-          quantity: 1,
+          quantity: qty,
           selectedVariants: {
             ...(selectedSize !== null ? { size: String(selectedSize) } : {}),
             ...(selectedColor ? { color: selectedColor } : {}),
@@ -239,9 +275,14 @@ function QuickViewModal({
                 )}
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-xl font-extrabold text-slate-900">${Number(product.price).toFixed(2)}</p>
-                {product.compareAtPrice && product.compareAtPrice > product.price && (
+                <p className="text-xl font-extrabold text-slate-900">${Number(displayPrice).toFixed(2)}</p>
+                {variantCompareAtPrice != null ? (
+                  <p className="text-xs text-slate-400 line-through">${Number(variantCompareAtPrice).toFixed(2)}</p>
+                ) : product.compareAtPrice && product.compareAtPrice > product.price ? (
                   <p className="text-xs text-slate-400 line-through">${Number(product.compareAtPrice).toFixed(2)}</p>
+                ) : null}
+                {storeDiscount > 0 && (
+                  <p className="text-[10px] font-bold text-amber-600">{storeDiscount}% OFF</p>
                 )}
               </div>
             </div>
@@ -259,15 +300,8 @@ function QuickViewModal({
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {sizes.map((sz) => (
-                    <button
-                      key={String(sz)}
-                      onClick={() => setSelectedSize(sz)}
-                      className={`min-w-[40px] px-3 py-1.5 rounded-lg border text-sm font-semibold transition ${
-                        selectedSize === sz
-                          ? "border-[#68B8C1] bg-[#68B8C1] text-white"
-                          : "border-slate-200 text-slate-700 hover:border-[#68B8C1]"
-                      }`}
-                    >
+                    <button key={String(sz)} onClick={() => handleSizeSelect(sz)}
+                      className={`min-w-[2.5rem] rounded-xl border px-3 py-1.5 text-sm font-semibold transition text-left break-words ${selectedSize === sz ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 bg-white text-slate-700 hover:border-[#68B8C1]"}`}>
                       {sz}
                     </button>
                   ))}
@@ -282,7 +316,7 @@ function QuickViewModal({
                   Color {selectedColor === null && <span className="text-red-400 font-normal normal-case">— please select</span>}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {colors.map((col) => (
+                  {availableColors.map((col) => (
                     isHex(col) ? (
                       <button
                         key={col}
@@ -318,22 +352,40 @@ function QuickViewModal({
               </p>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-1">
-              <Link
-                href={`/product?productId=${product.productId}&storeId=${storeId}`}
-                className="flex-1 text-center py-3 rounded-2xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                Full Details
-              </Link>
-              <button
-                onClick={handleAddToCart}
-                disabled={!canAdd || adding}
-                className="flex-1 py-3 rounded-2xl bg-[#68B8C1] hover:bg-[#4f9ea7] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition"
-              >
-                {adding ? "Adding…" : "Add to Cart"}
-              </button>
-            </div>
+            {/* Quantity + Actions */}
+            {(() => {
+              const maxQty = product.quantity > 0 ? product.quantity : 0;
+              return (
+                <>
+                  {maxQty > 0 && (
+                    <div className="flex items-center gap-3 pt-1">
+                      <button onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base font-bold text-slate-600 transition hover:border-[#68B8C1] hover:text-[#68B8C1]">−</button>
+                      <span className="w-6 text-center text-sm font-bold text-slate-800">{qty}</span>
+                      <button onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                        disabled={qty >= maxQty}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base font-bold text-slate-600 transition hover:border-[#68B8C1] hover:text-[#68B8C1] disabled:opacity-40 disabled:cursor-not-allowed">+</button>
+                      <span className="text-xs text-slate-400">{maxQty} in stock</span>
+                    </div>
+                  )}
+                  <div className="flex gap-3 pt-1">
+                    <Link
+                      href={`/product?productId=${product.productId}&storeId=${storeId}`}
+                      className="flex-1 text-center py-3 rounded-2xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      Full Details
+                    </Link>
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={!canAdd || adding || maxQty === 0}
+                      className="flex-1 py-3 rounded-2xl bg-[#68B8C1] hover:bg-[#4f9ea7] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition"
+                    >
+                      {adding ? "Adding…" : maxQty === 0 ? "Out of Stock" : "Add to Cart"}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
