@@ -19,21 +19,48 @@ export async function GET(req: Request, { params }: Ctx) {
   const db = client.db(DB_NAME);
   const product = await db.collection("products").findOne({ _id: id });
 
-  if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  if (!product || product.brandSuspended) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
   let stock: number | null = null;
+  let variantPrices: Record<string, number> = {};
+  let storeSellingPrice: number | null = null;
+  let storeDiscountPercent: number = 0;
+  let storeIsOnSale: boolean = false;
+
   if (storeId) {
     const sp = await db.collection("store_products").findOne(
       { storeId, productId },
-      { projection: { quantity: 1 } }
+      { projection: { quantity: 1, variantPrices: 1, sellingPrice: 1, discountPercent: 1, isOnSale: 1 } }
     );
-    stock = sp?.quantity ?? null;
+    stock            = sp?.quantity ?? null;
+    variantPrices    = (sp?.variantPrices as Record<string, number>) ?? {};
+    storeSellingPrice   = sp?.sellingPrice ?? null;
+    storeDiscountPercent = (sp?.isOnSale && sp?.discountPercent > 0) ? (sp.discountPercent as number) : 0;
+    storeIsOnSale    = sp?.isOnSale ?? false;
   }
+
+  // Effective price from store (already accounts for discount in store_products route,
+  // but here we compute it fresh for the single-product detail page)
+  const basePrice: number = storeSellingPrice ?? (product.price as number) ?? 0;
+  const effectivePrice: number = Math.round(basePrice * (1 - storeDiscountPercent / 100) * 100) / 100;
+
+  // Merge store owner's variant price overrides so the customer sees the correct price
+  const variants = ((product.variants ?? []) as Array<Record<string, unknown>>).map((v) => {
+    const storePrice = variantPrices[v.id as string];
+    return storePrice != null ? { ...v, priceOverride: storePrice } : v;
+  });
 
   return NextResponse.json({
     product: {
       ...product,
+      variants,
       isCustomOrderEnabled: product.allowCustomOrders ?? false,
+      // Store-specific pricing overlays
+      price: effectivePrice,
+      sellingPrice: basePrice,
+      discountPercent: storeDiscountPercent,
+      isOnSale: storeIsOnSale,
+      compareAtPrice: storeDiscountPercent > 0 ? basePrice : (product.compareAtPrice ?? null),
       ...(stock !== null ? { stock } : {}),
     },
   });
