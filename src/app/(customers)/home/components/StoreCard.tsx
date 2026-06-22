@@ -7,9 +7,12 @@ const StarIcon = () => (
   </svg>
 );
 
-const BookmarkIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+const StoreIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l1-5h16l1 5" />
+    <path d="M3 9a2 2 0 004 0 2 2 0 004 0 2 2 0 004 0 2 2 0 004 0" />
+    <path d="M5 9v11h14V9" />
+    <path d="M10 14h4v6H10z" />
   </svg>
 );
 
@@ -57,13 +60,13 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
           <p className="line-clamp-1 text-xs leading-snug text-white/85 sm:text-sm">{store.description}</p>
 
           <div className="mt-1.5 flex items-center justify-between gap-2 sm:mt-2">
-            <div className="inline-flex items-center gap-1.5">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#68B8C1]/80 px-3 py-1 backdrop-blur-sm">
               <LocationIcon />
-              <span className="text-sm text-white/85 sm:text-base">{store.state}</span>
+              <span className="text-sm font-medium text-white sm:text-base">{store.state}</span>
             </div>
 
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#77cad4] text-white shadow-sm transition-colors hover:bg-[#63bcc7] sm:h-9 sm:w-9">
-              <BookmarkIcon />
+              <StoreIcon />
             </span>
           </div>
         </div>
