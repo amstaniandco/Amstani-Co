@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import CartSummary from "./components/CartSummary";
+import { useToast } from "../../../components/global/ToastProvider";
 
 type CartItem = {
   productId: string;
@@ -27,6 +28,7 @@ function variantKey(selectedVariants?: Record<string, string>) {
 }
 
 export default function CartPage() {
+  const toast = useToast();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -124,11 +126,12 @@ export default function CartPage() {
     const item = items[idx];
     const isCustom = !!item.customOrderDetails;
 
+    if (quantity <= 0) {
+      await removeItem(idx);
+      return;
+    }
+
     if (isCustom) {
-      if (quantity <= 0) {
-        await removeItem(idx);
-        return;
-      }
       await fetch("/api/cart", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -137,15 +140,16 @@ export default function CartPage() {
       setItems((prev) => prev.map((i, j) => j === idx ? { ...i, quantity } : i));
     } else {
       const key = variantKey(item.selectedVariants);
-      await fetch("/api/cart", {
+      const res = await fetch("/api/cart", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: item.productId, storeId: item.storeId, quantity, selectedVariants: item.selectedVariants }),
       });
+      const data = await res.json().catch(() => ({}));
+      const finalQty = data.capped ? data.max : quantity;
+      if (data.capped) toast.error(`Only ${data.max} unit(s) available in stock.`);
       setItems((prev) =>
-        quantity <= 0
-          ? prev.filter((i) => !(i.productId === item.productId && i.storeId === item.storeId && variantKey(i.selectedVariants) === key))
-          : prev.map((i) => i.productId === item.productId && i.storeId === item.storeId && variantKey(i.selectedVariants) === key ? { ...i, quantity } : i)
+        prev.map((i) => i.productId === item.productId && i.storeId === item.storeId && variantKey(i.selectedVariants) === key ? { ...i, quantity: finalQty } : i)
       );
     }
   }
