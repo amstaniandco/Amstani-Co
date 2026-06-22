@@ -13,7 +13,7 @@ type ProductRow = {
   discountPercent?: number;
   isOnSale?: boolean;
   isNewArrival?: boolean;
-  isCustomOrderEnabled?: boolean;
+  allowCustomOrders?: boolean;
   price: number;
   quantity: number;
   mainImage?: string | null;
@@ -367,13 +367,6 @@ function PriceEditor({
     if (ok) onUpdated(product.productId, { isNewArrival: newVal });
   }
 
-  const isCustomOrderEnabled = product.isCustomOrderEnabled ?? false;
-  async function toggleCustomOrder() {
-    const newVal = !isCustomOrderEnabled;
-    const ok = await patch({ isCustomOrderEnabled: newVal });
-    if (ok) onUpdated(product.productId, { isCustomOrderEnabled: newVal });
-  }
-
   const effectivePrice = currentSelling * (1 - currentDiscount / 100);
 
   return (
@@ -441,13 +434,6 @@ function PriceEditor({
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isNewArrival ? "bg-[#68B8C1] border-[#68B8C1] text-white" : "border-slate-300 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
           ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
         </button>
-        <button onClick={toggleCustomOrder} disabled={saving}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isCustomOrderEnabled ? "bg-purple-600 border-purple-600 text-white" : "border-slate-300 text-slate-500 hover:border-purple-500 hover:text-purple-600"}`}>
-          ✎ {isCustomOrderEnabled ? "Custom Orders (ON)" : "Enable Custom Orders"}
-        </button>
-        <span className="text-[11px] text-slate-400">
-          {isCustomOrderEnabled ? "Customers can request a custom order for this product." : "Custom orders off."}
-        </span>
       </div>
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
     </div>
@@ -543,6 +529,7 @@ export default function OwnerProductsPage() {
   const [filterSale, setFilterSale] = useState("all");
   const [filterNewArrival, setFilterNewArrival] = useState("all");
   const [filterStock, setFilterStock] = useState("all");
+  const [filterCustomOrder, setFilterCustomOrder] = useState("all");
 
   useEffect(() => {
     const since = localStorage.getItem("sb_seen_owner_listing_requests") ?? "";
@@ -591,10 +578,12 @@ export default function OwnerProductsPage() {
     if (filterNewArrival === "no" && p.isNewArrival) return false;
     if (filterStock === "instock" && (p.quantity ?? 0) <= 0) return false;
     if (filterStock === "outofstock" && (p.quantity ?? 0) > 0) return false;
+    if (filterCustomOrder === "yes" && !p.allowCustomOrders) return false;
+    if (filterCustomOrder === "no" && p.allowCustomOrders) return false;
     return true;
   });
 
-  const hasFilters = search || filterCategory !== "all" || filterBrand !== "all" || filterSale !== "all" || filterNewArrival !== "all" || filterStock !== "all";
+  const hasFilters = search || filterCategory !== "all" || filterBrand !== "all" || filterSale !== "all" || filterNewArrival !== "all" || filterStock !== "all" || filterCustomOrder !== "all";
 
   if (loading) {
     return (
@@ -685,9 +674,16 @@ export default function OwnerProductsPage() {
                 <option value="outofstock">Out of Stock</option>
               </select>
 
+              <select value={filterCustomOrder} onChange={(e) => setFilterCustomOrder(e.target.value)}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400">
+                <option value="all">All Custom Orders</option>
+                <option value="yes">Custom Order Enabled</option>
+                <option value="no">Custom Order Disabled</option>
+              </select>
+
               {hasFilters && (
                 <button
-                  onClick={() => { setSearch(""); setFilterCategory("all"); setFilterBrand("all"); setFilterSale("all"); setFilterNewArrival("all"); setFilterStock("all"); }}
+                  onClick={() => { setSearch(""); setFilterCategory("all"); setFilterBrand("all"); setFilterSale("all"); setFilterNewArrival("all"); setFilterStock("all"); setFilterCustomOrder("all"); }}
                   className="h-9 rounded-xl border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                 >
                   Clear
@@ -731,6 +727,11 @@ export default function OwnerProductsPage() {
                               <div className="text-[11px] text-slate-400 mt-0.5 truncate">
                                 {[product.brand, product.category].filter(Boolean).join(" · ")}
                               </div>
+                            )}
+                            {product.allowCustomOrders && (
+                              <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+                                ✎ Custom Orders
+                              </span>
                             )}
                           </div>
                           <div className="font-mono text-xs text-slate-500">{product.sku || "—"}</div>
