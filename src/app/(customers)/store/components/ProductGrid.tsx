@@ -344,6 +344,86 @@ function getProductCategories(product: StoreProduct): string[] {
   return product.categoryTags ?? [];
 }
 
+// ── All Categories Modal ─────────────────────────────────────────────────────
+
+function AllCategoriesModal({
+  categoryNames,
+  selectedCategory,
+  onSelect,
+  onClose,
+}: {
+  categoryNames: string[];
+  selectedCategory: string | null;
+  onSelect: (cat: string) => void;
+  onClose: () => void;
+}) {
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  return (
+    <div
+      ref={backdropRef}
+      onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
+    >
+      <div className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden dark:bg-slate-900">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">All Categories</h3>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Grid */}
+        <div className="overflow-y-auto p-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {categoryNames.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => { onSelect(cat); onClose(); }}
+                className="group relative cursor-pointer overflow-hidden rounded-2xl focus:outline-none"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getCatImage(cat)}
+                  alt={cat}
+                  className={`h-[120px] w-full object-cover transition-all duration-300 ${
+                    selectedCategory === cat
+                      ? "brightness-50 scale-105"
+                      : "brightness-90 group-hover:brightness-100 group-hover:scale-105"
+                  }`}
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_CAT_IMG; }}
+                />
+                {selectedCategory === cat && (
+                  <div className="absolute inset-0 ring-2 ring-[#68B8C1] rounded-2xl pointer-events-none" />
+                )}
+                <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[#68B8C1]/90 px-3 py-1 text-[11px] font-semibold text-white shadow">
+                  {cat}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ProductGrid ────────────────────────────────────────────────────────
 
 export default function ProductGrid({ storeId, storeName = "" }: { storeId?: string | null; storeName?: string }) {
@@ -351,6 +431,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
   const [loading, setLoading] = useState(Boolean(storeId));
   const [quickView, setQuickView] = useState<StoreProduct | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showAllCats, setShowAllCats] = useState(false);
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
 
   useEffect(() => {
@@ -409,33 +490,43 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
       {/* ── Browse by categories ─────────────────────────────────────────── */}
       {categoryNames.length > 0 && (
         <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Browse by categories
-          </h3>
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-            {categoryNames.map((cat) => (
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">
+              Browse by categories
+            </h3>
+            {categoryNames.length > 4 && (
+              <button
+                type="button"
+                onClick={() => setShowAllCats(true)}
+                className="text-xs font-semibold text-[#68B8C1] hover:text-[#4f9ea7] transition"
+              >
+                View all ({categoryNames.length})
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-4 gap-8">
+            {categoryNames.slice(0, 4).map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                className="group relative min-w-[110px] flex-shrink-0 cursor-pointer overflow-hidden rounded-xl focus:outline-none"
+                className="group relative cursor-pointer overflow-hidden rounded-2xl focus:outline-none"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getCatImage(cat)}
                   alt={cat}
-                  className={`h-[120px] w-full object-cover transition-all duration-300 ${
+                  className={`aspect-[3/2] w-full object-cover transition-all duration-300 ${
                     selectedCategory === cat
                       ? "brightness-50 scale-105"
-                      : "brightness-75 group-hover:brightness-90 group-hover:scale-105"
+                      : "brightness-90 group-hover:brightness-100 group-hover:scale-105"
                   }`}
                   onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_CAT_IMG; }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 {selectedCategory === cat && (
-                  <div className="absolute inset-0 ring-2 ring-[#68B8C1] rounded-xl" />
+                  <div className="absolute inset-0 ring-2 ring-[#68B8C1] rounded-2xl pointer-events-none" />
                 )}
-                <span className="absolute bottom-2 left-0 right-0 px-2 text-center text-[11px] font-bold text-white drop-shadow">
+                <span className="absolute bottom-3 right-3 rounded-full bg-[#68B8C1]/90 px-3 py-1 text-[11px] font-semibold text-white shadow">
                   {cat}
                 </span>
               </button>
@@ -597,6 +688,16 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
           storeId={storeId}
           storeName={storeName}
           onClose={() => setQuickView(null)}
+        />
+      )}
+
+      {/* All categories modal */}
+      {showAllCats && (
+        <AllCategoriesModal
+          categoryNames={categoryNames}
+          selectedCategory={selectedCategory}
+          onSelect={(cat) => setSelectedCategory(selectedCategory === cat ? null : cat)}
+          onClose={() => setShowAllCats(false)}
         />
       )}
     </>
