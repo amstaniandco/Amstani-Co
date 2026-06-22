@@ -7,12 +7,9 @@ const StarIcon = () => (
   </svg>
 );
 
-const StoreIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l1-5h16l1 5" />
-    <path d="M3 9a2 2 0 004 0 2 2 0 004 0 2 2 0 004 0 2 2 0 004 0" />
-    <path d="M5 9v11h14V9" />
-    <path d="M10 14h4v6H10z" />
+const BookmarkIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
   </svg>
 );
 
@@ -36,7 +33,7 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
           alt={store.name}
           className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/35 to-black/10" />
 
         {store.badge && (
           <div className="absolute left-2 top-2 sm:left-3 sm:top-3">
@@ -46,28 +43,27 @@ export default function StoreCard({ store }: { store: BrowseStore }) {
           </div>
         )}
 
-        {/* Info strip */}
-        <div className="absolute inset-x-0 bottom-0 rounded-b-2xl bg-[#68B8C1]/90 px-3 pb-3 pt-2.5 backdrop-blur-sm sm:px-4 sm:pb-4 sm:pt-3">
-          <div className="mb-1 flex items-center justify-between sm:mb-1.5">
-            <h3 className="text-base font-bold leading-tight text-white sm:text-xl">{store.name}</h3>
+        <div className="absolute inset-x-0 bottom-0 px-3 pb-3 sm:px-4 sm:pb-4">
+          <div className="mb-2 flex items-center justify-between sm:mb-2.5">
+            <h3 className="text-base font-semibold leading-tight text-white sm:text-xl">{store.name}</h3>
             {store.rating && (
-              <div className="inline-flex items-center gap-1 rounded-full bg-white/25 px-2 py-0.5 text-[11px] font-semibold text-white sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs">
+              <div className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs">
                 <StarIcon />
                 <span>{store.rating}</span>
               </div>
             )}
           </div>
 
-          <p className="line-clamp-1 text-xs leading-snug text-white/90 sm:text-sm">{store.description}</p>
+          <p className="line-clamp-1 text-xs leading-snug text-white/85 sm:text-sm">{store.description}</p>
 
           <div className="mt-1.5 flex items-center justify-between gap-2 sm:mt-2">
-            <div className="inline-flex items-center gap-1.5 text-white/90">
+            <div className="inline-flex items-center gap-1.5">
               <LocationIcon />
-              <span className="text-sm sm:text-base">{store.state}</span>
+              <span className="text-sm text-white/85 sm:text-base">{store.state}</span>
             </div>
 
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/25 text-white shadow-sm transition-colors hover:bg-white/40 sm:h-9 sm:w-9">
-              <StoreIcon />
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#77cad4] text-white shadow-sm transition-colors hover:bg-[#63bcc7] sm:h-9 sm:w-9">
+              <BookmarkIcon />
             </span>
           </div>
         </div>
