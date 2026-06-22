@@ -377,10 +377,10 @@ function AllCategoriesModal({
       onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
     >
-      <div className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden dark:bg-slate-900">
+      <div className="relative w-full max-w-4xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden dark:bg-slate-900">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">All Categories</h3>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">All Categories</h3>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
@@ -390,8 +390,8 @@ function AllCategoriesModal({
         </div>
 
         {/* Grid */}
-        <div className="overflow-y-auto p-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="overflow-y-auto p-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {categoryNames.map((cat) => (
               <button
                 key={cat}
@@ -403,7 +403,7 @@ function AllCategoriesModal({
                 <img
                   src={getCatImage(cat)}
                   alt={cat}
-                  className={`h-[120px] w-full object-cover transition-all duration-300 ${
+                  className={`h-[150px] w-full object-cover transition-all duration-300 ${
                     selectedCategory === cat
                       ? "brightness-50 scale-105"
                       : "brightness-90 group-hover:brightness-100 group-hover:scale-105"
@@ -413,7 +413,7 @@ function AllCategoriesModal({
                 {selectedCategory === cat && (
                   <div className="absolute inset-0 ring-2 ring-[#68B8C1] rounded-2xl pointer-events-none" />
                 )}
-                <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[#68B8C1]/90 px-3 py-1 text-[11px] font-semibold text-white shadow">
+                <span className="absolute bottom-2.5 right-2.5 rounded-full bg-[#68B8C1]/90 px-3 py-1 text-[11px] font-semibold text-white shadow">
                   {cat}
                 </span>
               </button>
