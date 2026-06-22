@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "../../../components/global/ToastProvider";
 import { useWishlist } from "../../../hooks/useWishlist";
+import { fetchAndUpdateCartCount } from "../../../lib/cart-events";
 
 type Review = {
   _id: string;
@@ -186,6 +187,7 @@ export default function ProductPageClient() {
     if (res.ok) {
       setCartMsg("");
       toast.success("Added to cart!");
+      fetchAndUpdateCartCount();
     } else {
       setCartMsg("");
       const data = await res.json().catch(() => ({}));
@@ -268,6 +270,7 @@ export default function ProductPageClient() {
       });
       if (res.ok) {
         toast.success("Custom order added to cart!");
+        fetchAndUpdateCartCount();
         setCustomOrderOpen(false);
         setCustomDesc("");
         setCustomMediaFiles([]);
