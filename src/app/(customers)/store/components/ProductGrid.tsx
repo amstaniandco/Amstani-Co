@@ -487,6 +487,13 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
 
   return (
     <>
+      {/* ── Catalog banner ───────────────────────────────────────────────── */}
+      <div className="mt-5 rounded-2xl bg-white shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 flex items-center justify-center py-4">
+        <p className="text-sm font-extrabold tracking-[0.18em] text-slate-700 dark:text-slate-200 uppercase">
+          Amstani &amp; Co&apos;s Catalog
+        </p>
+      </div>
+
       {/* ── Browse by categories ─────────────────────────────────────────── */}
       {categoryNames.length > 0 && (
         <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
