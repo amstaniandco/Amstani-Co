@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, ShoppingCart, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import { useWishlist } from "../../../../hooks/useWishlist";
+import { fetchAndUpdateCartCount } from "../../../../lib/cart-events";
 
 // ── Category image fallbacks (same as home page) ───────────────────────────
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -135,6 +136,7 @@ function QuickViewModal({
       });
       if (res.ok) {
         toast.success("Added to cart!");
+        fetchAndUpdateCartCount();
         onClose();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -676,9 +678,11 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
                           }`}
                           title={isWishlisted(product.productId, storeId ?? "") ? "Remove from wishlist" : "Add to wishlist"}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill={isWishlisted(product.productId, storeId ?? "") ? "currentColor" : "none"}>
-                            <path d="M12.1 21.55l-.1.1-.11-.1C7.14 17.24 4 14.39 4 10.5 4 7.42 6.42 5 9.5 5c1.74 0 3.41.81 4.5 2.09C15.09 5.81 16.76 5 18.5 5 21.58 5 24 7.42 24 10.5c0 3.89-3.14 6.74-7.9 11.05z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                          <Heart
+                            className="w-4 h-4"
+                            fill={isWishlisted(product.productId, storeId ?? "") ? "currentColor" : "none"}
+                            strokeWidth={1.8}
+                          />
                         </button>
                         <button
                           type="button"
@@ -687,10 +691,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
                           className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition ${outOfStock ? "bg-slate-300 cursor-not-allowed dark:bg-slate-700" : "bg-[#68B8C1] hover:bg-[#4f9ea7]"}`}
                           title={outOfStock ? "Out of stock" : "Add to cart"}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M8 6V4a2 2 0 114 0v2m4 0V4a2 2 0 114 0v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                          <ShoppingCart className="w-4 h-4" strokeWidth={1.8} />
                         </button>
                       </div>
                     </div>
