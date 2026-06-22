@@ -119,13 +119,19 @@ export async function POST(req: Request) {
   const client = await clientPromise;
   const db = client.db(DB_NAME);
   const now = new Date();
-  const [product, store] = await Promise.all([
+  const [product, store, storeProd] = await Promise.all([
     db.collection("products").findOne({ _id: new ObjectId(productId) }),
     db.collection("stores").findOne({ _id: new ObjectId(storeId) }),
+    db.collection("store_products").findOne({ storeId, productId }, { projection: { quantity: 1 } }),
   ]);
 
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
+
+  const availableStock: number = storeProd?.quantity ?? Infinity;
+  if (availableStock <= 0) {
+    return NextResponse.json({ error: "This product is out of stock." }, { status: 400 });
+  }
 
   const normalizedSelectedVariants = normalizeSelectedVariants(selectedVariants);
   const matchedVariant = findMatchingVariant(product as ProductDoc, normalizedSelectedVariants);
@@ -178,14 +184,21 @@ export async function POST(req: Request) {
           selectedVariantsKey(i.selectedVariants) === itemKey
         );
     if (idx >= 0) {
+      const currentQty: number = cart.items[idx].quantity ?? 0;
+      const addQty = normalizedItem.quantity as number;
+      const newQty = Math.min(currentQty + addQty, availableStock);
+      if (newQty <= currentQty) {
+        return NextResponse.json({ error: `Only ${availableStock} unit(s) available. You already have ${currentQty} in your cart.` }, { status: 400 });
+      }
       await db.collection("carts").updateOne(
         { userId: user.id },
-        { $inc: { [`items.${idx}.quantity`]: normalizedItem.quantity as number }, $set: { updatedAt: now } }
+        { $set: { [`items.${idx}.quantity`]: newQty, updatedAt: now } }
       );
     } else {
+      const addQty = Math.min(normalizedItem.quantity as number, availableStock);
       await db.collection("carts").updateOne(
         { userId: user.id },
-        { $push: { items: normalizedItem as never }, $set: { updatedAt: now } }
+        { $push: { items: { ...normalizedItem, quantity: addQty } as never }, $set: { updatedAt: now } }
       );
     }
   }
@@ -223,10 +236,21 @@ export async function PATCH(req: Request) {
     const newItems = cart.items.filter((_: unknown, i: number) => i !== idx);
     await db.collection("carts").updateOne({ userId: user.id }, { $set: { items: newItems, updatedAt: new Date() } });
   } else {
+    // Cap against available stock
+    const item = cart.items[idx];
+    const sp = await db.collection("store_products").findOne(
+      { storeId: item.storeId, productId: item.productId },
+      { projection: { quantity: 1 } }
+    );
+    const available: number = sp?.quantity ?? Infinity;
+    const capped = Math.min(quantity, available);
     await db.collection("carts").updateOne(
       { userId: user.id },
-      { $set: { [`items.${idx}.quantity`]: quantity, updatedAt: new Date() } }
+      { $set: { [`items.${idx}.quantity`]: capped, updatedAt: new Date() } }
     );
+    if (capped < quantity) {
+      return NextResponse.json({ ok: true, capped: true, max: available });
+    }
   }
 
   return NextResponse.json({ ok: true });
