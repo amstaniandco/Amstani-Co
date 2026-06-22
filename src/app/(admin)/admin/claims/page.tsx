@@ -39,6 +39,7 @@ type Claim = {
   description: string;
   items: ClaimItem[];
   mediaUrls?: string[];
+  resolveProofUrls?: string[];
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
   messages: ClaimMessage[];
   adminIntervened?: boolean;
@@ -484,6 +485,26 @@ function AdminClaimsPageContent() {
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  {selectedClaim.resolveProofUrls && selectedClaim.resolveProofUrls.length > 0 && (
+                    <div className="mt-3 mb-1 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-2">Owner&apos;s Resolution Proof</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedClaim.resolveProofUrls.map((url, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setLightboxUrl(url)}
+                            className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-emerald-200 hover:opacity-80 transition-opacity"
+                          >
+                            <img src={url} alt={`Resolve proof ${i + 1}`} className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                      {selectedClaim.resolveRequestPending && !selectedClaim.resolveApprovedByAdmin && (
+                        <p className="mt-2 text-[11px] text-emerald-700 font-medium">Owner has uploaded proof and is requesting your approval to close this claim.</p>
+                      )}
                     </div>
                   )}
                   {timelineEvents.length === 0 ? (

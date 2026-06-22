@@ -9,6 +9,7 @@ import {
   ownerStatusOptions,
   type OrderRow,
   type OrderStatus,
+  type StatusTone,
   statusStyles,
 } from "./data";
 
@@ -168,6 +169,22 @@ function OrderDetail({
   shippingEdit: ShippingEdit | null; setShippingEdit: (v: ShippingEdit | null) => void;
   shippingSaving: boolean; saveShipping: () => void; setLightboxSrc: (s: string) => void;
 }) {
+  const [localStatus, setLocalStatus] = useState<OrderStatus>(order.status);
+  const [localTone, setLocalTone] = useState<StatusTone>(order.statusTone);
+
+  // Sync local status when a different order is selected OR when parent reverts/updates status
+  useEffect(() => {
+    setLocalStatus(order.status);
+    setLocalTone(order.statusTone);
+  }, [order.id, order.status, order.statusTone]);
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const next = e.target.value as OrderStatus;
+    setLocalStatus(next);
+    setLocalTone(getStatusTone(next));
+    onStatusChange(order.id, next);
+  };
+
   const subtotal = order.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const grandTotal = subtotal + order.shippingFee + order.taxAmount - order.discountAmount;
 
@@ -188,8 +205,8 @@ function OrderDetail({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-bold text-slate-900">{order.id}</h3>
-                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusStyles[order.statusTone]}`}>
-                  {order.status}
+                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusStyles[localTone]}`}>
+                  {localStatus}
                 </span>
                 <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                   order.paymentStatus === "Paid" ? "bg-emerald-100 text-emerald-700" :
@@ -203,7 +220,7 @@ function OrderDetail({
 
           {/* Status change */}
           <div className="shrink-0">
-            <select value={order.status} onChange={(e) => onStatusChange(order.id, e.target.value as OrderStatus)}
+            <select value={localStatus} onChange={handleSelectChange}
               className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 outline-none hover:bg-slate-100 transition cursor-pointer">
               {ownerStatusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>

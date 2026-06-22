@@ -33,6 +33,7 @@ type Claim = {
   description: string;
   items: ClaimItem[];
   mediaUrls?: string[];
+  resolveProofUrls?: string[];
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
   messages: ClaimMessage[];
   resolveRequestPending?: boolean;
@@ -534,6 +535,28 @@ export default function OwnerClaimsPage() {
                       className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 hover:opacity-80 transition-opacity"
                     >
                       <img src={url} alt={`Evidence ${i + 1}`} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Resolve Proof (uploaded by owner) */}
+            {activeClaim.resolveProofUrls && activeClaim.resolveProofUrls.length > 0 && (
+              <div className="px-5 py-3 border-b border-slate-100 bg-emerald-50">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 mb-1">Your Resolution Proof</p>
+                {activeClaim.resolveRequestPending && !activeClaim.resolveApprovedByAdmin && (
+                  <p className="text-[11px] text-emerald-700 mb-2">Submitted — awaiting admin approval.</p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {activeClaim.resolveProofUrls.map((url, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setLightboxUrl(url)}
+                      className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-emerald-200 hover:opacity-80 transition-opacity"
+                    >
+                      <img src={url} alt={`Proof ${i + 1}`} className="h-full w-full object-cover" />
                     </button>
                   ))}
                 </div>
