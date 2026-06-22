@@ -44,9 +44,12 @@ export async function POST(req: Request) {
   const client = await clientPromise;
   const db = client.db(DB_NAME);
 
-  // Verify the store product has custom orders enabled
-  const sp = await db.collection("store_products").findOne({ storeId, productId });
-  if (!sp?.isCustomOrderEnabled) {
+  // Verify the global catalog product has custom orders enabled
+  let catalogProduct = null;
+  try {
+    catalogProduct = await db.collection("products").findOne({ _id: new ObjectId(productId) });
+  } catch { /* invalid id */ }
+  if (!catalogProduct?.allowCustomOrders) {
     return NextResponse.json({ error: "Custom orders are not enabled for this product." }, { status: 403 });
   }
 
