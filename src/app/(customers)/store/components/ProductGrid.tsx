@@ -489,7 +489,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
     <>
       {/* ── Catalog banner ───────────────────────────────────────────────── */}
       <div className="mt-5 rounded-2xl bg-white shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 flex items-center justify-center py-4">
-        <p className="text-base font-black tracking-[0.18em] text-slate-900 dark:text-slate-100 uppercase">
+        <p className="text-xl font-black tracking-[0.18em] text-slate-900 dark:text-slate-100 uppercase" style={{ WebkitTextStroke: "0.5px currentColor" }}>
           Amstani &amp; Co&apos;s Catalog
         </p>
       </div>
