@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchAndUpdateCartCount } from "../../../lib/cart-events";
+
+function dispatchWishlistUpdate(count: number) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("wishlist-updated", { detail: { count } }));
+  }
+}
 
 type WishlistItem = {
   productId: string;
@@ -30,7 +37,11 @@ export default function WishlistPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productId, storeId }),
     });
-    setItems((prev) => prev.filter((i) => !(i.productId === productId && i.storeId === storeId)));
+    setItems((prev) => {
+      const next = prev.filter((i) => !(i.productId === productId && i.storeId === storeId));
+      dispatchWishlistUpdate(next.length);
+      return next;
+    });
   }
 
   async function clearWishlist() {
@@ -40,6 +51,7 @@ export default function WishlistPage() {
       body: JSON.stringify({ clearAll: true }),
     });
     setItems([]);
+    dispatchWishlistUpdate(0);
   }
 
   async function moveToCart(item: WishlistItem) {
@@ -58,6 +70,7 @@ export default function WishlistPage() {
       }),
     });
     if (res.ok) {
+      fetchAndUpdateCartCount();
       removeItem(item.productId, item.storeId);
     }
   }
