@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Heart } from "lucide-react";
 import { useWishlist } from "../../../../hooks/useWishlist";
 
 interface NewArrivalProduct {
@@ -71,9 +72,11 @@ export default function NewArrivalsSection({ products }: { products: NewArrivalP
                 }`}
                 title={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
               >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"}>
-                  <path d="M12.1 21.55l-.1.1-.11-.1C7.14 17.24 4 14.39 4 10.5 4 7.42 6.42 5 9.5 5c1.74 0 3.41.81 4.5 2.09C15.09 5.81 16.76 5 18.5 5 21.58 5 24 7.42 24 10.5c0 3.89-3.14 6.74-7.9 11.05z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <Heart
+                  className="w-3 h-3"
+                  fill={wishlisted ? "currentColor" : "none"}
+                  strokeWidth={1.8}
+                />
               </button>
 
               <Link href={`/product?productId=${p.productId}&storeId=${p.storeId}`}>
