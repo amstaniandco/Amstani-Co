@@ -34,6 +34,7 @@ type ProductDetail = {
   category?: string;
   categories?: Array<{ category: { name: string; slug?: string }; isPrimary?: boolean }>;
   isCustomOrderEnabled?: boolean;
+  stock?: number;
 };
 
 function StarRating({ rating, interactive = false, onRate }: { rating: number; interactive?: boolean; onRate?: (s: number) => void }) {
@@ -436,9 +437,15 @@ export default function ProductPageClient() {
             {cartMsg && <p className="text-sm text-emerald-600 mb-2">{cartMsg}</p>}
             {wishlistMsg && <p className="text-sm text-teal-600 mb-2">{wishlistMsg}</p>}
 
-            <button onClick={handleAddToCart} className="w-full py-3 rounded-xl font-bold text-white text-sm bg-[#68B8C1] active:scale-95 hover:bg-[#4f9ea7]">
-              Add to cart
-            </button>
+            {storeId && (product.stock ?? 1) <= 0 ? (
+              <div className="w-full py-3 rounded-xl font-bold text-sm text-center bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400 cursor-not-allowed">
+                Out of Stock
+              </div>
+            ) : (
+              <button onClick={handleAddToCart} className="w-full py-3 rounded-xl font-bold text-white text-sm bg-[#68B8C1] active:scale-95 hover:bg-[#4f9ea7]">
+                Add to cart
+              </button>
+            )}
             <button onClick={handleWishlist} className={`mt-2 w-full py-3 rounded-xl font-bold text-sm border-2 transition-all ${wishlisted ? "border-red-400 bg-red-50 text-red-500" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}>
               {wishlisted ? "♥ Wishlisted" : "♡ Wishlist"}
             </button>
@@ -577,9 +584,15 @@ export default function ProductPageClient() {
               {wishlistMsg && <p className="text-sm text-teal-600 mb-2">{wishlistMsg}</p>}
 
               <div className="space-y-3">
-                <button onClick={handleAddToCart} className="w-full py-3.5 rounded-2xl font-bold text-white transition-all text-base bg-[#68B8C1] hover:bg-[#4f9ea7] active:scale-[0.98]">
-                  Add to cart
-                </button>
+                {storeId && (product.stock ?? 1) <= 0 ? (
+                  <div className="w-full py-3.5 rounded-2xl font-bold text-base text-center bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400 cursor-not-allowed">
+                    Out of Stock
+                  </div>
+                ) : (
+                  <button onClick={handleAddToCart} className="w-full py-3.5 rounded-2xl font-bold text-white transition-all text-base bg-[#68B8C1] hover:bg-[#4f9ea7] active:scale-[0.98]">
+                    Add to cart
+                  </button>
+                )}
                 <button onClick={handleWishlist} className={`w-full py-3.5 rounded-2xl font-bold border-2 transition-all text-base ${wishlisted ? "border-red-400 bg-red-50 text-red-500 dark:bg-red-950/30 dark:border-red-500 dark:text-red-400" : "border-gray-300 bg-white text-gray-800 hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"}`}>
                   {wishlisted ? "♥ Wishlisted" : "♡ Add to Wishlist"}
                 </button>
