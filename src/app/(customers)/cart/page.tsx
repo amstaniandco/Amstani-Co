@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import CartSummary from "./components/CartSummary";
 import { useToast } from "../../../components/global/ToastProvider";
+import { fetchAndUpdateCartCount } from "../../../lib/cart-events";
 
 type CartItem = {
   productId: string;
@@ -114,6 +115,7 @@ export default function CartPage() {
         }),
       });
       fetchCart();
+      fetchAndUpdateCartCount();
       setEditIdx(null);
     } catch {
       setEditMsg("Something went wrong. Please try again.");
@@ -138,6 +140,7 @@ export default function CartPage() {
         body: JSON.stringify({ itemIndex: idx, quantity }),
       });
       setItems((prev) => prev.map((i, j) => j === idx ? { ...i, quantity } : i));
+      fetchAndUpdateCartCount();
     } else {
       const key = variantKey(item.selectedVariants);
       const res = await fetch("/api/cart", {
@@ -151,6 +154,7 @@ export default function CartPage() {
       setItems((prev) =>
         prev.map((i) => i.productId === item.productId && i.storeId === item.storeId && variantKey(i.selectedVariants) === key ? { ...i, quantity: finalQty } : i)
       );
+      fetchAndUpdateCartCount();
     }
   }
 
@@ -163,6 +167,7 @@ export default function CartPage() {
         body: JSON.stringify({ itemIndex: idx }),
       });
       setItems((prev) => prev.filter((_, i) => i !== idx));
+      fetchAndUpdateCartCount();
     } else {
       const key = variantKey(item.selectedVariants);
       await fetch("/api/cart", {
@@ -171,6 +176,7 @@ export default function CartPage() {
         body: JSON.stringify({ productId: item.productId, storeId: item.storeId, selectedVariants: item.selectedVariants }),
       });
       setItems((prev) => prev.filter((i) => !(i.productId === item.productId && i.storeId === item.storeId && variantKey(i.selectedVariants) === key)));
+      fetchAndUpdateCartCount();
     }
   }
 
@@ -181,6 +187,7 @@ export default function CartPage() {
       body: JSON.stringify({ clearAll: true }),
     });
     setItems([]);
+    fetchAndUpdateCartCount();
   }
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
