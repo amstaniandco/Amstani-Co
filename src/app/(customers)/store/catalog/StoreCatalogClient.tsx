@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
-import { useToast } from "../../../../components/global/ToastProvider";
-import { useWishlist } from "../../../../hooks/useWishlist";
 
 type Variant = { size?: string; color?: string; stock?: number };
 
@@ -26,15 +24,11 @@ type CatalogProduct = {
   allowCustomOrders?: boolean;
 };
 
-function isHex(s: string) { return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(s.trim()); }
-
-function QuickViewModal({ product, storeId, storeName, onClose }: {
+function QuickViewModal({ product, storeId, onClose }: {
   product: CatalogProduct;
   storeId: string;
-  storeName: string;
   onClose: () => void;
 }) {
-  const toast = useToast();
   const imgs = [
     ...(product.images?.map((i) => i.imageUrl) ?? []),
     ...(product.imageUrls ?? []),
@@ -42,11 +36,6 @@ function QuickViewModal({ product, storeId, storeName, onClose }: {
   ].filter((v, i, a) => v && a.indexOf(v) === i);
 
   const [imgIdx, setImgIdx] = useState(0);
-  const sizes = [...new Set((product.variants ?? []).map((v) => v.size).filter(Boolean))] as string[];
-  const colors = [...new Set((product.variants ?? []).map((v) => v.color).filter(Boolean))] as string[];
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -54,35 +43,6 @@ function QuickViewModal({ product, storeId, storeName, onClose }: {
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [onClose]);
-
-  const canAdd = (!sizes.length || selectedSize) && (!colors.length || selectedColor);
-
-  async function addToCart() {
-    if (!canAdd) return;
-    setAdding(true);
-    try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.productId,
-          storeId,
-          storeName,
-          name: product.name,
-          sku: product.sku ?? "",
-          price: product.price,
-          mainImage: imgs[0] ?? null,
-          quantity: 1,
-          selectedVariants: {
-            ...(selectedSize ? { size: selectedSize } : {}),
-            ...(selectedColor ? { color: selectedColor } : {}),
-          },
-        }),
-      });
-      if (res.ok) { toast.success("Added to cart!"); onClose(); }
-      else toast.error("Sign in to add items to cart.");
-    } finally { setAdding(false); }
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
@@ -124,50 +84,32 @@ function QuickViewModal({ product, storeId, storeName, onClose }: {
               <div>
                 <h2 className="text-base font-bold text-slate-900">{product.name}</h2>
                 {product.sku && <p className="text-xs font-mono text-slate-400 mt-0.5">{product.sku}</p>}
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {product.category && <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">{product.category}</span>}
+                  {product.brand?.name && <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">{product.brand.name}</span>}
+                  {product.allowCustomOrders && <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700">✎ Custom Orders</span>}
+                </div>
               </div>
               <p className="text-xl font-extrabold text-slate-900 flex-shrink-0">${product.price.toFixed(2)}</p>
             </div>
-            {product.description && <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">{product.description}</p>}
-            {sizes.length > 0 && (
+            {product.description && <p className="text-sm text-slate-600 leading-relaxed">{product.description}</p>}
+            {product.variants && product.variants.length > 0 && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Size</p>
-                <div className="flex flex-wrap gap-2">
-                  {sizes.map((sz) => (
-                    <button key={sz} onClick={() => setSelectedSize(sz)}
-                      className={`px-3 py-1.5 rounded-lg border text-sm font-semibold transition ${selectedSize === sz ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 text-slate-700 hover:border-[#68B8C1]"}`}>
-                      {sz}
-                    </button>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Variants</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {product.variants.map((v, i) => (
+                    <span key={i} className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600">
+                      {[v.size, v.color].filter(Boolean).join(" / ") || "—"}
+                      {v.stock != null && <span className="ml-1 text-slate-400">({v.stock})</span>}
+                    </span>
                   ))}
                 </div>
               </div>
             )}
-            {colors.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Color</p>
-                <div className="flex flex-wrap gap-2">
-                  {colors.map((col) => isHex(col) ? (
-                    <button key={col} onClick={() => setSelectedColor(col)} title={col}
-                      style={{ backgroundColor: col }}
-                      className={`h-8 w-8 rounded-full border-2 transition ${selectedColor === col ? "border-[#68B8C1] scale-110 ring-2 ring-[#68B8C1]/30" : "border-slate-200"}`} />
-                  ) : (
-                    <button key={col} onClick={() => setSelectedColor(col)}
-                      className={`px-3 py-1.5 rounded-lg border text-sm font-semibold transition ${selectedColor === col ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 text-slate-700 hover:border-[#68B8C1]"}`}>
-                      {col}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="flex gap-3 pt-1">
-              <Link href={`/product?productId=${product.productId}&storeId=${storeId}`}
-                className="flex-1 text-center py-3 rounded-2xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
-                Full Details
-              </Link>
-              <button onClick={addToCart} disabled={!canAdd || adding}
-                className="flex-1 py-3 rounded-2xl bg-[#68B8C1] hover:bg-[#4f9ea7] disabled:opacity-50 text-white text-sm font-semibold transition">
-                {adding ? "Adding…" : "Add to Cart"}
-              </button>
-            </div>
+            <Link href={`/product?productId=${product.productId}&storeId=${storeId}`}
+              className="block w-full text-center py-3 rounded-2xl bg-[#68B8C1] hover:bg-[#4f9ea7] text-white text-sm font-semibold transition">
+              View Full Details
+            </Link>
           </div>
         </div>
       </div>
@@ -185,7 +127,6 @@ export default function StoreCatalogClient() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [quickView, setQuickView] = useState<CatalogProduct | null>(null);
-  const { isWishlisted, toggle: toggleWishlist } = useWishlist();
 
   useEffect(() => {
     if (!storeId) { setLoading(false); return; }
@@ -261,48 +202,26 @@ export default function StoreCatalogClient() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {filtered.map((product) => {
               const img = product.imageUrls?.[0] ?? product.mainImage;
-              const wishlisted = isWishlisted(product.productId, storeId);
               return (
-                <div key={product.productId}
-                  className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
-                  <Link href={`/product?productId=${product.productId}&storeId=${storeId}`}
-                    className="relative block h-48 bg-white overflow-hidden">
+                <button key={product.productId} type="button" onClick={() => setQuickView(product)}
+                  className="group text-left overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
+                  <div className="relative h-48 bg-white overflow-hidden">
                     {img ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={img} alt={product.name} className="h-full w-full object-cover hover:scale-105 transition-transform duration-300" />
+                      <img src={img} alt={product.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="h-full bg-slate-200" />
                     )}
                     {product.allowCustomOrders && (
                       <span className="absolute top-2 left-2 rounded-full bg-purple-600/90 px-2 py-0.5 text-[10px] font-semibold text-white">✎ Custom</span>
                     )}
-                  </Link>
-                  <div className="p-3 space-y-2">
-                    <Link href={`/product?productId=${product.productId}&storeId=${storeId}`}
-                      className="text-sm font-semibold text-[#68B8C1] hover:text-[#4f9ea7] line-clamp-1 block">
-                      {product.name}
-                    </Link>
-                    {product.category && <p className="text-[11px] text-slate-400">{product.category}</p>}
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-base font-extrabold text-slate-900">${product.price.toFixed(2)}</p>
-                      <div className="flex gap-1.5">
-                        <button type="button" onClick={() => toggleWishlist({ productId: product.productId, storeId, storeName, name: product.name, price: product.price, mainImage: img ?? null })}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition ${wishlisted ? "border-red-300 bg-red-50 text-red-500" : "border-slate-200 text-slate-400 hover:text-red-400"}`}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"}>
-                            <path d="M12.1 21.55l-.1.1-.11-.1C7.14 17.24 4 14.39 4 10.5 4 7.42 6.42 5 9.5 5c1.74 0 3.41.81 4.5 2.09C15.09 5.81 16.76 5 18.5 5 21.58 5 24 7.42 24 10.5c0 3.89-3.14 6.74-7.9 11.05z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                        <button type="button" onClick={() => setQuickView(product)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#68B8C1] text-white hover:bg-[#4f9ea7] transition">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <path d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M8 6V4a2 2 0 114 0v2m4 0V4a2 2 0 114 0v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
                   </div>
-                </div>
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{product.name}</p>
+                    {product.category && <p className="text-[11px] text-slate-400 truncate">{product.category}</p>}
+                    <p className="mt-2 text-base font-extrabold text-slate-900">${product.price.toFixed(2)}</p>
+                  </div>
+                </button>
               );
             })}
           </div>
@@ -310,7 +229,7 @@ export default function StoreCatalogClient() {
       </div>
 
       {quickView && (
-        <QuickViewModal product={quickView} storeId={storeId} storeName={storeName} onClose={() => setQuickView(null)} />
+        <QuickViewModal product={quickView} storeId={storeId} onClose={() => setQuickView(null)} />
       )}
     </div>
   );
