@@ -592,6 +592,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.map((product) => {
               const imgs = normalizeImages(product);
+              const outOfStock = (product.quantity ?? 0) <= 0;
 
               return (
                 <div
@@ -604,15 +605,19 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
                     className="relative block h-[300px] w-full overflow-hidden bg-white dark:bg-slate-900"
                   >
                     {imgs[0] ? (
-                      <img src={imgs[0]} alt={product.name} className="h-full w-full object-cover" />
+                      <img src={imgs[0]} alt={product.name} className={`h-full w-full object-cover ${outOfStock ? "opacity-50 grayscale" : ""}`} />
                     ) : (
                       <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />
                     )}
-                    {product.isOnSale && product.discountPercent && (
+                    {outOfStock ? (
+                      <div className="absolute top-2 left-2 rounded-full bg-slate-700 px-2.5 py-0.5 text-[10px] font-bold text-white">
+                        Out of Stock
+                      </div>
+                    ) : product.isOnSale && product.discountPercent ? (
                       <div className="absolute top-2 left-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
                         {product.discountPercent}% OFF
                       </div>
-                    )}
+                    ) : null}
                   </Link>
 
                   <div className="space-y-3 p-4">
@@ -630,9 +635,15 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
                           </p>
                         )}
                       </div>
-                      <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300">
-                        {product.quantity} in stock
-                      </span>
+                      {outOfStock ? (
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-500 dark:bg-red-500/10 dark:text-red-400">
+                          Out of stock
+                        </span>
+                      ) : (
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300">
+                          {product.quantity} in stock
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between gap-4">
@@ -670,9 +681,10 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
                         </button>
                         <button
                           type="button"
-                          onClick={() => setQuickView(product)}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#68B8C1] text-white transition hover:bg-[#4f9ea7]"
-                          title="Add to cart"
+                          onClick={() => !outOfStock && setQuickView(product)}
+                          disabled={outOfStock}
+                          className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition ${outOfStock ? "bg-slate-300 cursor-not-allowed dark:bg-slate-700" : "bg-[#68B8C1] hover:bg-[#4f9ea7]"}`}
+                          title={outOfStock ? "Out of stock" : "Add to cart"}
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path d="M6 6h.01M6 6l1.5 9.3a1 1 0 001 .92h9a1 1 0 001-.92L18 6H6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
