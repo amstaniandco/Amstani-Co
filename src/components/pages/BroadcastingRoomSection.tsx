@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Lock } from "lucide-react";
 
 type BroadcastCard = {
@@ -164,13 +165,13 @@ export default function BroadcastingRoomSection() {
               })}
             </div>
 
-            <button
-              type="button"
+            <Link
+              href="/home"
               className="absolute left-1/2 top-1/2 inline-flex max-w-[90%] -translate-x-1/2 -translate-y-1/2 items-center gap-2 whitespace-nowrap rounded-2xl bg-[#56aebb] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(0,0,0,0.22)] transition hover:bg-[#489fad] sm:px-6 sm:py-2.5 sm:text-xl"
             >
               <Lock className="h-4 w-4 sm:h-5 sm:w-5" />
               Explore Live Stores
-            </button>
+            </Link>
           </div>
         </div>
       </div>
