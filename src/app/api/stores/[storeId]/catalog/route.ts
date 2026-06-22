@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ storeId
     if (!store) return NextResponse.json({ products: [] });
 
     const ownerId = store.ownerId?.toString() ?? "";
-    const globalProducts = await db.collection("products").find({}).toArray();
+    const globalProducts = await db.collection("products").find({ brandSuspended: { $ne: true } }).toArray();
 
     if (globalProducts.length > 0) {
       const docs = globalProducts.map((p) => ({

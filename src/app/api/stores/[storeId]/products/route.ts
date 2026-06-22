@@ -21,11 +21,11 @@ export async function GET(_req: Request, { params }: Ctx) {
     .map((id) => new ObjectId(id));
 
   const products = productIds.length
-    ? await db.collection("products").find({ _id: { $in: productIds } }).toArray()
+    ? await db.collection("products").find({ _id: { $in: productIds }, brandSuspended: { $ne: true } }).toArray()
     : [];
   const productMap = new Map(products.map((p) => [p._id.toString(), p]));
 
-  const mergedProducts = storeProducts.map((sp) => {
+  const mergedProducts = storeProducts.filter((sp) => productMap.has(sp.productId)).map((sp) => {
     const global = productMap.get(sp.productId);
 
     const sellingPrice: number = sp.sellingPrice ?? sp.price ?? global?.price ?? 0;
@@ -44,6 +44,13 @@ export async function GET(_req: Request, { params }: Ctx) {
       categoryTags.push(String(global.category));
     }
 
+    // Merge store owner's variant price overrides into the global variant list
+    const storeVariantPrices = (sp.variantPrices as Record<string, number>) ?? {};
+    const variants = ((global?.variants ?? []) as Array<Record<string, unknown>>).map((v) => {
+      const storePrice = storeVariantPrices[v.id as string];
+      return storePrice != null ? { ...v, priceOverride: storePrice } : v;
+    });
+
     return {
       ...(global ?? {}),
       ...sp,
@@ -57,6 +64,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       discountPercent,
       isOnSale: sp.isOnSale ?? false,
       categoryTags,
+      variants,
     };
   });
 
