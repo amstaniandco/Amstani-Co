@@ -40,7 +40,7 @@ export async function GET() {
   const catalogDocs = productIds.length
     ? await db.collection("products")
         .find({ _id: { $in: productIds } })
-        .project({ _id: 1, brand: 1, category: 1, description: 1 })
+        .project({ _id: 1, brand: 1, category: 1, description: 1, allowCustomOrders: 1 })
         .toArray()
     : [];
 
@@ -55,6 +55,7 @@ export async function GET() {
       brand: (cat?.brand as { name?: string } | undefined)?.name ?? null,
       category: (cat?.category as string | undefined) ?? null,
       description: (cat?.description as string | undefined) ?? null,
+      allowCustomOrders: (cat?.allowCustomOrders as boolean | undefined) ?? false,
     };
   });
 
