@@ -8,6 +8,7 @@ import {
   Boxes,
   ChartLine,
   CreditCard,
+  LayoutGrid,
   LogOut,
   Menu,
   MessageCircle,
@@ -31,6 +32,7 @@ const SIDEBAR_TUTORIAL_IDS: Record<string, string> = {
   "/orders":              "sidebar-orders",
   "/performance":         "sidebar-performance",
   "/products":            "sidebar-products",
+  "/products/catalog":    "sidebar-global-catalog",
   "/timings":             "sidebar-timings",
   "/communications":      "sidebar-communications",
   "/owner/notifications": "sidebar-notifications",
@@ -46,6 +48,7 @@ const sidebarItems: SidebarItem[] = [
   { label: "Orders", href: "/orders", icon: Package },
   { label: "Performance", href: "/performance", icon: ChartLine },
   { label: "Products", href: "/products", icon: Boxes },
+  { label: "Global Catalog", href: "/products/catalog", icon: LayoutGrid },
   { label: "Timings", href: "/timings", icon: Timer },
   { label: "Communications", href: "/communications", icon: Bell },
   { label: "Notifications", href: "/owner/notifications", icon: Bell },
@@ -57,9 +60,10 @@ const sidebarItems: SidebarItem[] = [
 type SidebarCounts = { orders: number; claims: number; notifications: number; listing_requests: number };
 
 function getActiveLabel(pathname: string) {
-  const match = sidebarItems.find(
-    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
-  );
+  // Longest-prefix match so /products/catalog doesn't match /products
+  const match = sidebarItems
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0];
   return match?.label ?? "Profile";
 }
 
