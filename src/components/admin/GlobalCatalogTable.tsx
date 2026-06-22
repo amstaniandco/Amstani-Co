@@ -15,6 +15,7 @@ export type CatalogProductRow = {
   stock?: number;
   isPublished?: boolean;
   imageUrls?: string[];
+  allowCustomOrders?: boolean;
 };
 
 type GlobalCatalogTableProps = {
@@ -87,6 +88,20 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
     }
   };
 
+  const toggleCustomOrder = async (productId: string, current: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/global-catalog/products/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowCustomOrders: !current }),
+      });
+      if (!res.ok) { const d = await res.json(); setError(d.error || "Failed to update"); return; }
+      setProducts((prev) => prev.map((p) => p._id === productId ? { ...p, allowCustomOrders: !current } : p));
+    } catch {
+      setError("Failed to update custom order setting");
+    }
+  };
+
   return (
     <div className="rounded-xl bg-white shadow-sm md:rounded-[26px]">
       {/* Search bar */}
@@ -119,18 +134,19 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">BASE PRICE</th>
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">STATUS</th>
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4 md:px-5">STOCK</th>
+              <th className="px-3 py-3 text-center font-semibold text-slate-600 sm:px-4 md:px-5">CUSTOM ORDER</th>
               <th className="px-3 py-3 text-center font-semibold text-slate-600 sm:px-4 md:px-5">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td className="px-5 py-8 text-center text-slate-400" colSpan={7}>Loading…</td>
+                <td className="px-5 py-8 text-center text-slate-400" colSpan={8}>Loading…</td>
               </tr>
             )}
             {!loading && products.length === 0 && (
               <tr>
-                <td className="px-5 py-8 text-center text-slate-400" colSpan={7}>No products found.</td>
+                <td className="px-5 py-8 text-center text-slate-400" colSpan={8}>No products found.</td>
               </tr>
             )}
             {!loading && products.map((product) => {
@@ -158,6 +174,20 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
                     </span>
                   </td>
                   <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">{stock}</td>
+                  <td className="px-3 py-3 text-center sm:px-4 md:px-5">
+                    <button
+                      type="button"
+                      onClick={() => toggleCustomOrder(product._id, product.allowCustomOrders ?? false)}
+                      title={product.allowCustomOrders ? "Disable custom orders" : "Enable custom orders"}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                        product.allowCustomOrders
+                          ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      }`}
+                    >
+                      ✎ {product.allowCustomOrders ? "ON" : "OFF"}
+                    </button>
+                  </td>
                   <td className="px-3 py-3 sm:px-4 md:px-5">
                     <div className="flex justify-center gap-2">
                       <button type="button" onClick={() => router.push(`/admin/global-catalog/products/${product._id}`)}
