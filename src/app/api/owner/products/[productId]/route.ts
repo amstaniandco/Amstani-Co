@@ -77,11 +77,6 @@ export async function PATCH(
     updates.isNewArrival = body.isNewArrival;
   }
 
-  // Toggle custom order
-  if (typeof body.isCustomOrderEnabled === "boolean") {
-    updates.isCustomOrderEnabled = body.isCustomOrderEnabled;
-  }
-
   await db.collection("store_products").updateOne(
     { storeId, productId },
     { $set: updates }
