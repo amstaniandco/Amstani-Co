@@ -45,6 +45,33 @@ export async function POST(req: Request) {
         { _id: { $in: validIds } },
         { $set: { paymentStatus: "Paid", paymentIntentId: pi.id, updatedAt: new Date() } }
       );
+
+      // Decrement stock for each ordered item
+      const orders = await db.collection("orders").find({ _id: { $in: validIds } }).toArray();
+      type BulkOp = { updateOne: { filter: Record<string, unknown>; update: Record<string, unknown> } };
+      const stockOps: BulkOp[] = [];
+      for (const order of orders) {
+        for (const item of (order.items ?? [])) {
+          if (!item.productId || !order.storeId) continue;
+          const qty = Math.max(1, Number(item.quantity) || 1);
+          stockOps.push({
+            updateOne: {
+              filter: { storeId: order.storeId as string, productId: item.productId as string },
+              update: { $inc: { quantity: -qty } },
+            },
+          });
+        }
+      }
+      if (stockOps.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await db.collection("store_products").bulkWrite(stockOps as any, { ordered: false });
+        // Clamp negatives to 0
+        const affectedStoreIds = [...new Set(orders.map((o) => o.storeId as string))];
+        await db.collection("store_products").updateMany(
+          { storeId: { $in: affectedStoreIds }, quantity: { $lt: 0 } },
+          { $set: { quantity: 0 } }
+        );
+      }
     }
 
     // Transfer 100% to each store owner that has a connected Stripe account
