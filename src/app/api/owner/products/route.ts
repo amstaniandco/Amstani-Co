@@ -39,7 +39,7 @@ export async function GET() {
 
   const catalogDocs = productIds.length
     ? await db.collection("products")
-        .find({ _id: { $in: productIds } })
+        .find({ _id: { $in: productIds }, brandSuspended: { $ne: true } })
         .project({ _id: 1, brand: 1, category: 1, description: 1, allowCustomOrders: 1 })
         .toArray()
     : [];
@@ -48,16 +48,18 @@ export async function GET() {
     (catalogDocs as WithId<Document>[]).map((d) => [d._id.toString(), d])
   );
 
-  const enriched = products.map((p) => {
-    const cat = catalogMap.get(p.productId as string);
-    return {
-      ...p,
-      brand: (cat?.brand as { name?: string } | undefined)?.name ?? null,
-      category: (cat?.category as string | undefined) ?? null,
-      description: (cat?.description as string | undefined) ?? null,
-      allowCustomOrders: (cat?.allowCustomOrders as boolean | undefined) ?? false,
-    };
-  });
+  const enriched = products
+    .filter((p) => catalogMap.has(p.productId as string))
+    .map((p) => {
+      const cat = catalogMap.get(p.productId as string);
+      return {
+        ...p,
+        brand: (cat?.brand as { name?: string } | undefined)?.name ?? null,
+        category: (cat?.category as string | undefined) ?? null,
+        description: (cat?.description as string | undefined) ?? null,
+        allowCustomOrders: (cat?.allowCustomOrders as boolean | undefined) ?? false,
+      };
+    });
 
   return NextResponse.json({ products: enriched, storeName: store.name, markupPercent, discountCap });
 }
