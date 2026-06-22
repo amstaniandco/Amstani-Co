@@ -156,7 +156,7 @@ function ProductDetailModal({ product, onClose }: {
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Available Sizes</p>
                 <div className="flex flex-wrap gap-2">
                   {sizes.map((sz) => (
-                    <span key={sz} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700">
+                    <span key={sz} title={sz} className="inline-block max-w-[80px] truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700">
                       {sz}
                     </span>
                   ))}
