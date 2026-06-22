@@ -138,6 +138,19 @@ export async function POST(req: Request) {
     pricingConfig?.taxRates?.[stateCode]?.rate ?? 0;
 
   // Group by store
+  // Stock validation — check before any orders are created
+  for (const item of cartItems) {
+    const storeProd = storeProductByKey.get(`${item.storeId}:${item.productId}`);
+    const product = productById.get(item.productId);
+    const available = storeProd?.quantity ?? 0;
+    if (available <= 0) {
+      return NextResponse.json({ error: `"${product?.name ?? "A product"}" is out of stock.` }, { status: 400 });
+    }
+    if (available < (Number(item.quantity) || 1)) {
+      return NextResponse.json({ error: `Only ${available} unit(s) of "${product?.name ?? "a product"}" are available.` }, { status: 400 });
+    }
+  }
+
   const storeMap = new Map<string, { storeName: string; items: (CartItem & { effectivePrice: number; discountAmount: number })[] }>();
 
   for (const item of cartItems) {
@@ -234,6 +247,22 @@ export async function POST(req: Request) {
       updatedAt: now,
     });
     insertedIds.push(result.insertedId.toString());
+  }
+
+  // Decrement stock for each ordered item
+  const stockOps = cartItems.map((item) => ({
+    updateOne: {
+      filter: { storeId: item.storeId, productId: item.productId },
+      update: { $inc: { quantity: -(Math.max(1, Number(item.quantity) || 1)) } },
+    },
+  }));
+  if (stockOps.length > 0) {
+    await db.collection("store_products").bulkWrite(stockOps, { ordered: false });
+    // Clamp any negatives to 0
+    await db.collection("store_products").updateMany(
+      { storeId: { $in: [...new Set(cartItems.map((i) => i.storeId))] }, quantity: { $lt: 0 } },
+      { $set: { quantity: 0 } }
+    );
   }
 
   await db.collection("carts").updateOne({ userId: user.id }, { $set: { items: [], updatedAt: now } });
