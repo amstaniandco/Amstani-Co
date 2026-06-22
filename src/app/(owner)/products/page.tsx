@@ -55,6 +55,7 @@ type StoreProductDetail = {
   isNewArrival: boolean;
   listedAt: string | null;
   quantity: number;
+  variantPrices?: Record<string, number>;
 };
 
 function ProductDetailModal({
@@ -312,14 +313,20 @@ function PricingModal({
   ).current;
 
   const maxSellingPrice = originalPrice * (1 + markupPercent / 100);
-  const currentSelling = product.sellingPrice ?? originalPrice;
+  const currentSelling  = product.sellingPrice ?? originalPrice;
   const currentDiscount = product.discountPercent ?? 0;
-  const isOnSale = product.isOnSale ?? false;
+  const isOnSale        = product.isOnSale ?? false;
 
-  const [priceInput, setPriceInput] = useState(currentSelling.toFixed(2));
+  const [priceInput,    setPriceInput]    = useState(currentSelling.toFixed(2));
   const [discountInput, setDiscountInput] = useState(String(currentDiscount));
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [saving,        setSaving]        = useState(false);
+  const [error,         setError]         = useState("");
+
+  // Variant pricing state
+  type VariantRow = { id: string; size?: string; color?: string; isCustomSize?: boolean; catalogPrice: number; input: string; saving: boolean };
+  const [variantRows,    setVariantRows]    = useState<VariantRow[]>([]);
+  const [variantsLoaded, setVariantsLoaded] = useState(false);
+  const [variantError,   setVariantError]   = useState("");
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -327,6 +334,32 @@ function PricingModal({
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [onClose]);
+
+  // Load variants + existing store overrides
+  useEffect(() => {
+    fetch(`/api/owner/products/${product.productId}/detail`)
+      .then((r) => r.json())
+      .then((data) => {
+        const variants = (data.catalog?.variants ?? []) as Array<{
+          id?: string; size?: string; color?: string; isCustomSize?: boolean; priceOverride?: number | null;
+        }>;
+        const existingPrices: Record<string, number> = data.storeProduct?.variantPrices ?? {};
+        const rows: VariantRow[] = variants
+          .filter((v) => v.priceOverride != null)
+          .map((v) => ({
+            id:            v.id ?? "",
+            size:          v.size,
+            color:         v.color,
+            isCustomSize:  v.isCustomSize,
+            catalogPrice:  v.priceOverride!,
+            input:         (existingPrices[v.id ?? ""] ?? v.priceOverride!).toFixed(2),
+            saving:        false,
+          }));
+        setVariantRows(rows);
+        setVariantsLoaded(true);
+      })
+      .catch(() => setVariantsLoaded(true));
+  }, [product.productId]);
 
   async function patch(body: Record<string, unknown>) {
     setSaving(true); setError("");
@@ -369,6 +402,31 @@ function PricingModal({
     if (ok) onUpdated(product.productId, { isNewArrival: newVal });
   }
 
+  async function saveVariantPrice(variantId: string) {
+    const row = variantRows.find((r) => r.id === variantId);
+    if (!row) return;
+    const price = parseFloat(row.input);
+    if (isNaN(price) || price < 0) { setVariantError("Enter a valid price."); return; }
+    const max = row.catalogPrice * (1 + markupPercent / 100);
+    if (price > max) { setVariantError(`Max for this variant is PKR ${max.toFixed(2)}.`); return; }
+
+    setVariantError("");
+    setVariantRows((prev) => prev.map((r) => r.id === variantId ? { ...r, saving: true } : r));
+    try {
+      const res = await fetch(`/api/owner/products/${product.productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variantPrices: { [variantId]: price } }),
+      });
+      const data = await res.json();
+      if (!res.ok) setVariantError(data.error || "Failed to save variant price.");
+    } catch {
+      setVariantError("Failed to save variant price.");
+    } finally {
+      setVariantRows((prev) => prev.map((r) => r.id === variantId ? { ...r, saving: false } : r));
+    }
+  }
+
   const effectivePrice = parseFloat(priceInput || "0") * (1 - parseFloat(discountInput || "0") / 100);
 
   return (
@@ -376,94 +434,142 @@ function PricingModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+      <div className="flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: "90vh" }}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
           <div className="min-w-0">
-            <h3 className="font-bold text-slate-900 truncate">{product.name}</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Pricing & Tags</p>
+            <h3 className="truncate font-bold text-slate-900">{product.name}</h3>
+            <p className="mt-0.5 text-xs text-slate-400">Pricing & Tags</p>
           </div>
-          <button onClick={onClose} className="ml-3 flex-shrink-0 text-slate-400 hover:text-slate-700 transition">
+          <button onClick={onClose} className="ml-3 shrink-0 text-slate-400 transition hover:text-slate-700">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="px-5 py-5 space-y-5">
-          {/* Price row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Catalog Price</p>
-              <p className="text-base font-bold text-slate-600">${originalPrice.toFixed(2)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">max ${maxSellingPrice.toFixed(2)}</p>
-            </div>
-            <div className="rounded-xl bg-teal-50 border border-teal-100 px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-teal-500 mb-1">Customer Pays</p>
-              <p className="text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
-              {isOnSale && parseFloat(discountInput) > 0 && (
-                <p className="text-[10px] text-slate-400 line-through mt-0.5">${parseFloat(priceInput).toFixed(2)}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Selling price input */}
-          <div>
-            <label className="text-xs font-semibold text-slate-600 block mb-1.5">
-              Your Selling Price <span className="font-normal text-slate-400">(max ${maxSellingPrice.toFixed(2)})</span>
-            </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
-                <input
-                  type="number" min="0" max={maxSellingPrice} step="0.01"
-                  value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
-                />
+        <div className="overflow-y-auto px-5 py-5">
+          <div className="space-y-5">
+            {/* Price overview */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">Catalog Price</p>
+                <p className="text-base font-bold text-slate-600">PKR {originalPrice.toFixed(2)}</p>
+                <p className="mt-0.5 text-[10px] text-slate-400">max PKR {maxSellingPrice.toFixed(2)}</p>
               </div>
-              <button onClick={savePrice} disabled={saving}
-                className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold disabled:opacity-60 transition">
-                {saving ? "…" : "Save"}
-              </button>
-            </div>
-          </div>
-
-          {/* Discount */}
-          <div>
-            <label className="text-xs font-semibold text-slate-600 block mb-1.5">
-              Sale Discount <span className="font-normal text-slate-400">(max {discountCap}%)</span>
-            </label>
-            <div className="flex gap-2">
-              <button onClick={toggleSale} disabled={saving}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border transition disabled:opacity-60 flex-shrink-0 ${isOnSale ? "bg-amber-500 border-amber-500 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-                <Tag className="h-3.5 w-3.5" />{isOnSale ? "ON" : "OFF"}
-              </button>
-              <div className="relative flex-1">
-                <input
-                  type="number" min="0" max={discountCap} step="1"
-                  value={discountInput} onChange={(e) => setDiscountInput(e.target.value)}
-                  disabled={!isOnSale}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-slate-50 disabled:text-slate-400"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
+              <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-teal-500">Customer Pays</p>
+                <p className="text-base font-extrabold text-teal-600">PKR {effectivePrice.toFixed(2)}</p>
+                {isOnSale && parseFloat(discountInput) > 0 && (
+                  <p className="mt-0.5 text-[10px] text-slate-400 line-through">PKR {parseFloat(priceInput).toFixed(2)}</p>
+                )}
               </div>
-              <button onClick={saveDiscount} disabled={saving || !isOnSale}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold disabled:opacity-40 transition">
-                {saving ? "…" : "Save"}
-              </button>
             </div>
-          </div>
 
-          {/* Tags */}
-          <div className="border-t border-slate-100 pt-4">
-            <p className="text-xs font-semibold text-slate-500 mb-2">Product Tags</p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={toggleNewArrival} disabled={saving}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isNewArrival ? "bg-[#68B8C1] border-[#68B8C1] text-white" : "border-slate-200 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
-                ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
-              </button>
+            {/* Selling price */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                Your Selling Price <span className="font-normal text-slate-400">(max PKR {maxSellingPrice.toFixed(2)})</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">PKR</span>
+                  <input
+                    type="number" min="0" max={maxSellingPrice} step="0.01"
+                    value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-2 pl-12 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  />
+                </div>
+                <button onClick={savePrice} disabled={saving}
+                  className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:opacity-60">
+                  {saving ? "…" : "Save"}
+                </button>
+              </div>
             </div>
-          </div>
 
-          {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+            {/* Discount */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                Sale Discount <span className="font-normal text-slate-400">(max {discountCap}%)</span>
+              </label>
+              <div className="flex gap-2">
+                <button onClick={toggleSale} disabled={saving}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:opacity-60 ${isOnSale ? "border-amber-500 bg-amber-500 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                  <Tag className="h-3.5 w-3.5" />{isOnSale ? "ON" : "OFF"}
+                </button>
+                <div className="relative flex-1">
+                  <input
+                    type="number" min="0" max={discountCap} step="1"
+                    value={discountInput} onChange={(e) => setDiscountInput(e.target.value)}
+                    disabled={!isOnSale}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
+                </div>
+                <button onClick={saveDiscount} disabled={saving || !isOnSale}
+                  className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-40">
+                  {saving ? "…" : "Save"}
+                </button>
+              </div>
+            </div>
+
+            {/* Variant price overrides */}
+            {variantsLoaded && variantRows.length > 0 && (
+              <div className="border-t border-slate-100 pt-4">
+                <p className="mb-3 text-xs font-semibold text-slate-600">
+                  Variant Prices <span className="font-normal text-slate-400">(max +{markupPercent}% above catalog)</span>
+                </p>
+                <div className="space-y-2">
+                  {variantRows.map((row) => {
+                    const max = row.catalogPrice * (1 + markupPercent / 100);
+                    const label = [row.isCustomSize ? "Custom" : row.size, row.color].filter(Boolean).join(" · ") || "Variant";
+                    return (
+                      <div key={row.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-700">{label}</span>
+                          <span className="text-[10px] text-slate-400">catalog PKR {row.catalogPrice.toFixed(2)} · max PKR {max.toFixed(2)}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">PKR</span>
+                            <input
+                              type="number" min="0" max={max} step="0.01"
+                              value={row.input}
+                              onChange={(e) =>
+                                setVariantRows((prev) =>
+                                  prev.map((r) => r.id === row.id ? { ...r, input: e.target.value } : r)
+                                )
+                              }
+                              className="w-full rounded-lg border border-slate-200 py-1.5 pl-11 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                            />
+                          </div>
+                          <button
+                            onClick={() => saveVariantPrice(row.id)}
+                            disabled={row.saving}
+                            className="rounded-lg bg-teal-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-600 disabled:opacity-60"
+                          >
+                            {row.saving ? "…" : "Save"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {variantError && <p className="mt-2 text-xs font-medium text-red-500">{variantError}</p>}
+              </div>
+            )}
+
+            {/* Tags */}
+            <div className="border-t border-slate-100 pt-4">
+              <p className="mb-2 text-xs font-semibold text-slate-500">Product Tags</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={toggleNewArrival} disabled={saving}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${isNewArrival ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
+                  ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="text-xs font-medium text-red-500">{error}</p>}
+          </div>
         </div>
       </div>
     </div>
