@@ -30,7 +30,7 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { status, action } = body;
+  const { status, action, resolveProofUrls } = body;
 
   if (action !== "request_resolve" && !["resolved", "owner_responded"].includes(status)) {
     return NextResponse.json({ error: "Invalid action or status" }, { status: 400 });
@@ -51,10 +51,13 @@ export async function PATCH(
 
   // ── REQUEST ADMIN APPROVAL TO RESOLVE ────────────────────────────────────
   if (action === "request_resolve") {
+    if (!resolveProofUrls?.length) {
+      return NextResponse.json({ error: "Please upload at least one proof image before requesting approval." }, { status: 400 });
+    }
     const now = new Date();
     await db.collection("claims").updateOne(
       { _id: new ObjectId(claimId) },
-      { $set: { resolveRequestPending: true, updatedAt: now } }
+      { $set: { resolveRequestPending: true, resolveProofUrls: resolveProofUrls ?? [], updatedAt: now } }
     );
 
     // Notify all admins

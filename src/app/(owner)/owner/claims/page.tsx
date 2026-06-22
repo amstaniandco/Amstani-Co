@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Clock3, ExternalLink, FolderKanban, Store, TriangleAlert, X } from "lucide-react";
+import { Clock3, ExternalLink, FolderKanban, ImagePlus, Store, TriangleAlert, X } from "lucide-react";
 
 type ClaimMessage = {
   senderId: string;
@@ -121,6 +121,9 @@ export default function OwnerClaimsPage() {
   const [resolving, setResolving] = useState(false);
   const [requestingResolve, setRequestingResolve] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [proofUrls, setProofUrls] = useState<string[]>([]);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const proofInputRef = useRef<HTMLInputElement>(null);
   const [claimsPage, setClaimsPage] = useState(1);
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -196,17 +199,18 @@ export default function OwnerClaimsPage() {
   }
 
   async function handleRequestResolve(claimId: string) {
+    if (!proofUrls.length) return;
     setRequestingResolve(true);
     try {
       const res = await fetch(`/api/owner/claims/${claimId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "request_resolve" }),
+        body: JSON.stringify({ action: "request_resolve", resolveProofUrls: proofUrls }),
       });
       if (!res.ok) return;
       await loadClaims();
-      // Update activeClaim state optimistically
       setActiveClaim((prev) => prev ? { ...prev, resolveRequestPending: true } : prev);
+      setProofUrls([]);
     } finally {
       setRequestingResolve(false);
     }
@@ -217,6 +221,29 @@ export default function OwnerClaimsPage() {
     localStorage.setItem(`claim_read_${claim._id}`, now);
     setUnreadMap((prev) => ({ ...prev, [claim._id]: 0 }));
     setActiveClaim(claim);
+    setProofUrls([]);
+  }
+
+  async function handleProofUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploadingProof(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (res.ok) {
+          const data = await res.json();
+          uploaded.push(data.url);
+        }
+      }
+      setProofUrls((prev) => [...prev, ...uploaded]);
+    } finally {
+      setUploadingProof(false);
+      if (proofInputRef.current) proofInputRef.current.value = "";
+    }
   }
 
   const summaryCards = [
@@ -388,11 +415,10 @@ export default function OwnerClaimsPage() {
                               </span>
                             ) : (
                               <button
-                                onClick={() => handleRequestResolve(claim._id)}
-                                disabled={requestingResolve}
-                                className="rounded-xl bg-slate-700 hover:bg-slate-800 px-3.5 py-2 text-[12px] font-semibold text-white transition disabled:opacity-60"
+                                onClick={() => openClaim(claim)}
+                                className="rounded-xl bg-slate-700 hover:bg-slate-800 px-3.5 py-2 text-[12px] font-semibold text-white transition"
                               >
-                                Request Admin Approval
+                                Upload Proof & Request Approval
                               </button>
                             )
                           )}
@@ -578,13 +604,62 @@ export default function OwnerClaimsPage() {
                       Awaiting Admin Approval to Resolve
                     </div>
                   ) : (
-                    <button
-                      onClick={() => handleRequestResolve(activeClaim._id)}
-                      disabled={requestingResolve}
-                      className="w-full py-2 rounded-xl bg-slate-700 hover:bg-slate-800 disabled:opacity-60 text-white text-xs font-semibold transition"
-                    >
-                      {requestingResolve ? "Requesting…" : "Request Admin Approval to Resolve"}
-                    </button>
+                    <div className="space-y-2">
+                      {/* Proof upload */}
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Proof of Resolution <span className="text-red-400">*</span>
+                        </p>
+                        <p className="text-[11px] text-slate-400">Upload at least one image showing how the issue was resolved before requesting approval.</p>
+
+                        {/* Uploaded thumbnails */}
+                        {proofUrls.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {proofUrls.map((url, i) => (
+                              <div key={i} className="relative group">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt={`Proof ${i + 1}`}
+                                  className="h-14 w-14 rounded-lg object-cover border border-slate-200 cursor-pointer"
+                                  onClick={() => setLightboxUrl(url)} />
+                                <button
+                                  type="button"
+                                  onClick={() => setProofUrls((p) => p.filter((_, j) => j !== i))}
+                                  className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <input
+                          ref={proofInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleProofUpload}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => proofInputRef.current?.click()}
+                          disabled={uploadingProof}
+                          className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-[#65bbc5] hover:text-[#65bbc5] transition disabled:opacity-50"
+                        >
+                          <ImagePlus className="h-4 w-4" />
+                          {uploadingProof ? "Uploading…" : "Add Photos"}
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => handleRequestResolve(activeClaim._id)}
+                        disabled={requestingResolve || proofUrls.length === 0 || uploadingProof}
+                        className="w-full py-2 rounded-xl bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold transition"
+                      >
+                        {requestingResolve ? "Requesting…" : proofUrls.length === 0 ? "Upload proof to request approval" : "Request Admin Approval to Resolve"}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
