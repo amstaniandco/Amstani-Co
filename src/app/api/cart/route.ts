@@ -19,6 +19,7 @@ type CartItemInput = {
 };
 
 type ProductVariant = {
+  id?: string;
   size?: string;
   color?: string;
   sku?: string;
@@ -122,7 +123,10 @@ export async function POST(req: Request) {
   const [product, store, storeProd] = await Promise.all([
     db.collection("products").findOne({ _id: new ObjectId(productId) }),
     db.collection("stores").findOne({ _id: new ObjectId(storeId) }),
-    db.collection("store_products").findOne({ storeId, productId }, { projection: { quantity: 1 } }),
+    db.collection("store_products").findOne(
+      { storeId, productId },
+      { projection: { quantity: 1, sellingPrice: 1, discountPercent: 1, isOnSale: 1, variantPrices: 1 } }
+    ),
   ]);
 
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -142,7 +146,21 @@ export async function POST(req: Request) {
           .map(([key, value]) => [key, String(value)])
       )
     : normalizedSelectedVariants;
-  const derivedPrice = Number(matchedVariant?.priceOverride ?? product.price ?? price ?? 0);
+
+  // Resolve the effective price server-side (never trust raw client price for variant overrides)
+  const storeVariantPrices: Record<string, number> = (storeProd?.variantPrices as Record<string, number>) ?? {};
+  const storeDiscount: number = (storeProd?.isOnSale && (storeProd?.discountPercent ?? 0) > 0)
+    ? (storeProd.discountPercent as number) : 0;
+  // Per-store variant price takes precedence over catalog priceOverride
+  const variantBasePrice: number | null =
+    matchedVariant?.id && storeVariantPrices[matchedVariant.id] != null
+      ? storeVariantPrices[matchedVariant.id]
+      : matchedVariant?.priceOverride ?? null;
+  // Final raw price before discount
+  const rawPrice: number = Number(variantBasePrice ?? storeProd?.sellingPrice ?? product.price ?? price ?? 0);
+  // Apply store discount
+  const derivedPrice = Math.round(rawPrice * (1 - storeDiscount / 100) * 100) / 100;
+
   const derivedSku = matchedVariant?.skuVariant ?? matchedVariant?.sku ?? product.sku ?? sku ?? "";
   const derivedImage = product.mainImage ?? mainImage ?? product.images?.[0]?.url ?? product.images?.[0]?.imageUrl ?? product.images?.[0] ?? null;
 
