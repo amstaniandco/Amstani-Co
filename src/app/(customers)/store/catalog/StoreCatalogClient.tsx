@@ -195,10 +195,6 @@ function ProductDetailModal({ product, onClose }: {
               </div>
             )}
 
-            {/* View only notice */}
-            <p className="text-center text-xs text-slate-400 pt-1">
-              This product will be available to order when listed by the store.
-            </p>
           </div>
         </div>
       </div>
