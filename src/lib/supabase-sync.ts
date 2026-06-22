@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import { MongoClient } from "mongodb";
+import { recomputeCatalogCounts } from "./catalog-counts";
 
 function groupById<T extends Record<string, unknown>>(rows: T[], key: string): Record<string, T[]> {
   const map: Record<string, T[]> = {};
@@ -41,42 +42,24 @@ async function fetchFromSupabase(pool: Pool) {
   const brandsById: Record<string, typeof brands[0]> = {};
   for (const b of brands) brandsById[b.id] = b;
 
-  const imagesByProduct = groupById(images, "productId");
-  const catsByProduct = groupById(productCategories, "productId");
-  const variantsByProduct = groupById(variants, "productId");
+  const imagesByProduct    = groupById(images, "productId");
+  const catsByProduct      = groupById(productCategories, "productId");
+  const variantsByProduct  = groupById(variants, "productId");
   const sizeChartsByProduct = groupById(sizeCharts, "productId");
   const shippingByProduct: Record<string, typeof shippings[0]> = {};
   for (const s of shippings) shippingByProduct[s.productId] = s;
 
   const sizeVarsByCategory = groupById(sizeVariables, "categoryId");
 
-  const brandProductCount: Record<string, number> = {};
-  for (const p of products) {
-    if (p.brandId) brandProductCount[p.brandId] = (brandProductCount[p.brandId] || 0) + 1;
-  }
-
-  const categoryProductCount: Record<string, number> = {};
-  for (const pc of productCategories) {
-    categoryProductCount[pc.categoryId] = (categoryProductCount[pc.categoryId] || 0) + 1;
-  }
-
-  const enrichedBrands = brands.map((b) => ({
-    ...b,
-    _count: { products: brandProductCount[b.id] || 0 },
-  }));
-
-  const enrichedCategories = categories.map((c) => ({
-    ...c,
-    sizeVariables: sizeVarsByCategory[c.id] || [],
-    _count: { products: categoryProductCount[c.id] || 0 },
-  }));
-
   const enrichedProducts = products.map((p) => ({
     ...p,
     brand: p.brandId ? brandsById[p.brandId] : null,
     images: imagesByProduct[p.id] || [],
     categories: (catsByProduct[p.id] || [])
-      .sort((a: Record<string, unknown>, b: Record<string, unknown>) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0))
+      .sort(
+        (a: Record<string, unknown>, b: Record<string, unknown>) =>
+          (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+      )
       .map((pc: Record<string, unknown>) => ({
         categoryId: pc.categoryId,
         isPrimary: pc.isPrimary,
@@ -87,22 +70,23 @@ async function fetchFromSupabase(pool: Pool) {
     shipping: shippingByProduct[p.id] || null,
   }));
 
-  return { brands: enrichedBrands, categories: enrichedCategories, products: enrichedProducts };
-}
+  const enrichedCategories = categories.map((c) => ({
+    ...c,
+    sizeVariables: sizeVarsByCategory[c.id] || [],
+  }));
 
-function toStatus(isPublished: boolean) {
-  return isPublished ? "active" : "draft";
+  return { brands, categories: enrichedCategories, products: enrichedProducts };
 }
 
 function mapProduct(product: Record<string, unknown>) {
-  const images = (product.images as Record<string, unknown>[] || []);
-  const imageObjects = images.map((image) => ({
-    id: image.id,
-    imageUrl: image.imageUrl,
-    alt: image.alt ?? null,
-    isMain: image.isMain,
-    sortOrder: image.sortOrder,
-    createdAt: image.createdAt,
+  const images = (product.images as Record<string, unknown>[]) || [];
+  const imageObjects = images.map((img) => ({
+    id: img.id,
+    imageUrl: img.imageUrl,
+    alt: img.alt ?? null,
+    isMain: img.isMain,
+    sortOrder: img.sortOrder,
+    createdAt: img.createdAt,
   }));
   const imageUrls = [
     product.mainImage as string,
@@ -110,109 +94,110 @@ function mapProduct(product: Record<string, unknown>) {
   ].filter(Boolean);
   const uniqueImageUrls = Array.from(new Set(imageUrls));
 
-  const categories = product.categories as Array<{ isPrimary: boolean; categoryId: string; category: { id: string; name: string; slug: string } }>;
+  const categories = (product.categories as Array<{
+    isPrimary: boolean;
+    categoryId: string;
+    category: { id: string; name: string; slug: string };
+  }>) || [];
+
   const primaryCategory =
-    categories.find((item) => item.isPrimary)?.category ??
+    categories.find((c) => c.isPrimary)?.category ??
     categories[0]?.category ??
     null;
 
-  const brand = product.brand as Record<string, unknown> | null;
-  const variants = (product.variants as Record<string, unknown>[] || []);
-  const sizeChart = (product.sizeChart as Record<string, unknown>[] || []);
-  const shipping = product.shipping as Record<string, unknown> | null;
+  const brand    = product.brand as Record<string, unknown> | null;
+  const variants = (product.variants as Record<string, unknown>[]) || [];
+  const sizeChart = (product.sizeChart as Record<string, unknown>[]) || [];
+  const shipping  = product.shipping as Record<string, unknown> | null;
 
   return {
-    sourceProductId: product.id,
-    source: "supabase-postgres",
-    name: product.name,
-    sku: product.sku,
-    slug: product.slug,
-    description: (product.shortDescription ?? product.fullDescription) as string | null,
-    shortDescription: (product.shortDescription ?? null) as string | null,
-    fullDescription: product.fullDescription,
-    price: product.price,
-    compareAtPrice: (product.compareAtPrice ?? null) as number | null,
-    costPrice: (product.costPrice ?? null) as number | null,
-    stock: product.totalStock,
-    totalStock: product.totalStock,
-    stockStatus: product.stockStatus,
-    imageUrls: uniqueImageUrls,
-    images: imageObjects,
-    mainImage: (product.mainImage ?? uniqueImageUrls[0] ?? null) as string | null,
-    category: primaryCategory?.name ?? "",
-    categories: categories.map((item) => ({
+    sourceProductId:  product.id as string,
+    source:           "supabase-postgres" as const,
+    name:             product.name,
+    sku:              product.sku,
+    slug:             product.slug,
+    description:      ((product.shortDescription ?? product.fullDescription) as string | null) ?? "",
+    shortDescription: (product.shortDescription as string | null) ?? null,
+    fullDescription:  (product.fullDescription  as string | null) ?? "",
+    price:            product.price,
+    compareAtPrice:   (product.compareAtPrice as number | null) ?? null,
+    costPrice:        (product.costPrice       as number | null) ?? null,
+    stock:            product.totalStock,
+    totalStock:       product.totalStock,
+    stockStatus:      product.stockStatus,
+    imageUrls:        uniqueImageUrls,
+    images:           imageObjects,
+    mainImage:        (product.mainImage as string | null) ?? uniqueImageUrls[0] ?? null,
+    category:         primaryCategory?.name ?? "",
+    categories:       categories.map((item) => ({
       categoryId: item.categoryId,
-      isPrimary: item.isPrimary,
+      isPrimary:  item.isPrimary,
       category: { id: item.category.id, name: item.category.name, slug: item.category.slug },
     })),
     brand: brand
       ? { id: brand.id, name: brand.name, slug: brand.slug }
       : undefined,
     variants: variants.map((v) => ({
-      id: v.id,
-      size: v.size,
-      color: v.color ?? undefined,
-      sku: v.skuVariant,
-      priceModifier: v.priceOverride == null ? undefined : (v.priceOverride as number) - (product.price as number),
-      priceOverride: (v.priceOverride ?? null) as number | null,
-      stock: v.stockQuantity,
+      id:            v.id,
+      size:          v.size ?? "",
+      color:         (v.color as string | null | undefined) ?? undefined,
+      sku:           v.skuVariant,
+      priceOverride: (v.priceOverride as number | null) ?? null,
+      stock:         v.stockQuantity,
       stockQuantity: v.stockQuantity,
-      skuVariant: v.skuVariant,
-      isCustomSize: v.isCustomSize,
+      skuVariant:    v.skuVariant,
+      isCustomSize:  v.isCustomSize ?? false,
     })),
     sizeChart: sizeChart.map((chart) => ({
-      id: chart.id,
-      size: chart.size,
+      id:           chart.id,
+      size:         chart.size,
       measurements: chart.measurements,
-      unit: chart.unit,
+      unit:         chart.unit,
     })),
     shipping: shipping
       ? {
-          productId: shipping.productId,
-          weight: (shipping.weight ?? null) as number | null,
-          dimensionL: (shipping.dimensionL ?? null) as number | null,
-          dimensionW: (shipping.dimensionW ?? null) as number | null,
-          dimensionH: (shipping.dimensionH ?? null) as number | null,
-          shippingClass: (shipping.shippingClass ?? null) as string | null,
+          productId:     shipping.productId,
+          weight:        (shipping.weight        as number | null) ?? null,
+          dimensionL:    (shipping.dimensionL    as number | null) ?? null,
+          dimensionW:    (shipping.dimensionW    as number | null) ?? null,
+          dimensionH:    (shipping.dimensionH    as number | null) ?? null,
+          shippingClass: (shipping.shippingClass as string | null) ?? null,
         }
       : null,
-    status: toStatus(product.isPublished as boolean),
-    isFeatured: product.isFeatured,
-    isPublished: product.isPublished,
-    seoTitle: (product.seoTitle ?? null) as string | null,
-    seoDescription: (product.seoDescription ?? null) as string | null,
-    createdAt: product.createdAt,
-    updatedAt: product.updatedAt,
-    copiedAt: new Date(),
+    status:           product.isPublished ? "active" : "draft",
+    isFeatured:       (product.isFeatured       as boolean) ?? false,
+    isPublished:      (product.isPublished       as boolean) ?? false,
+    tags:             (product.tags             as string[] | null) ?? [],
+    allowCustomOrders:(product.allowCustomOrders as boolean | null) ?? false,
+    seoTitle:         (product.seoTitle         as string | null) ?? null,
+    seoDescription:   (product.seoDescription   as string | null) ?? null,
+    brandSuspended:   false,
+    createdAt:        product.createdAt ?? new Date(),
+    updatedAt:        product.updatedAt ?? new Date(),
+    copiedAt:         new Date(),
   };
 }
 
 export type SyncResult = {
-  newProducts: number;
-  skippedProducts: number;
-  newBrands: number;
-  skippedBrands: number;
-  newCategories: number;
-  skippedCategories: number;
-  brandCountsUpdated: number;
+  newProducts:         number;
+  skippedProducts:     number;
+  newBrands:           number;
+  skippedBrands:       number;
+  newCategories:       number;
+  skippedCategories:   number;
+  brandCountsUpdated:  number;
   categoryCountsUpdated: number;
   log: string[];
 };
 
 export async function runSupabaseSync(): Promise<SyncResult> {
   const SUPABASE_DATABASE_URL = process.env.SUPABASE_DATABASE_URL;
-  const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/amstani";
+  const MONGODB_URI    = process.env.MONGODB_URI    || "mongodb://127.0.0.1:27017/amstani";
   const MONGODB_DBNAME = process.env.MONGODB_DBNAME || "amstani";
 
-  if (!SUPABASE_DATABASE_URL) {
-    throw new Error("SUPABASE_DATABASE_URL is not configured");
-  }
+  if (!SUPABASE_DATABASE_URL) throw new Error("SUPABASE_DATABASE_URL is not configured");
 
-  const pool = new Pool({
-    connectionString: SUPABASE_DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-
+  const pool        = new Pool({ connectionString: SUPABASE_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   const mongoClient = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
 
   try {
@@ -220,19 +205,22 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     const docs = products.map(mapProduct);
 
     await mongoClient.connect();
-    const db = mongoClient.db(MONGODB_DBNAME);
-    const collection = db.collection("products");
-    const brandsCollection = db.collection("brands");
-    const categoriesCollection = db.collection("categories");
+    const db            = mongoClient.db(MONGODB_DBNAME);
+    const productsCol   = db.collection("products");
+    const brandsCol     = db.collection("brands");
+    const categoriesCol = db.collection("categories");
 
+    // ── Products ─────────────────────────────────────────────────────────────
+    // Only inserts records that do not yet exist (upsert with $setOnInsert).
+    // Existing records are never overwritten — they belong to this site now.
     let newProducts = 0;
     if (docs.length > 0) {
-      const result = await collection.bulkWrite(
+      const result = await productsCol.bulkWrite(
         docs.map((doc) => ({
           updateOne: {
             filter: { sourceProductId: doc.sourceProductId },
-            update: { $setOnInsert: doc },
-            upsert: true,
+            update:  { $setOnInsert: doc },
+            upsert:  true,
           },
         })),
         { ordered: false }
@@ -240,26 +228,28 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       newProducts = result.upsertedCount;
     }
 
-    await collection.createIndex({ sourceProductId: 1 }, { unique: true });
-    await collection.createIndex({ slug: 1 }, { sparse: true });
-    await collection.createIndex({ sku: 1 }, { sparse: true });
+    await productsCol.createIndex({ sourceProductId: 1 }, { unique: true });
+    await productsCol.createIndex({ slug: 1 }, { sparse: true });
+    await productsCol.createIndex({ sku:  1 }, { sparse: true });
 
+    // ── Brands ───────────────────────────────────────────────────────────────
     let newBrands = 0;
     if (brands.length > 0) {
-      const result = await brandsCollection.bulkWrite(
+      const result = await brandsCol.bulkWrite(
         brands.map((brand) => ({
           updateOne: {
             filter: { sourceBrandId: brand.id },
             update: {
               $setOnInsert: {
                 sourceBrandId: brand.id,
-                source: "supabase-postgres",
-                name: brand.name,
-                slug: brand.slug,
-                productCount: brand._count.products,
-                createdAt: brand.createdAt,
-                updatedAt: brand.updatedAt,
-                copiedAt: new Date(),
+                source:        "supabase-postgres",
+                name:          brand.name,
+                slug:          brand.slug,
+                status:        "active",
+                productCount:  0,
+                createdAt:     brand.createdAt ?? new Date(),
+                updatedAt:     brand.updatedAt ?? new Date(),
+                copiedAt:      new Date(),
               },
             },
             upsert: true,
@@ -270,29 +260,31 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       newBrands = result.upsertedCount;
     }
 
+    // ── Categories ───────────────────────────────────────────────────────────
     let newCategories = 0;
     if (categories.length > 0) {
-      const result = await categoriesCollection.bulkWrite(
+      const result = await categoriesCol.bulkWrite(
         categories.map((category) => ({
           updateOne: {
             filter: { sourceCategoryId: category.id },
             update: {
               $setOnInsert: {
                 sourceCategoryId: category.id,
-                source: "supabase-postgres",
-                name: category.name,
-                slug: category.slug,
-                productCount: category._count.products,
+                source:           "supabase-postgres",
+                name:             category.name,
+                slug:             category.slug,
+                status:           "active",
+                productCount:     0,
                 sizeVariables: (category.sizeVariables || []).map((sv: Record<string, unknown>) => ({
                   sourceSizeVariableId: sv.id,
-                  name: sv.name,
-                  label: sv.label,
+                  name:      sv.name,
+                  label:     sv.label,
                   sortOrder: sv.sortOrder,
-                  isDefault: sv.isDefault,
+                  isDefault: sv.isDefault ?? false,
                 })),
-                createdAt: category.createdAt,
-                updatedAt: category.updatedAt,
-                copiedAt: new Date(),
+                createdAt: category.createdAt ?? new Date(),
+                updatedAt: category.updatedAt ?? new Date(),
+                copiedAt:  new Date(),
               },
             },
             upsert: true,
@@ -303,48 +295,16 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       newCategories = result.upsertedCount;
     }
 
-    await brandsCollection.createIndex({ sourceBrandId: 1 }, { unique: true, sparse: true });
-    await brandsCollection.createIndex({ slug: 1 }, { unique: true, sparse: true });
-    await categoriesCollection.createIndex({ sourceCategoryId: 1 }, { unique: true, sparse: true });
-    await categoriesCollection.createIndex({ slug: 1 }, { unique: true, sparse: true });
+    await brandsCol.createIndex(    { sourceBrandId:    1 }, { unique: true, sparse: true });
+    await brandsCol.createIndex(    { slug: 1 },             { unique: true, sparse: true });
+    await categoriesCol.createIndex({ sourceCategoryId: 1 }, { unique: true, sparse: true });
+    await categoriesCol.createIndex({ slug: 1 },             { unique: true, sparse: true });
 
-    await Promise.all([
-      brandsCollection.updateMany({}, { $set: { productCount: 0 } }),
-      categoriesCollection.updateMany({}, { $set: { productCount: 0 } }),
-    ]);
+    const { brandCount, categoryCount } = await recomputeCatalogCounts(db);
 
-    const [brandCounts, categoryCounts] = await Promise.all([
-      collection.aggregate<{ _id: string; count: number }>([
-        { $match: { "brand.name": { $exists: true, $ne: null } } },
-        { $group: { _id: "$brand.name", count: { $sum: 1 } } },
-      ]).toArray(),
-      collection.aggregate<{ _id: string; count: number }>([
-        { $unwind: "$categories" },
-        { $group: { _id: "$categories.category.name", count: { $sum: 1 } } },
-      ]).toArray(),
-    ]);
-
-    if (brandCounts.length > 0) {
-      await brandsCollection.bulkWrite(
-        brandCounts.map(({ _id, count }) => ({
-          updateOne: { filter: { name: _id }, update: { $set: { productCount: count } } },
-        })),
-        { ordered: false }
-      );
-    }
-
-    if (categoryCounts.length > 0) {
-      await categoriesCollection.bulkWrite(
-        categoryCounts.map(({ _id, count }) => ({
-          updateOne: { filter: { name: _id }, update: { $set: { productCount: count } } },
-        })),
-        { ordered: false }
-      );
-    }
-
-    const skippedProducts = docs.length - newProducts;
-    const skippedBrands = brands.length - newBrands;
-    const skippedCategories = categories.length - newCategories;
+    const skippedProducts   = docs.length        - newProducts;
+    const skippedBrands     = brands.length      - newBrands;
+    const skippedCategories = categories.length  - newCategories;
 
     return {
       newProducts,
@@ -353,15 +313,15 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       skippedBrands,
       newCategories,
       skippedCategories,
-      brandCountsUpdated: brandCounts.length,
-      categoryCountsUpdated: categoryCounts.length,
+      brandCountsUpdated:    brandCount,
+      categoryCountsUpdated: categoryCount,
       log: [
-        `Read ${docs.length} products, ${brands.length} brands, ${categories.length} categories from Supabase.`,
-        `Products: ${newProducts} new, ${skippedProducts} already existed (skipped).`,
-        `Brands: ${newBrands} new, ${skippedBrands} already existed (skipped).`,
-        `Categories: ${newCategories} new, ${skippedCategories} already existed (skipped).`,
-        `Product counts relinked: ${brandCounts.length} brands, ${categoryCounts.length} categories updated.`,
-        "Supabase was read-only — no upstream data was changed.",
+        `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
+        `Products  : ${newProducts} new · ${skippedProducts} already here (skipped).`,
+        `Brands    : ${newBrands} new · ${skippedBrands} already here (skipped).`,
+        `Categories: ${newCategories} new · ${skippedCategories} already here (skipped).`,
+        `Product counts relinked: ${brandCount} brands · ${categoryCount} categories.`,
+        "Supabase was not modified — all operations were read-only.",
       ],
     };
   } finally {
