@@ -301,6 +301,16 @@ export default function Header() {
     return () => window.removeEventListener("wishlist-updated", handler);
   }, []);
 
+  // Listen for cart mutation events dispatched after add/remove/update operations
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const count = (e as CustomEvent<{ count: number }>).detail?.count;
+      if (typeof count === "number") setCartCount(count);
+    };
+    window.addEventListener("cart-updated", handler);
+    return () => window.removeEventListener("cart-updated", handler);
+  }, []);
+
   useEffect(() => {
     setStateMenuOpen(false);
   }, [pathname]);
