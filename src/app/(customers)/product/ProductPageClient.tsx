@@ -18,14 +18,21 @@ type Review = {
 type ProductImage = string | { url?: string; imageUrl?: string };
 
 type ProductVariant = {
+  id?: string;
   size?: string | number;
   color?: string;
+  priceOverride?: number | null;
+  isCustomSize?: boolean;
 };
 
 type ProductDetail = {
   name: string;
   sku?: string;
   price: number;
+  sellingPrice?: number;
+  discountPercent?: number;
+  isOnSale?: boolean;
+  compareAtPrice?: number | null;
   description?: string;
   mainImage?: string | null;
   images?: ProductImage[];
@@ -84,6 +91,7 @@ export default function ProductPageClient() {
 
   const [selectedSize, setSelectedSize] = useState<string | number | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -148,15 +156,64 @@ export default function ProductPageClient() {
     ? [...new Set(product.variants.map((v) => v.color).filter(Boolean).map((color) => String(color)))]
     : [];
 
+  // Only show colors that have a variant matching the selected size
+  const availableColors: string[] = selectedSize != null
+    ? [...new Set(
+        (product?.variants ?? [])
+          .filter((v) => v.size != null && String(v.size) === String(selectedSize))
+          .map((v) => v.color)
+          .filter(Boolean)
+          .map(String)
+      )]
+    : colors;
+
+  function handleSizeSelect(size: string | number) {
+    setSelectedSize(size);
+    setQty(1);
+    const colorsForSize = (product?.variants ?? [])
+      .filter((v) => v.size != null && String(v.size) === String(size))
+      .map((v) => v.color)
+      .filter(Boolean)
+      .map(String);
+    if (selectedColor && !colorsForSize.includes(selectedColor)) setSelectedColor(null);
+  }
+
   const canAddToCart =
     (!sizes.length || selectedSize !== null) &&
-    (!colors.length || selectedColor !== null);
+    (!availableColors.length || selectedColor !== null);
 
   const missingVariant = sizes.length > 0 && selectedSize === null
     ? "size"
-    : colors.length > 0 && selectedColor === null
+    : availableColors.length > 0 && selectedColor === null
     ? "color"
     : null;
+
+  // Resolve the active variant and its price (store owner may have set a custom priceOverride)
+  const activeVariant = (selectedSize != null || selectedColor != null)
+    ? product?.variants?.find((v) => {
+        const sizeMatch = selectedSize == null || String(v.size) === String(selectedSize);
+        const colorMatch = selectedColor == null || v.color === selectedColor;
+        return sizeMatch && colorMatch;
+      }) ?? null
+    : null;
+
+  const discountPercent: number = (product?.isOnSale && (product?.discountPercent ?? 0) > 0)
+    ? (product?.discountPercent ?? 0)
+    : 0;
+
+  const rawVariantPrice: number | null = activeVariant?.priceOverride ?? null;
+  // Apply the same store discount to the variant price
+  const discountedVariantPrice: number | null = rawVariantPrice != null
+    ? Math.round(rawVariantPrice * (1 - discountPercent / 100) * 100) / 100
+    : null;
+
+  const displayPrice: number = discountedVariantPrice ?? (product?.price ?? 0);
+  // For showing a crossed-out original when a discount is active on a variant
+  const variantCompareAtPrice: number | null = discountedVariantPrice != null && discountPercent > 0
+    ? rawVariantPrice
+    : null;
+
+  const maxQty: number = product?.stock != null && product.stock > 0 ? product.stock : 99;
 
   async function handleAddToCart() {
     if (!product || !storeId) { setCartMsg("Cannot add to cart."); return; }
@@ -172,9 +229,9 @@ export default function ProductPageClient() {
         storeName: product.storeName ?? "",
         name: product.name,
         sku: product.sku ?? "",
-        price: product.price,
+        price: displayPrice,
         mainImage: images[0] ?? null,
-        quantity: 1,
+        quantity: qty,
         selectedVariants:
           selectedSize == null && !selectedColor
             ? undefined
@@ -252,9 +309,9 @@ export default function ProductPageClient() {
           storeName: product.storeName ?? "",
           name: product.name,
           sku: product.sku ?? "",
-          price: product.price,
+          price: displayPrice,
           mainImage: images[0] ?? null,
-          quantity: 1,
+          quantity: qty,
           selectedVariants:
             selectedSize == null && !selectedColor
               ? undefined
@@ -381,8 +438,16 @@ export default function ProductPageClient() {
             <h1 className="mb-1 text-lg font-bold text-[#68B8C1]">{product.name}</h1>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl font-extrabold text-gray-900 dark:text-slate-100">
-                ${Number(product.price).toLocaleString()}
+                ${Number(displayPrice).toLocaleString()}
               </span>
+              {variantCompareAtPrice != null ? (
+                <span className="text-sm text-slate-400 line-through">${Number(variantCompareAtPrice).toLocaleString()}</span>
+              ) : product.compareAtPrice ? (
+                <span className="text-sm text-slate-400 line-through">${Number(product.compareAtPrice).toLocaleString()}</span>
+              ) : null}
+              {discountPercent > 0 && (
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">{discountPercent}% OFF</span>
+              )}
             </div>
             {product.description && (
               <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 mb-4 dark:text-slate-400">{product.description}</p>
@@ -409,8 +474,8 @@ export default function ProductPageClient() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {sizes.map((size) => (
-                    <button key={String(size)} onClick={() => setSelectedSize(size)}
-                      className={`w-10 h-10 rounded-full text-xs font-semibold border-2 transition-all ${selectedSize === size ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
+                    <button key={String(size)} onClick={() => handleSizeSelect(size)}
+                      className={`min-w-[2.5rem] rounded-xl border-2 px-3 py-2 text-xs font-semibold transition-all text-left break-words ${selectedSize === size ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"}`}>
                       {String(size)}
                     </button>
                   ))}
@@ -418,19 +483,16 @@ export default function ProductPageClient() {
               </div>
             )}
 
-            {colors.length > 0 && (
+            {availableColors.length > 0 && (
               <div className="mb-3">
                 <p className="text-sm font-semibold text-gray-700 mb-2">
                   Select Color
                   {selectedColor === null && <span className="ml-1 text-xs font-normal text-red-400">— required</span>}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`rounded-full border-2 px-3 py-2 text-xs font-semibold transition-all ${selectedColor === color ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}
-                    >
+                  {availableColors.map((color) => (
+                    <button key={color} onClick={() => setSelectedColor(color)}
+                      className={`rounded-full border-2 px-3 py-2 text-xs font-semibold transition-all ${selectedColor === color ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
                       {color}
                     </button>
                   ))}
@@ -446,9 +508,22 @@ export default function ProductPageClient() {
                 Out of Stock
               </div>
             ) : (
-              <button onClick={handleAddToCart} className="w-full py-3 rounded-xl font-bold text-white text-sm bg-[#68B8C1] active:scale-95 hover:bg-[#4f9ea7]">
-                Add to cart
-              </button>
+              <>
+                <div className="flex items-center gap-3 mb-3">
+                  <button onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-700 transition hover:border-gray-400 active:scale-95">−</button>
+                  <span className="w-8 text-center text-base font-bold text-gray-900 dark:text-slate-100">{qty}</span>
+                  <button onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                    disabled={qty >= maxQty}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-700 transition hover:border-gray-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">+</button>
+                  {product.stock != null && (
+                    <span className="text-xs text-gray-400">{product.stock} in stock</span>
+                  )}
+                </div>
+                <button onClick={handleAddToCart} className="w-full py-3 rounded-xl font-bold text-white text-sm bg-[#68B8C1] active:scale-95 hover:bg-[#4f9ea7]">
+                  Add to cart
+                </button>
+              </>
             )}
             <button onClick={handleWishlist} className={`mt-2 w-full py-3 rounded-xl font-bold text-sm border-2 transition-all ${wishlisted ? "border-red-400 bg-red-50 text-red-500" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}>
               {wishlisted ? "♥ Wishlisted" : "♡ Wishlist"}
@@ -527,8 +602,16 @@ export default function ProductPageClient() {
               <h1 className="mb-3 text-4xl font-extrabold uppercase tracking-tight text-[#68B8C1]">{product.name}</h1>
               <div className="flex items-baseline gap-3 mb-2">
                 <span className="text-3xl font-extrabold text-gray-900 dark:text-slate-100">
-                  ${Number(product.price).toLocaleString()}
+                  ${Number(displayPrice).toLocaleString()}
                 </span>
+                {variantCompareAtPrice != null ? (
+                  <span className="text-base text-slate-400 line-through">${Number(variantCompareAtPrice).toLocaleString()}</span>
+                ) : product.compareAtPrice ? (
+                  <span className="text-base text-slate-400 line-through">${Number(product.compareAtPrice).toLocaleString()}</span>
+                ) : null}
+                {discountPercent > 0 && (
+                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-sm font-bold text-red-600">{discountPercent}% OFF</span>
+                )}
               </div>
               {product.brand?.name && (
                 <p className="text-base font-bold text-gray-800 mb-1 dark:text-slate-200">Brand: {product.brand.name}</p>
@@ -558,8 +641,8 @@ export default function ProductPageClient() {
                   <p className="text-sm font-semibold text-gray-700 mb-2">Select Size</p>
                   <div className="flex flex-wrap gap-2">
                     {sizes.map((size) => (
-                      <button key={String(size)} onClick={() => setSelectedSize(size)}
-                        className={`w-11 h-11 rounded-full text-sm font-semibold border-2 transition-all ${selectedSize === size ? "border-gray-800 bg-gray-800 text-white" : "border-gray-300 text-gray-700 bg-white hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"}`}>
+                      <button key={String(size)} onClick={() => handleSizeSelect(size)}
+                        className={`min-w-[2.75rem] rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all text-left break-words ${selectedSize === size ? "border-gray-800 bg-gray-800 text-white" : "border-gray-300 bg-white text-gray-700 hover:border-gray-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-300"}`}>
                         {String(size)}
                       </button>
                     ))}
@@ -567,16 +650,13 @@ export default function ProductPageClient() {
                 </div>
               )}
 
-              {colors.length > 0 && (
+              {availableColors.length > 0 && (
                 <div className="mb-6">
                   <p className="text-sm font-semibold text-gray-700 mb-2">Select Color</p>
                   <div className="flex flex-wrap gap-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`rounded-full border-2 px-4 py-2 text-sm font-semibold transition-all ${selectedColor === color ? "border-gray-800 bg-gray-800 text-white" : "border-gray-300 text-gray-700 bg-white hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"}`}
-                      >
+                    {availableColors.map((color) => (
+                      <button key={color} onClick={() => setSelectedColor(color)}
+                        className={`rounded-full border-2 px-4 py-2 text-sm font-semibold transition-all ${selectedColor === color ? "border-gray-800 bg-gray-800 text-white" : "border-gray-300 text-gray-700 bg-white hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"}`}>
                         {color}
                       </button>
                     ))}
@@ -593,9 +673,22 @@ export default function ProductPageClient() {
                     Out of Stock
                   </div>
                 ) : (
-                  <button onClick={handleAddToCart} className="w-full py-3.5 rounded-2xl font-bold text-white transition-all text-base bg-[#68B8C1] hover:bg-[#4f9ea7] active:scale-[0.98]">
-                    Add to cart
-                  </button>
+                  <>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-300 text-xl font-bold text-gray-700 transition hover:border-gray-500 active:scale-95 dark:border-slate-600 dark:text-slate-300">−</button>
+                      <span className="w-8 text-center text-lg font-bold text-gray-900 dark:text-slate-100">{qty}</span>
+                      <button onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                        disabled={qty >= maxQty}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-300 text-xl font-bold text-gray-700 transition hover:border-gray-500 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed dark:border-slate-600 dark:text-slate-300">+</button>
+                      {product.stock != null && (
+                        <span className="text-sm text-gray-400 dark:text-slate-500">{product.stock} in stock</span>
+                      )}
+                    </div>
+                    <button onClick={handleAddToCart} className="w-full py-3.5 rounded-2xl font-bold text-white transition-all text-base bg-[#68B8C1] hover:bg-[#4f9ea7] active:scale-[0.98]">
+                      Add to cart
+                    </button>
+                  </>
                 )}
                 <button onClick={handleWishlist} className={`w-full py-3.5 rounded-2xl font-bold border-2 transition-all text-base ${wishlisted ? "border-red-400 bg-red-50 text-red-500 dark:bg-red-950/30 dark:border-red-500 dark:text-red-400" : "border-gray-300 bg-white text-gray-800 hover:border-gray-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"}`}>
                   {wishlisted ? "♥ Wishlisted" : "♡ Add to Wishlist"}
