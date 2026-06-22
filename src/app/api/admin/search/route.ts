@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
   const [stores, users, products, brands, categories, orders, claims] = await Promise.all([
     db.collection("stores")
-      .find({ name: rx }, { projection: { name: 1, status: 1 } })
+      .find({ $or: [{ name: rx }, { shortId: rx }] }, { projection: { name: 1, status: 1, shortId: 1 } })
       .limit(PER_TYPE).toArray(),
     db.collection("users")
       .find({ $or: [{ name: rx }, { email: rx }] }, { projection: { name: 1, email: 1, role: 1 } })
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
       id: s._id.toString(),
       type: "store",
       title: s.name ?? "Untitled store",
-      subtitle: s.status ? `Status: ${s.status}` : undefined,
+      subtitle: [s.shortId ? `#${s.shortId}` : null, s.status ? `Status: ${s.status}` : null].filter(Boolean).join(" · ") || undefined,
       href: `/admin/stores?highlight=${s._id.toString()}`,
     })),
     ...users.map((u): SearchResult => ({

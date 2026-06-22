@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ stor
 
     const [followerCount, productCount, rank] = await Promise.all([
       db.collection("storeFollowers").countDocuments({ storeId: new ObjectId(storeId) }),
-      db.collection("products").countDocuments({ storeId: new ObjectId(storeId) }),
+      db.collection("store_products").countDocuments({ storeId }),
       getStoreRank(db, storeId),
     ]);
 

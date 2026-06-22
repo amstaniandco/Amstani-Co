@@ -2,11 +2,17 @@ export interface StoreData {
   _id: string;
   name: string;
   status: "pending" | "active" | "suspended";
+  shortId?: string;
   logoUrl?: string;
   bannerUrl?: string;
   description?: string;
   createdAt?: string;
   updatedAt?: string;
+  rating?: number;
+  reviewCount?: number;
+  monthlyRevenue?: number;
+  monthlyOrders?: number;
+  productCount?: number;
   owner?: {
     name?: string;
     email?: string;

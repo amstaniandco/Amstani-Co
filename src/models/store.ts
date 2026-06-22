@@ -32,6 +32,8 @@ export type Store = {
   
   settings?: StoreSettings;
   
+  shortId?: string;
+
   status: "pending" | "active" | "suspended" | "inactive";
   isLive?: boolean;
   liveLink?: string | null;

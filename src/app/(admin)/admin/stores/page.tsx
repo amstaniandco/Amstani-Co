@@ -31,21 +31,26 @@ function convertStoreToRow(store: StoreData & { rating?: number }): StoreRow {
     pending: "Dormant",
   };
 
+  const rev = store.monthlyRevenue ?? 0;
+  const revenueStr = rev >= 1000 ? `$${(rev / 1000).toFixed(1)}K` : `$${rev.toFixed(0)}`;
   return {
     id: store._id,
     name: store.name,
     status: statusMap[store.status] || "Dormant",
     owner: store.owner?.name || "Unknown",
     onboarding: store.createdAt ? new Date(store.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "N/A",
-    revenue: "$0",
+    revenue: revenueStr,
     rating: store.rating != null && store.rating > 0 ? Number(store.rating).toFixed(1) : "0.0",
+    shortId: store.shortId,
     ownerEmail: store.owner?.email,
     ownerPhone: store.owner?.phone,
     location: store.owner?.state,
-    monthlyOrders: "0",
-    fulfillmentRate: "0%",
-    returnRate: "0%",
-    escalationRisk: "Low",
+    monthlyOrders: String(store.monthlyOrders ?? 0),
+    productCount: String(store.productCount ?? 0),
+    reviewCount: store.reviewCount ? String(store.reviewCount) : null,
+    fulfillmentRate: null,
+    returnRate: null,
+    escalationRisk: null,
   };
 }
 
@@ -92,9 +97,10 @@ function AdminStoresPageContent() {
   const filteredStores = stores.filter(store => {
     // Search filter
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       store.name.toLowerCase().includes(searchLower) ||
       store.id.toLowerCase().includes(searchLower) ||
+      (store.shortId?.toLowerCase().includes(searchLower) ?? false) ||
       store.owner.toLowerCase().includes(searchLower) ||
       (store.ownerEmail?.toLowerCase().includes(searchLower) ?? false);
 
@@ -159,6 +165,8 @@ function AdminStoresPageContent() {
         setStores(convertedStores);
         if (convertedStores.length > 0) {
           setSelectedStore(convertedStores[0]);
+          setOpenChats([{ id: convertedStores[0].id, name: convertedStores[0].name }]);
+          setActiveChatId(convertedStores[0].id);
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to fetch stores");
@@ -505,51 +513,24 @@ function AdminStoresPageContent() {
                   </div>
 
                   <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                    {selectedStore.shortId && (
+                      <DetailItem label="Store ID" value={`#${selectedStore.shortId}`} mono />
+                    )}
                     <DetailItem label="Owner" value={selectedStore.owner} />
-                    <DetailItem
-                      label="Owner Email"
-                      value={selectedStore.ownerEmail ?? "-"}
-                    />
-                    <DetailItem
-                      label="Owner Phone"
-                      value={selectedStore.ownerPhone ?? "-"}
-                    />
-                    <DetailItem
-                      label="Location"
-                      value={selectedStore.location ?? "-"}
-                    />
-                    <DetailItem
-                      label="Category"
-                      value={selectedStore.category ?? "-"}
-                    />
-                    <DetailItem
-                      label="Onboarding Date"
-                      value={selectedStore.onboarding}
-                    />
+                    <DetailItem label="Owner Email" value={selectedStore.ownerEmail ?? "-"} />
+                    <DetailItem label="Owner Phone" value={selectedStore.ownerPhone ?? "-"} />
+                    <DetailItem label="Location" value={selectedStore.location ?? "-"} />
+                    <DetailItem label="Onboarding Date" value={selectedStore.onboarding} />
                     <DetailItem label="Revenue (30d)" value={selectedStore.revenue} />
+                    <DetailItem label="Orders (30d)" value={selectedStore.monthlyOrders ?? "0"} />
+                    <DetailItem label="Listed Products" value={selectedStore.productCount ?? "0"} />
                     <DetailItem
                       label="Store Rating"
                       value={
                         selectedStore.rating === "0.0" || !selectedStore.rating
-                          ? "0/0"
-                          : `${selectedStore.rating}/5`
+                          ? `No reviews`
+                          : `${selectedStore.rating}/5 (${selectedStore.reviewCount ?? 0})`
                       }
-                    />
-                    <DetailItem
-                      label="Monthly Orders"
-                      value={selectedStore.monthlyOrders ?? "-"}
-                    />
-                    <DetailItem
-                      label="Fulfillment Rate"
-                      value={selectedStore.fulfillmentRate ?? "-"}
-                    />
-                    <DetailItem
-                      label="Return Rate"
-                      value={selectedStore.returnRate ?? "-"}
-                    />
-                    <DetailItem
-                      label="Escalation Risk"
-                      value={selectedStore.escalationRisk ?? "-"}
                     />
                   </div>
                 </section>
@@ -574,13 +555,13 @@ function AdminStoresPageContent() {
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }) {
+function DetailItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="rounded-xl border border-[#e6edf2] bg-[#f9fbfd] px-3 py-2.5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>
-      <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
+      <p className={`mt-1 text-sm font-medium text-slate-900 ${mono ? "font-mono" : ""}`}>{value}</p>
     </div>
   );
 }

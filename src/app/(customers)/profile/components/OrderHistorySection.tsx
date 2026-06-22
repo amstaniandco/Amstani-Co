@@ -80,7 +80,7 @@ export default function OrderHistorySection() {
 
   const rows = useMemo(
     () =>
-      orders.map((order) => ({
+      orders.slice(0, 5).map((order) => ({
         id: order.orderNumber || order._id || "-",
         rawId: order._id || "",
         date: formatDate(order.createdAt),

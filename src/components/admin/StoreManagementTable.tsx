@@ -12,14 +12,17 @@ export type StoreRow = {
   onboarding: string;
   revenue: string;
   rating: string;
+  shortId?: string;
   ownerEmail?: string;
   ownerPhone?: string;
   location?: string;
   category?: string;
   monthlyOrders?: string;
-  fulfillmentRate?: string;
-  returnRate?: string;
-  escalationRisk?: string;
+  productCount?: string;
+  reviewCount?: string | null;
+  fulfillmentRate?: string | null;
+  returnRate?: string | null;
+  escalationRisk?: string | null;
 };
 
 type StoreManagementTableProps = {
@@ -230,7 +233,9 @@ export default function StoreManagementTable({
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold text-slate-500">{row.id}</p>
+                <p className="text-xs font-semibold text-slate-500">
+                  {row.shortId ? <span className="font-mono">#{row.shortId}</span> : row.id.slice(-8)}
+                </p>
                 <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#dff2f5] text-xs font-bold text-[#4faebd]">
                     {row.name.charAt(0)}
@@ -281,7 +286,9 @@ export default function StoreManagementTable({
                 }`}
                 onClick={() => onSelectStore?.(row)}
               >
-                <div className="font-semibold text-slate-600">{row.id}</div>
+                <div className="font-mono text-xs font-semibold text-slate-600">
+                  {row.shortId ? `#${row.shortId}` : row.id.slice(-8)}
+                </div>
                 <div className="flex items-center gap-3 font-semibold text-slate-900">
                   <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#dff2f5] text-xs font-bold text-[#4faebd]">
                     {row.name.charAt(0)}

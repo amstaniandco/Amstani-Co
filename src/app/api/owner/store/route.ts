@@ -5,6 +5,7 @@ import { getUserFromToken } from "../../../../lib/auth";
 import { User } from "../../../../models/user";
 import { Store } from "../../../../models/store";
 import { getStoreRank } from "../../../../lib/store-rank";
+import { uniqueStoreShortId } from "../../../../lib/shortId";
 
 export async function GET() {
   try {
@@ -21,7 +22,14 @@ export async function GET() {
     );
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    const store = await db.collection<Store>("stores").findOne({ ownerId: new ObjectId(tokenUser.id) });
+    let store = await db.collection<Store>("stores").findOne({ ownerId: new ObjectId(tokenUser.id) });
+
+    // Backfill shortId for stores that don't have one yet
+    if (store && !store.shortId) {
+      const shortId = await uniqueStoreShortId(db);
+      await db.collection("stores").updateOne({ _id: store._id }, { $set: { shortId } });
+      store = { ...store, shortId };
+    }
 
     let followerCount = 0;
     let productCount = 0;
@@ -117,11 +125,13 @@ export async function PUT(req: Request) {
         { $set: storeFields }
       );
     } else {
+      const shortId = await uniqueStoreShortId(db);
       const newStore: Store = {
         ownerId: new ObjectId(tokenUser.id),
         name: storeName,
         description: storeDescription || "",
         status: "pending",
+        shortId,
         logoUrl: logoUrl || undefined,
         bannerUrl: bannerUrl || undefined,
         settings: { languages: languages || [] },

@@ -35,11 +35,47 @@ export async function GET() {
             as: "reviewData",
           },
         },
+        // Real order stats: count + revenue for last 30 days
+        {
+          $lookup: {
+            from: "orders",
+            let: { sidStr: { $toString: "$_id" } },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$storeId", "$$sidStr"] },
+                  paymentStatus: "Paid",
+                  createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalRevenue: { $sum: "$total" },
+                  orderCount: { $sum: 1 },
+                },
+              },
+            ],
+            as: "orderStats",
+          },
+        },
+        {
+          $lookup: {
+            from: "store_products",
+            let: { sidStr: { $toString: "$_id" } },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$storeId", "$$sidStr"] } } },
+              { $count: "total" },
+            ],
+            as: "productStats",
+          },
+        },
         {
           $project: {
             _id: 1,
             name: 1,
             status: 1,
+            shortId: 1,
             logoUrl: 1,
             bannerUrl: 1,
             description: 1,
@@ -51,6 +87,9 @@ export async function GET() {
             "owner.state": 1,
             rating: { $ifNull: [{ $arrayElemAt: ["$reviewData.avg", 0] }, 0] },
             reviewCount: { $ifNull: [{ $arrayElemAt: ["$reviewData.count", 0] }, 0] },
+            monthlyRevenue: { $ifNull: [{ $arrayElemAt: ["$orderStats.totalRevenue", 0] }, 0] },
+            monthlyOrders: { $ifNull: [{ $arrayElemAt: ["$orderStats.orderCount", 0] }, 0] },
+            productCount: { $ifNull: [{ $arrayElemAt: ["$productStats.total", 0] }, 0] },
           },
         },
         { $sort: { createdAt: -1 } },

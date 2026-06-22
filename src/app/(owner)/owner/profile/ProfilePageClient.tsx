@@ -182,6 +182,11 @@ function StorePreviewModal({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-2xl font-bold text-slate-900">{store?.name || "Store Name"}</h2>
+                    {store?.shortId && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-mono font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                        #{store.shortId}
+                      </span>
+                    )}
                     {rank !== null && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">
                         <Trophy className="h-3 w-3" /> Ranked #{rank}
@@ -390,6 +395,11 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-[1.75rem] font-bold leading-none text-slate-900 dark:text-slate-100 sm:text-[2rem]">{store?.name || "Setup Your Store"}</h2>
+              {store?.shortId && (
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-mono font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                  #{store.shortId}
+                </span>
+              )}
             </div>
             <p className="mt-2 max-w-[300px] text-[13px] leading-5 text-slate-400 dark:text-slate-500">
               {store?.description || "Description of the store can be written here"}
