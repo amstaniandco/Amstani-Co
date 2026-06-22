@@ -460,11 +460,6 @@ function PricingModal({
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-60 ${isNewArrival ? "bg-[#68B8C1] border-[#68B8C1] text-white" : "border-slate-200 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
                 ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
               </button>
-              {product.allowCustomOrders && (
-                <span className="flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700">
-                  ✎ Custom Orders (set by admin)
-                </span>
-              )}
             </div>
           </div>
 
