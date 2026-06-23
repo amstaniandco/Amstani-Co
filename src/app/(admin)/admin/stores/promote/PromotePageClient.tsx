@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Pencil, Slash, Upload, X, Check } from "lucide-react";
 import { useToast } from "../../../../../components/global/ToastProvider";
+import { useConfirm } from "../../../../../components/global/ConfirmProvider";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
 
@@ -21,6 +22,7 @@ type Promotion = {
 export default function PromotePageClient() {
   const searchParams = useSearchParams();
   const toast = useToast();
+  const confirm = useConfirm();
   const storeId = searchParams.get("storeId") ?? "";
 
   const [storeName, setStoreName] = useState("Store");
@@ -110,7 +112,7 @@ export default function PromotePageClient() {
   }
 
   async function handleDelete(promotionId: string) {
-    if (!confirm("Remove this promotion?")) return;
+    if (!(await confirm("Remove this promotion?"))) return;
     await fetch(`/api/admin/stores/promotions/${promotionId}`, { method: "DELETE" });
     fetchPromotions();
   }
