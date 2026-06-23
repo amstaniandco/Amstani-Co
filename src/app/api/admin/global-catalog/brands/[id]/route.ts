@@ -65,8 +65,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
 
     const body = await req.json();
     const action = body.action as string;
-    if (action !== "suspend" && action !== "activate") {
-      return NextResponse.json({ error: "action must be 'suspend' or 'activate'" }, { status: 400 });
+    const VALID = ["suspend", "activate", "enableCustomOrders", "disableCustomOrders"];
+    if (!VALID.includes(action)) {
+      return NextResponse.json({ error: `action must be one of ${VALID.join(", ")}` }, { status: 400 });
     }
 
     const client = await clientPromise;
@@ -75,17 +76,46 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     const brand = await db.collection("brands").findOne({ _id: objectId });
     if (!brand) return NextResponse.json({ error: "Brand not found" }, { status: 404 });
 
+    const filter = brandProductFilter(brand as unknown as { name: string; sourceBrandId?: string });
+    const now = new Date();
+
+    // ── Bulk toggle custom orders for every product of this brand ──
+    if (action === "enableCustomOrders" || action === "disableCustomOrders") {
+      const allow = action === "enableCustomOrders";
+
+      // Product ids (as strings) for syncing the per-store owner_catalog snapshots
+      const prods = await db.collection("products").find(filter).project({ _id: 1 }).toArray();
+      const ids = prods.map((p) => p._id.toString());
+
+      await db.collection("products").updateMany(filter, { $set: { allowCustomOrders: allow, updatedAt: now } });
+      if (ids.length) {
+        await db.collection("owner_catalog").updateMany(
+          { productId: { $in: ids } },
+          { $set: { allowCustomOrders: allow, updatedAt: now } }
+        );
+      }
+
+      await db.collection("brands").updateOne(
+        { _id: objectId },
+        { $set: { customOrdersEnabled: allow, updatedAt: now } }
+      );
+
+      const updated = await db.collection("brands").findOne({ _id: objectId });
+      return NextResponse.json({ brand: updated, updatedProducts: ids.length }, { status: 200 });
+    }
+
+    // ── Suspend / activate ──
     const newStatus = action === "suspend" ? "suspended" : "active";
     const brandSuspended = action === "suspend";
 
     await db.collection("brands").updateOne(
       { _id: objectId },
-      { $set: { status: newStatus, updatedAt: new Date() } }
+      { $set: { status: newStatus, updatedAt: now } }
     );
 
     await db.collection("products").updateMany(
-      brandProductFilter(brand as unknown as { name: string; sourceBrandId?: string }),
-      { $set: { brandSuspended, updatedAt: new Date() } }
+      filter,
+      { $set: { brandSuspended, updatedAt: now } }
     );
 
     const updated = await db.collection("brands").findOne({ _id: objectId });
