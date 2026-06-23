@@ -520,35 +520,46 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
     );
   }, [products, selectedCategory]);
 
+  // ── Catalog banner — always shown; it links to the global catalog, not the store's own products ──
+  const catalogBanner = (
+    <Link href={storeId ? `/store/catalog?storeId=${storeId}` : "/store/catalog"}
+      className="mt-5 rounded-2xl bg-white shadow-lg dark:border dark:border-slate-700 dark:bg-slate-800 flex items-center justify-center py-5 hover:bg-slate-50 dark:hover:bg-slate-700 transition group">
+      <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase group-hover:text-[#68B8C1] transition-colors" style={{ WebkitTextStroke: "1px currentColor" }}>
+        Amstani &amp; Co&apos;s Catalog
+      </p>
+    </Link>
+  );
+
   if (loading) {
     return (
-      <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
-        <div className="py-12 text-center text-sm text-slate-400">Loading products…</div>
-      </div>
+      <>
+        {catalogBanner}
+        <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+          <div className="py-12 text-center text-sm text-slate-400">Loading products…</div>
+        </div>
+      </>
     );
   }
 
   if (products.length === 0) {
     return (
-      <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
-        <div className="mb-5 flex items-center gap-2">
-          <span className="text-[#5fb9c3]">📦</span>
-          <h3 className="text-base font-semibold text-[#68B8C1]">Our Products</h3>
+      <>
+        {catalogBanner}
+        <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+          <div className="mb-5 flex items-center gap-2">
+            <span className="text-[#5fb9c3]">📦</span>
+            <h3 className="text-base font-semibold text-[#68B8C1]">Our Products</h3>
+          </div>
+          <div className="py-8 text-center text-sm text-slate-400">No products listed yet.</div>
         </div>
-        <div className="py-8 text-center text-sm text-slate-400">No products listed yet.</div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
       {/* ── Catalog banner ───────────────────────────────────────────────── */}
-      <Link href={storeId ? `/store/catalog?storeId=${storeId}` : "/store/catalog"}
-        className="mt-5 rounded-2xl bg-white shadow-lg dark:border dark:border-slate-700 dark:bg-slate-800 flex items-center justify-center py-5 hover:bg-slate-50 dark:hover:bg-slate-700 transition group">
-        <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase group-hover:text-[#68B8C1] transition-colors" style={{ WebkitTextStroke: "1px currentColor" }}>
-          Amstani &amp; Co&apos;s Catalog
-        </p>
-      </Link>
+      {catalogBanner}
 
       {/* ── Browse by categories ─────────────────────────────────────────── */}
       {categoryNames.length > 0 && (
