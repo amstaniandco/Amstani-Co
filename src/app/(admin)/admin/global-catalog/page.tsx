@@ -9,6 +9,7 @@ import BrandsTab from "../../../../components/admin/BrandsTab";
 import CategoryTab from "../../../../components/admin/CategoryTab";
 import AddGlobalProductForm from "../../../../components/admin/AddGlobalProductForm";
 import TaxPricingPage from "./tax-pricing/page";
+import PriceAdjustmentTab from "../../../../components/admin/PriceAdjustmentTab";
 
 export default function AdminGlobalCatalogPage() {
   return (
@@ -19,13 +20,13 @@ export default function AdminGlobalCatalogPage() {
 }
 
 function AdminGlobalCatalogPageContent() {
-  const [activeTab, setActiveTab] = useState<"products" | "tax-pricing" | "brands" | "category" | "add-product">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "tax-pricing" | "brands" | "category" | "add-product" | "price-adjustment">("products");
   const searchParams = useSearchParams();
 
   // Deep-link to a tab via ?tab=brands|category|products (used by global admin search)
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "brands" || tab === "category" || tab === "products" || tab === "tax-pricing") {
+    if (tab === "brands" || tab === "category" || tab === "products" || tab === "tax-pricing" || tab === "price-adjustment") {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -199,6 +200,16 @@ function AdminGlobalCatalogPageContent() {
               >
                 Category
               </button>
+              <button
+                onClick={() => setActiveTab("price-adjustment")}
+                className={`border-b-2 pb-2 transition sm:pb-3 ${
+                  activeTab === "price-adjustment"
+                    ? "border-[#58b8c3] text-[#2f7f8d]"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Price Adjustment
+              </button>
             </div>
           </section>
 
@@ -207,6 +218,7 @@ function AdminGlobalCatalogPageContent() {
             {activeTab === "tax-pricing" && <TaxPricingPage />}
             {activeTab === "brands" && <BrandsTab />}
             {activeTab === "category" && <CategoryTab />}
+            {activeTab === "price-adjustment" && <PriceAdjustmentTab />}
             {activeTab === "add-product" && (
               <AddGlobalProductForm
                 productId={editingProductId}
