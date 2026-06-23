@@ -12,6 +12,8 @@ type CartItem = {
   name: string;
   sku: string;
   price: number;
+  originalPrice?: number;
+  weightKg?: number;
   mainImage?: string | null;
   quantity: number;
   selectedVariants?: Record<string, string>;
