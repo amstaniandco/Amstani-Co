@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Eye, Plus, Search, Store, Tag, X } from "lucide-react";
+import { Eye, Plus, RotateCcw, Search, Store, Tag, TrendingDown, TrendingUp, X } from "lucide-react";
 
 type ProductRow = {
   productId: string;
@@ -86,8 +86,9 @@ function ProductDetailModal({
       .finally(() => setLoading(false));
   }, [productId]);
 
-  const sellingPrice = storeProduct?.sellingPrice ?? storeProduct?.originalPrice ?? 0;
-  const originalPrice = storeProduct?.originalPrice ?? 0;
+  // The owner's "original" is the admin-set price (their base cost)
+  const originalPrice = storeProduct?.adminAdjustedPrice ?? storeProduct?.originalPrice ?? 0;
+  const sellingPrice = storeProduct?.sellingPrice ?? originalPrice;
   const discount = storeProduct?.discountPercent ?? 0;
   const effectivePrice = sellingPrice * (1 - discount / 100);
   const images = catalog?.imageUrls ?? [];
@@ -308,6 +309,7 @@ function PricingModal({
   onUpdated: (productId: string, changes: Partial<ProductRow>) => void;
   onClose: () => void;
 }) {
+  // The owner's base ("original") price is the admin-set price when present
   const catalogBase = useRef<number>(
     product.adminAdjustedPrice != null && product.adminAdjustedPrice > 0
       ? product.adminAdjustedPrice
@@ -316,22 +318,23 @@ function PricingModal({
         : product.price ?? 0
   ).current;
 
-  const originalPrice = useRef<number>(
-    product.originalPrice != null && product.originalPrice > 0
-      ? product.originalPrice
-      : product.price ?? 0
-  ).current;
-
-  const hasAdminAdjust = product.adminAdjustedPrice != null && product.adminAdjustedPrice !== originalPrice;
   const maxSellingPrice = catalogBase * (1 + markupPercent / 100);
   const currentSelling  = product.sellingPrice ?? catalogBase;
   const currentDiscount = product.discountPercent ?? 0;
   const isOnSale        = product.isOnSale ?? false;
 
-  const [priceInput,    setPriceInput]    = useState(currentSelling.toFixed(2));
+  // Current markup % of selling price over the catalog base
+  const currentMarkupPct = catalogBase > 0
+    ? Math.max(0, Math.round(((currentSelling - catalogBase) / catalogBase) * 1000) / 10)
+    : 0;
+
+  const [markupInput,   setMarkupInput]   = useState(String(currentMarkupPct));
   const [discountInput, setDiscountInput] = useState(String(currentDiscount));
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState("");
+
+  // Selling price derived from the markup %
+  const derivedSelling = Math.round(catalogBase * (1 + (parseFloat(markupInput) || 0) / 100) * 100) / 100;
 
   // Variant pricing state
   type VariantRow = { id: string; size?: string; color?: string; isCustomSize?: boolean; catalogPrice: number; input: string; saving: boolean };
@@ -386,10 +389,21 @@ function PricingModal({
     } finally { setSaving(false); }
   }
 
+  // Changing the normal markup auto-adjusts every custom-priced variant to match.
+  function handleMarkupChange(val: string) {
+    setMarkupInput(val);
+    const pct = parseFloat(val) || 0;
+    setVariantRows((prev) => prev.map((r) => ({
+      ...r,
+      input: (Math.round(r.catalogPrice * (1 + pct / 100) * 100) / 100).toFixed(2),
+    })));
+  }
+
   async function savePrice() {
-    const sp = parseFloat(priceInput);
-    if (isNaN(sp) || sp < 0) { setError("Enter a valid price."); return; }
-    if (sp > maxSellingPrice) { setError(`Max allowed is $${maxSellingPrice.toFixed(2)} (${markupPercent}% over catalog).`); return; }
+    const pct = parseFloat(markupInput);
+    if (isNaN(pct) || pct < 0) { setError("Enter a valid markup percentage."); return; }
+    if (pct > markupPercent) { setError(`Markup cannot exceed ${markupPercent}% (platform limit).`); return; }
+    const sp = Math.round(catalogBase * (1 + pct / 100) * 100) / 100;
     const ok = await patch({ sellingPrice: sp });
     if (ok) onUpdated(product.productId, { sellingPrice: sp });
   }
@@ -439,7 +453,7 @@ function PricingModal({
     }
   }
 
-  const effectivePrice = Math.round(parseFloat(priceInput || "0") * (1 - parseFloat(discountInput || "0") / 100) * 100) / 100;
+  const effectivePrice = Math.round(derivedSelling * (1 - parseFloat(discountInput || "0") / 100) * 100) / 100;
 
   return (
     <div
@@ -464,42 +478,43 @@ function PricingModal({
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                  {hasAdminAdjust ? "Admin-Adjusted Price" : "Catalog Price"}
+                  Original Price
                 </p>
                 <p className="text-base font-bold text-slate-600">${catalogBase.toFixed(2)}</p>
-                {hasAdminAdjust && (
-                  <p className="mt-0.5 text-[10px] text-slate-400">original ${originalPrice.toFixed(2)}</p>
-                )}
                 <p className="mt-0.5 text-[10px] text-slate-400">max ${maxSellingPrice.toFixed(2)}</p>
               </div>
               <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-teal-500">Customer Pays</p>
                 <p className="text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
                 {isOnSale && parseFloat(discountInput) > 0 && (
-                  <p className="mt-0.5 text-[10px] text-slate-400 line-through">${parseFloat(priceInput).toFixed(2)}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400 line-through">${derivedSelling.toFixed(2)}</p>
                 )}
               </div>
             </div>
 
-            {/* Selling price */}
+            {/* Price increase (markup %) */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                Your Selling Price <span className="font-normal text-slate-400">(max ${maxSellingPrice.toFixed(2)})</span>
+                Increase Price <span className="font-normal text-slate-400">(markup, max {markupPercent}%)</span>
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
                   <input
-                    type="number" min="0" max={maxSellingPrice} step="0.01"
-                    value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 py-2 pl-8 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    type="number" min="0" max={markupPercent} step="0.1"
+                    value={markupInput} onChange={(e) => handleMarkupChange(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
                 </div>
                 <button onClick={savePrice} disabled={saving}
                   className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:opacity-60">
                   {saving ? "…" : "Save"}
                 </button>
               </div>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Selling at <span className="font-semibold text-slate-600">${derivedSelling.toFixed(2)}</span>
+                {parseFloat(markupInput) > 0 ? ` (+${parseFloat(markupInput)}% over $${catalogBase.toFixed(2)})` : " (catalog price)"}
+              </p>
             </div>
 
             {/* Discount */}
@@ -594,7 +609,8 @@ function PricingModal({
 }
 
 function DetailsModal({ product, onClose }: { product: ProductRow; onClose: () => void }) {
-  const originalPrice = product.originalPrice ?? product.price ?? 0;
+  // The owner's "original" is the admin-set price (their base cost)
+  const originalPrice = product.adminAdjustedPrice ?? product.originalPrice ?? product.price ?? 0;
   const sellingPrice = product.sellingPrice ?? originalPrice;
   const discount = product.discountPercent ?? 0;
   const effective = sellingPrice * (1 - discount / 100);
@@ -664,6 +680,107 @@ function DetailsModal({ product, onClose }: { product: ProductRow; onClose: () =
   );
 }
 
+function BulkPricingPanel({
+  markupPercent,
+  discountCap,
+  onApplied,
+}: {
+  markupPercent: number;
+  discountCap: number;
+  onApplied: () => void;
+}) {
+  const [mode,      setMode]      = useState<"markup" | "discount">("markup");
+  const [pctInput,  setPctInput]  = useState("");
+  const [applying,  setApplying]  = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [msg,       setMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+
+  const cap = mode === "markup" ? markupPercent : discountCap;
+
+  async function send(body: Record<string, unknown>) {
+    const res = await fetch("/api/owner/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return { res, data: await res.json() };
+  }
+
+  async function apply() {
+    const pct = parseFloat(pctInput);
+    if (isNaN(pct) || pct < 0) { setMsg({ ok: false, text: "Enter a valid percentage." }); return; }
+    if (pct > cap) { setMsg({ ok: false, text: `Max allowed: ${cap}% (platform limit).` }); return; }
+    setApplying(true); setMsg(null);
+    try {
+      const { res, data } = await send({ type: mode, percent: pct });
+      if (!res.ok) { setMsg({ ok: false, text: data.error || "Failed." }); return; }
+      setMsg({ ok: true, text: `Applied ${mode === "markup" ? "+" : "−"}${pct}% to ${data.updatedCount} products.` });
+      setPctInput("");
+      onApplied();
+    } finally { setApplying(false); }
+  }
+
+  async function resetAll() {
+    setResetting(true); setMsg(null);
+    try {
+      const { res, data } = await send({ type: "reset" });
+      if (!res.ok) { setMsg({ ok: false, text: data.error || "Failed." }); return; }
+      setMsg({ ok: true, text: `Reset ${data.updatedCount} products to catalog prices.` });
+      setPctInput("");
+      onApplied();
+    } finally { setResetting(false); }
+  }
+
+  return (
+    <section className="mt-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <p className="text-sm font-bold text-slate-800">Bulk Pricing — apply to all products</p>
+      <p className="mt-0.5 text-xs text-slate-500">
+        Increase prices (max <span className="font-semibold">{markupPercent}%</span>) or apply a discount (max <span className="font-semibold">{discountCap}%</span>) across every product at once. Individual prices can still be fine-tuned afterwards.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <div className="flex rounded-xl border border-slate-200 overflow-hidden">
+          <button type="button" onClick={() => setMode("markup")}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition ${mode === "markup" ? "bg-teal-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}>
+            <TrendingUp className="h-4 w-4" /> Increase
+          </button>
+          <button type="button" onClick={() => setMode("discount")}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition ${mode === "discount" ? "bg-amber-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}>
+            <TrendingDown className="h-4 w-4" /> Discount
+          </button>
+        </div>
+
+        <div className="flex-1 min-w-[130px]">
+          <div className="relative">
+            <input type="number" min="0" max={cap} step="0.1"
+              value={pctInput} onChange={(e) => setPctInput(e.target.value)}
+              placeholder={`0–${cap}`}
+              className="w-full rounded-xl border border-slate-200 py-2 pl-4 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">%</span>
+          </div>
+        </div>
+
+        <button onClick={apply} disabled={applying || !pctInput}
+          className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition disabled:opacity-50 ${mode === "markup" ? "bg-teal-500 hover:bg-teal-600" : "bg-amber-500 hover:bg-amber-600"}`}>
+          {applying ? "Applying…" : `Apply ${mode === "markup" ? "Increase" : "Discount"}`}
+        </button>
+
+        <button onClick={resetAll} disabled={resetting}
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50">
+          <RotateCcw className="h-4 w-4" />{resetting ? "Resetting…" : "Reset All"}
+        </button>
+      </div>
+
+      {msg && (
+        <div className={`mt-3 flex items-start justify-between rounded-xl px-4 py-2.5 text-sm ${msg.ok ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+          <span>{msg.text}</span>
+          <button onClick={() => setMsg(null)} className="ml-4 shrink-0 opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function OwnerProductsPage() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [storeName, setStoreName] = useState("");
@@ -698,16 +815,19 @@ export default function OwnerProductsPage() {
     return () => window.removeEventListener("sb-seen", handler);
   }, []);
 
-  useEffect(() => {
-    fetch("/api/owner/products")
+  function loadProducts() {
+    return fetch("/api/owner/products")
       .then((r) => r.json())
       .then((data) => {
         setProducts(data.products ?? []);
         setStoreName(data.storeName ?? "");
         setMarkupPercent(data.markupPercent ?? 20);
         setDiscountCap(data.discountCap ?? 20);
-      })
-      .finally(() => setLoading(false));
+      });
+  }
+
+  useEffect(() => {
+    loadProducts().finally(() => setLoading(false));
   }, []);
 
   function handleUpdated(productId: string, changes: Partial<ProductRow>) {
@@ -760,6 +880,8 @@ export default function OwnerProductsPage() {
           <span>Max discount: <strong className="text-amber-600">{discountCap}%</strong> off selling price</span>
         </div>
       </section>
+
+      <BulkPricingPanel markupPercent={markupPercent} discountCap={discountCap} onApplied={loadProducts} />
 
       <section data-tutorial-id="owner-products-section" className="mt-4">
         <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
@@ -864,7 +986,8 @@ export default function OwnerProductsPage() {
 
                 <div className="divide-y divide-slate-100">
                   {filteredProducts.map((product) => {
-                    const origP = product.originalPrice ?? product.price ?? 0;
+                    // The owner's "original" is the admin-set price (their base cost)
+                    const origP = product.adminAdjustedPrice ?? product.originalPrice ?? product.price ?? 0;
                     const sellP = product.sellingPrice ?? origP;
                     const isOnSale = product.isOnSale ?? false;
                     const discount = product.discountPercent ?? 0;
