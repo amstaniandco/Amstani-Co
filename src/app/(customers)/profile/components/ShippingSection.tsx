@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Address } from "../../../../models/user";
 import ProfileLocationMap from "./ProfileLocationMap";
 import { useToast } from "../../../../components/global/ToastProvider";
+import { useConfirm } from "../../../../components/global/ConfirmProvider";
 
 type AddressSelection = {
   street?: string;
@@ -27,6 +28,7 @@ export default function ShippingSection({
   onSetDefaultAddress,
 }: ShippingSectionProps) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [pendingAddressId, setPendingAddressId] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export default function ShippingSection({
   }, []);
 
   const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm("Delete this saved address?")) return;
+    if (!(await confirm("Delete this saved address?"))) return;
     setPendingAddressId(addressId);
     try {
       await onDeleteAddress?.(addressId);
