@@ -8,6 +8,7 @@ import StoreManagementTabs from "../../../../components/admin/StoreManagementTab
 import { useHighlightRow } from "../../../../components/admin/useHighlightRow";
 import { CircleCheck, CircleSlash, Mail, Package, ShieldX, TriangleAlert, Trash2, Megaphone } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
+import { useConfirm } from "../../../../components/global/ConfirmProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
 import CustomerOwnerChatsPanel from "../../../../components/admin/CustomerOwnerChatsPanel";
@@ -65,6 +66,7 @@ export default function AdminStoresPage() {
 function AdminStoresPageContent() {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [selectedStore, setSelectedStore] = useState<StoreRow | null>(null);
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -211,7 +213,7 @@ function AdminStoresPageContent() {
   };
 
   const handleDeleteStore = async (storeId: string) => {
-    if (!confirm("Are you sure you want to delete this store? The owner's account will revert to a regular user. This cannot be undone.")) return;
+    if (!(await confirm({ title: "Delete store", message: "Are you sure you want to delete this store? The owner's account will revert to a regular user. This cannot be undone.", confirmLabel: "Delete" }))) return;
     try {
       await deleteStore(storeId);
       setStores((prev) => prev.filter((s) => s.id !== storeId));
@@ -333,7 +335,7 @@ function AdminStoresPageContent() {
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!confirm(`Remove all warnings from ${w.storeName}?`)) return;
+                            if (!(await confirm(`Remove all warnings from ${w.storeName}?`))) return;
                             await fetch("/api/admin/live-warnings", {
                               method: "DELETE",
                               headers: { "Content-Type": "application/json" },
