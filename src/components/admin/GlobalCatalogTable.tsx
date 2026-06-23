@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Edit3, Eye, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "../global/ConfirmProvider";
 
 export type CatalogProductRow = {
   _id: string;
@@ -28,6 +29,7 @@ const PAGE_SIZE = 10;
 
 export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCatalogTableProps) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [products, setProducts] = useState<CatalogProductRow[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -76,7 +78,7 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
   }, [search, page, refreshKey]);
 
   const deleteProduct = async (productId: string) => {
-    const confirmed = window.confirm("Delete this product from the global catalog?");
+    const confirmed = await confirm("Delete this product from the global catalog?");
     if (!confirmed) return;
     try {
       const res = await fetch(`/api/admin/global-catalog/products/${productId}`, { method: "DELETE" });
