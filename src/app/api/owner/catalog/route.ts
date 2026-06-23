@@ -114,7 +114,7 @@ export async function GET() {
   const globalDocs = globalIds.length
     ? await db.collection("products")
         .find({ _id: { $in: globalIds } })
-        .project({ _id: 1, adminAdjustedPrice: 1, isPublished: 1, status: 1, brandSuspended: 1 })
+        .project({ _id: 1, adminAdjustedPrice: 1, isPublished: 1, status: 1, brandSuspended: 1, variants: 1, description: 1 })
         .toArray()
     : [];
   const globalMap = new Map(globalDocs.map((d) => [d._id.toString(), d]));
@@ -130,7 +130,13 @@ export async function GET() {
     })
     .map((c) => {
       const gp = globalMap.get(c.productId as string);
-      return { ...c, adminAdjustedPrice: (gp?.adminAdjustedPrice as number) ?? null };
+      return {
+        ...c,
+        adminAdjustedPrice: (gp?.adminAdjustedPrice as number) ?? null,
+        // Use fresh global variants/description so detail view reflects admin edits
+        variants: (gp?.variants as unknown[]) ?? c.variants ?? [],
+        description: (gp?.description as string) ?? c.description ?? "",
+      };
     });
 
   return NextResponse.json({ products, markupPercent, discountCap });
