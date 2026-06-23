@@ -32,17 +32,26 @@ export async function PATCH(
   const markupPercent: number = config?.markupPercent ?? 20;
   const discountCap: number = config?.discountCap ?? 20;
 
-  const originalPrice: number = storeProduct.originalPrice ?? storeProduct.price ?? 0;
+  // Fetch global product to get adminAdjustedPrice (if admin applied a global adjustment)
+  const globalProduct = ObjectId.isValid(productId)
+    ? await db.collection("products").findOne({ _id: new ObjectId(productId) }, { projection: { price: 1, adminAdjustedPrice: 1 } })
+    : null;
+  const catalogBasePrice: number = (globalProduct?.adminAdjustedPrice as number) ?? (globalProduct?.price as number) ?? storeProduct.originalPrice ?? storeProduct.price ?? 0;
+  const originalPrice: number = catalogBasePrice;
   const maxSellingPrice = originalPrice * (1 + markupPercent / 100);
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (typeof body.sellingPrice === "number") {
+  if (body.sellingPrice === null) {
+    // Owner chose "use catalog price" — clear their custom selling price
+    updates.sellingPrice = null;
+    updates.price = null;
+  } else if (typeof body.sellingPrice === "number") {
     const sp = Number(body.sellingPrice.toFixed(2));
     if (sp < 0) return NextResponse.json({ error: "Selling price cannot be negative." }, { status: 400 });
     if (sp > maxSellingPrice) {
       return NextResponse.json({
-        error: `Selling price cannot exceed PKR ${maxSellingPrice.toFixed(2)} (original PKR ${originalPrice.toFixed(2)} + ${markupPercent}% markup).`,
+        error: `Selling price cannot exceed $${maxSellingPrice.toFixed(2)} (catalog $${originalPrice.toFixed(2)} + ${markupPercent}% markup).`,
       }, { status: 400 });
     }
     updates.sellingPrice = sp;
