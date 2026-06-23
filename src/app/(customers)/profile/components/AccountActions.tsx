@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useConfirm } from "../../../../components/global/ConfirmProvider";
 
 export default function AccountActions({ onDeleteAccount }: { onDeleteAccount: () => Promise<void> }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [deleting, setDeleting] = useState(false);
 
   const handleLogout = async () => {
@@ -18,7 +20,7 @@ export default function AccountActions({ onDeleteAccount }: { onDeleteAccount: (
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm("Delete your account? This will remove your saved profile details, cards, addresses, cart, and wishlist.")) return;
+    if (!(await confirm({ title: "Delete account", message: "Delete your account? This will remove your saved profile details, cards, addresses, cart, and wishlist.", confirmLabel: "Delete account" }))) return;
 
     setDeleting(true);
     try {
