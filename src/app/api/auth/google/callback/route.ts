@@ -87,6 +87,29 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // Existing user without a state must still pick one before continuing
+      if (!user.state) {
+        const secret = new TextEncoder().encode(JWT_SECRET);
+        const pendingToken = await new jose.SignJWT({
+          provider: "google",
+          providerId: googleId,
+          name,
+          email,
+        })
+          .setProtectedHeader({ alg: "HS256" })
+          .setExpirationTime("15m")
+          .sign(secret);
+
+        const response = NextResponse.redirect(`${APP_URL}/signup/oauth-state`);
+        response.cookies.set("pending_oauth", pendingToken, {
+          httpOnly: true,
+          sameSite: "lax",
+          maxAge: 15 * 60,
+          path: "/",
+        });
+        return response;
+      }
+
       // Issue auth JWT and redirect
       const secret = new TextEncoder().encode(JWT_SECRET);
       const token = await new jose.SignJWT({ id: user._id.toString(), role: user.role })
