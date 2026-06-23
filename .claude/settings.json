@@ -17,7 +17,9 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(node _inspect.js)",
       "Bash(mkdir -p \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\owner\\\\products\\\\[productId]\\\\detail\")",
-      "Bash(xargs grep -l \"wishlist\")"
+      "Bash(xargs grep -l \"wishlist\")",
+      "PowerShell(git add -A)",
+      "PowerShell(git commit -m \"feat\\(admin\\): delete store and revert owner role to user\")"
     ],
     "additionalDirectories": [
       "c:\\Development\\Amstani-Co\\src\\app\\api\\owner\\products\\[productId]"

@@ -103,6 +103,40 @@ export async function GET() {
   }
 }
 
+export async function DELETE(req: Request) {
+  try {
+    const user = await getUserFromToken();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (user.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { storeId } = await req.json();
+    if (!storeId) {
+      return NextResponse.json({ error: "storeId is required" }, { status: 400 });
+    }
+
+    const { ObjectId } = await import("mongodb");
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DBNAME || "amstani");
+
+    const store = await db.collection("stores").findOne({ _id: new ObjectId(storeId) });
+    if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
+
+    await db.collection("stores").deleteOne({ _id: new ObjectId(storeId) });
+
+    if (store.ownerId) {
+      await db.collection("users").updateOne(
+        { _id: store.ownerId },
+        { $set: { role: "user", updatedAt: new Date() } }
+      );
+    }
+
+    return NextResponse.json({ message: "Store deleted" }, { status: 200 });
+  } catch (error) {
+    console.error("DELETE /api/admin/stores error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request) {
   try {
     const user = await getUserFromToken();

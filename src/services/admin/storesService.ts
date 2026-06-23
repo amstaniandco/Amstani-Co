@@ -46,6 +46,19 @@ export async function fetchAllStores(): Promise<StoreData[]> {
   return data.stores || [];
 }
 
+export async function deleteStore(storeId: string): Promise<void> {
+  const response = await fetch("/api/admin/stores", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ storeId }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to delete store: ${response.statusText}`);
+  }
+}
+
 export async function updateStoreStatus(
   storeId: string,
   status: "pending" | "active" | "suspended"

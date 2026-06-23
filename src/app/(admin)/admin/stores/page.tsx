@@ -15,7 +15,7 @@ import StoreChatPanel from "../../../../components/admin/StoreChatPanel";
 import StoreManagementTable, {
   type StoreRow,
 } from "../../../../components/admin/StoreManagementTable";
-import { fetchAllStores, updateStoreStatus, type StoreData } from "../../../../services/admin/storesService";
+import { fetchAllStores, updateStoreStatus, deleteStore, type StoreData } from "../../../../services/admin/storesService";
 
 const NAV_TABS = [
   { label: "All Stores",        href: "/admin/stores",                key: "stores" },
@@ -210,6 +210,18 @@ function AdminStoresPageContent() {
     openOwnerChat(store);
   };
 
+  const handleDeleteStore = async (storeId: string) => {
+    if (!confirm("Are you sure you want to delete this store? The owner's account will revert to a regular user. This cannot be undone.")) return;
+    try {
+      await deleteStore(storeId);
+      setStores((prev) => prev.filter((s) => s.id !== storeId));
+      if (selectedStore?.id === storeId) setSelectedStore(null);
+      toast.success("Store deleted successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete store");
+    }
+  };
+
   const handleUpdateStatus = async (storeId: string, newStatus: "active" | "suspended" | "pending") => {
     try {
       setIsUpdating(true);
@@ -380,11 +392,7 @@ function AdminStoresPageContent() {
                   onManageProducts={(storeId) => {
                     router.push(`/admin/stores/store-products?storeId=${encodeURIComponent(storeId)}`);
                   }}
-                  onDeleteStore={(storeId) => {
-                    if (confirm("Are you sure you want to delete this store? This action cannot be undone.")) {
-                      alert("Delete functionality coming soon");
-                    }
-                  }}
+                  onDeleteStore={handleDeleteStore}
                   onViewAnalytics={(storeId) => {
                     router.push(`/admin/stores/${storeId}/analytics`);
                   }}
@@ -505,7 +513,7 @@ function AdminStoresPageContent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { if (confirm("Delete this store? This cannot be undone.")) alert("Delete coming soon"); }}
+                      onClick={() => handleDeleteStore(selectedStore.id)}
                       className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
                     >
                       <Trash2 className="h-4 w-4" /> Delete Store
