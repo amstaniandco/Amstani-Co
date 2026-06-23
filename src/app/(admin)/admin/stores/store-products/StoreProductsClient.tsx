@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Search, Filter, Download } from "lucide-react";
 import AdminNavbar from "../../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../../components/admin/AdminSidebar";
+import { useConfirm } from "../../../../../components/global/ConfirmProvider";
 import ListedProducts, { type StoreProductItem } from "./components/ListedProducts";
 import ListingRequests, { type ListingRequestItem } from "./components/ListingRequests";
 import AddNewProduct from "./components/AddNewProduct";
@@ -15,6 +16,7 @@ const PAGE_SIZE = 10;
 export default function StoreProductsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const confirm = useConfirm();
   const storeId = searchParams.get("storeId") ?? "";
   const [currentTab, setCurrentTab] = useState("listed");
   const [storeName, setStoreName] = useState("Store");
@@ -72,7 +74,7 @@ export default function StoreProductsClient() {
   }, [storeId]);
 
   const handleRemoveProduct = async (productId: string) => {
-    if (!confirm("Remove this product from the store?")) return;
+    if (!(await confirm("Remove this product from the store?"))) return;
     await fetch(`/api/admin/stores/${storeId}/products`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
