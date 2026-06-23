@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Search, TrendingDown, TrendingUp, RotateCcw } from "lucide-react";
+import { ChevronLeft, Eye, Search, TrendingDown, TrendingUp, RotateCcw, X } from "lucide-react";
+
+type CatalogVariant = { id?: string; size?: string; color?: string; stock?: number; stockQuantity?: number; skuVariant?: string; priceOverride?: number | null };
 
 type CatalogProduct = {
   productId: string;
@@ -12,6 +14,7 @@ type CatalogProduct = {
   brand?: { name?: string } | null;
   mainImage?: string | null;
   imageUrls?: string[];
+  description?: string;
   originalPrice: number;
   adminAdjustedPrice?: number | null;
   price: number;
@@ -19,7 +22,137 @@ type CatalogProduct = {
   isOnSale?: boolean;
   totalStock?: number;
   allowCustomOrders?: boolean;
+  variants?: CatalogVariant[];
 };
+
+function CatalogDetailModal({ product, onClose }: { product: CatalogProduct; onClose: () => void }) {
+  const [activeImage, setActiveImage] = useState(0);
+  const images = product.imageUrls?.length ? product.imageUrls : product.mainImage ? [product.mainImage] : [];
+  // The admin-set price is the owner's base ("original") — wholesale is never shown here
+  const catalogBase = product.adminAdjustedPrice ?? product.originalPrice;
+  const discount = product.isOnSale && (product.discountPercent ?? 0) > 0 ? (product.discountPercent ?? 0) : 0;
+  const effectivePrice = Math.round(product.price * (1 - discount / 100) * 100) / 100;
+  // How much the owner has marked the product up over the catalog base (used to scale variants)
+  const ownerRatio = catalogBase > 0 ? product.price / catalogBase : 1;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: "92vh" }}>
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
+          <h3 className="text-lg font-bold text-slate-900">Product Detail</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+        </div>
+
+        <div className="overflow-y-auto px-5 py-5 space-y-6">
+          <div className="grid gap-5 sm:grid-cols-[200px_1fr]">
+            <div>
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                {images[activeImage] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={images[activeImage]} alt={product.name} className="aspect-square w-full object-cover" />
+                ) : (
+                  <div className="flex aspect-square items-center justify-center text-xs text-slate-400">No image</div>
+                )}
+              </div>
+              {images.length > 1 && (
+                <div className="mt-2 grid grid-cols-5 gap-1">
+                  {images.slice(0, 10).map((url, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={url} src={url} alt="" onClick={() => setActiveImage(i)}
+                      className={`aspect-square cursor-pointer rounded-md border object-cover ${i === activeImage ? "border-[#65bbc5]" : "border-slate-200"}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-xl font-bold leading-tight text-slate-900">{product.name}</h4>
+                <p className="mt-0.5 text-xs text-slate-500">{product.sku || "—"} · {product.brand?.name || "No brand"}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Catalog Price</p>
+                  <p className="mt-0.5 text-sm font-bold text-slate-700">${catalogBase.toFixed(2)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Your Price</p>
+                  <p className="mt-0.5 text-sm font-bold text-slate-700">${product.price.toFixed(2)}</p>
+                </div>
+                <div className="rounded-xl border border-teal-100 bg-teal-50 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-teal-500">Customer Pays</p>
+                  <p className="mt-0.5 text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Stock</p>
+                  <p className="mt-0.5 text-sm font-bold text-slate-700">{product.totalStock ?? 0} units</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {discount > 0 && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{discount}% Sale</span>}
+                {product.allowCustomOrders && <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">✎ Custom Orders</span>}
+                {product.category && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{product.category}</span>}
+              </div>
+            </div>
+          </div>
+
+          {product.description && (
+            <div>
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Description</p>
+              <p className="whitespace-pre-line text-sm leading-6 text-slate-700">{product.description}</p>
+            </div>
+          )}
+
+          {(product.variants?.length ?? 0) > 0 && (
+            <div className="overflow-hidden rounded-xl border border-slate-200">
+              <p className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Variants</p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <tr>{["Size", "Color", "Stock", "Catalog", "Your Price", "Customer Pays"].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {product.variants!.map((v, i) => {
+                      const hasCustom = v.priceOverride != null;
+                      const catalogV = hasCustom ? v.priceOverride! : null;
+                      const yourV = catalogV != null ? Math.round(catalogV * ownerRatio * 100) / 100 : null;
+                      const paysV = yourV != null ? Math.round(yourV * (1 - discount / 100) * 100) / 100 : null;
+                      return (
+                        <tr key={v.id ?? i}>
+                          <td className="px-4 py-3 text-slate-700">{v.size || "—"}</td>
+                          <td className="px-4 py-3 text-slate-700">{v.color || "—"}</td>
+                          <td className="px-4 py-3 text-slate-700">{v.stock ?? v.stockQuantity ?? 0}</td>
+                          <td className="px-4 py-3 text-slate-500">{catalogV != null ? `$${catalogV.toFixed(2)}` : "—"}</td>
+                          <td className="px-4 py-3 font-semibold text-slate-800">{yourV != null ? `$${yourV.toFixed(2)}` : "—"}</td>
+                          <td className="px-4 py-3">
+                            {paysV != null ? <span className="font-bold text-teal-600">${paysV.toFixed(2)}</span> : "—"}
+                            {discount > 0 && paysV != null && yourV != null && paysV !== yourV && (
+                              <span className="ml-1.5 text-[10px] font-semibold text-amber-500">{discount}% OFF</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function OwnerCatalogPage() {
   const [products,      setProducts]      = useState<CatalogProduct[]>([]);
@@ -27,6 +160,7 @@ export default function OwnerCatalogPage() {
   const [discountCap,   setDiscountCap]   = useState(20);
   const [loading,       setLoading]       = useState(true);
   const [search,        setSearch]        = useState("");
+  const [detailProduct, setDetailProduct] = useState<CatalogProduct | null>(null);
 
   // Bulk pricing state
   const [mode,       setMode]       = useState<"markup" | "discount">("markup");
@@ -222,8 +356,8 @@ export default function OwnerCatalogPage() {
                 ? Math.round(product.price * (1 - (product.discountPercent ?? 0) / 100) * 100) / 100
                 : product.price;
               return (
-                <div key={product.productId}
-                  className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                <button key={product.productId} type="button" onClick={() => setDetailProduct(product)}
+                  className="group text-left overflow-hidden rounded-2xl bg-white shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
                   <div className="relative h-40 bg-slate-50">
                     {img ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -237,6 +371,9 @@ export default function OwnerCatalogPage() {
                     {product.isOnSale && (product.discountPercent ?? 0) > 0 && (
                       <span className="absolute top-2 right-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">{product.discountPercent}% OFF</span>
                     )}
+                    <span className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-slate-600 opacity-0 shadow transition group-hover:opacity-100">
+                      <Eye className="h-3.5 w-3.5" />
+                    </span>
                   </div>
                   <div className="p-3">
                     <p className="text-sm font-semibold text-slate-800 truncate">{product.name}</p>
@@ -248,12 +385,14 @@ export default function OwnerCatalogPage() {
                       )}
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         )}
       </div>
+
+      {detailProduct && <CatalogDetailModal product={detailProduct} onClose={() => setDetailProduct(null)} />}
     </div>
   );
 }
