@@ -5,10 +5,16 @@ import { getUserFromToken } from "../../../../lib/auth";
 const CONFIG_ID = "pricing_config";
 
 export type TaxRateEntry = { name: string; rate: number };
+export type ShippingBracket = { minKg: number; maxKg: number | null; ratePerKg: number };
 export type PricingConfig = {
   taxRates: Record<string, TaxRateEntry>; // key = 2-letter state code
   markupPercent: number;
   discountCap: number;
+  // Wholesale-to-retail formula fields
+  profitPercent: number;
+  tariffPercent: number;
+  generalShippingPerKg: number;
+  shippingBrackets: ShippingBracket[];
 };
 
 export const DEFAULT_CONFIG: PricingConfig = {
@@ -67,6 +73,10 @@ export const DEFAULT_CONFIG: PricingConfig = {
   },
   markupPercent: 20,
   discountCap: 20,
+  profitPercent: 0,
+  tariffPercent: 0,
+  generalShippingPerKg: 0,
+  shippingBrackets: [],
 };
 
 export async function GET() {
@@ -85,6 +95,10 @@ export async function GET() {
       taxRates: { ...DEFAULT_CONFIG.taxRates, ...(doc.taxRates ?? {}) },
       markupPercent: doc.markupPercent ?? DEFAULT_CONFIG.markupPercent,
       discountCap: doc.discountCap ?? DEFAULT_CONFIG.discountCap,
+      profitPercent: doc.profitPercent ?? DEFAULT_CONFIG.profitPercent,
+      tariffPercent: doc.tariffPercent ?? DEFAULT_CONFIG.tariffPercent,
+      generalShippingPerKg: doc.generalShippingPerKg ?? DEFAULT_CONFIG.generalShippingPerKg,
+      shippingBrackets: (doc.shippingBrackets as ShippingBracket[]) ?? DEFAULT_CONFIG.shippingBrackets,
     };
     return NextResponse.json(config);
   } catch (error) {
@@ -105,6 +119,10 @@ export async function PUT(req: Request) {
     if (body.taxRates) update.taxRates = body.taxRates;
     if (typeof body.markupPercent === "number") update.markupPercent = Math.max(0, body.markupPercent);
     if (typeof body.discountCap === "number") update.discountCap = Math.max(0, Math.min(100, body.discountCap));
+    if (typeof body.profitPercent === "number") update.profitPercent = Math.max(0, body.profitPercent);
+    if (typeof body.tariffPercent === "number") update.tariffPercent = Math.max(0, body.tariffPercent);
+    if (typeof body.generalShippingPerKg === "number") update.generalShippingPerKg = Math.max(0, body.generalShippingPerKg);
+    if (Array.isArray(body.shippingBrackets)) update.shippingBrackets = body.shippingBrackets;
 
     const client = await clientPromise;
     await client
