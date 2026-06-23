@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   const catalogDocs = productIds.length
     ? await db.collection("products")
         .find({ _id: { $in: productIds } })
-        .project({ _id: 1, brand: 1, category: 1, description: 1 })
+        .project({ _id: 1, brand: 1, category: 1, description: 1, isPublished: 1, status: 1, brandSuspended: 1 })
         .toArray()
     : [];
 
@@ -35,15 +35,24 @@ export async function GET(_req: Request, { params }: Ctx) {
     (catalogDocs as WithId<Document>[]).map((d) => [d._id.toString(), d])
   );
 
-  const enriched = rows.map((r) => {
-    const cat = catalogMap.get(r.productId as string);
-    return {
-      ...r,
-      brand: (cat?.brand as { name?: string } | undefined)?.name ?? null,
-      category: (cat?.category as string | undefined) ?? null,
-      description: (cat?.description as string | undefined) ?? null,
-    };
-  });
+  const enriched = rows
+    .filter((r) => {
+      const cat = catalogMap.get(r.productId as string);
+      if (!cat) return false; // removed from global catalog
+      if (cat.isPublished === false) return false;
+      if (cat.status === "archived" || cat.status === "draft") return false;
+      if (cat.brandSuspended === true) return false;
+      return true;
+    })
+    .map((r) => {
+      const cat = catalogMap.get(r.productId as string);
+      return {
+        ...r,
+        brand: (cat?.brand as { name?: string } | undefined)?.name ?? null,
+        category: (cat?.category as string | undefined) ?? null,
+        description: (cat?.description as string | undefined) ?? null,
+      };
+    });
 
   return NextResponse.json({ products: enriched });
 }
@@ -101,7 +110,7 @@ export async function POST(req: Request, { params }: Ctx) {
             // Only set these on first insert (owner can change them later)
             $setOnInsert: {
               listedAt: now,
-              sellingPrice: originalPrice,
+              sellingPrice: null,   // null = fall back to adminAdjustedPrice automatically
               discountPercent: 0,
               isOnSale: false,
               isNewArrival: false,
