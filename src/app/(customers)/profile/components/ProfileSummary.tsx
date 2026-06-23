@@ -103,6 +103,12 @@ export default function ProfileSummary({
 
   const displayedAvatarUrl = avatarPreviewUrl || user?.avatarUrl || "";
 
+  const connectedAccounts = [
+    { key: "google", label: "Google", linked: Boolean(user?.googleId), dotClass: "bg-red-500" },
+    { key: "facebook", label: "Facebook", linked: Boolean(user?.facebookId), dotClass: "bg-blue-600" },
+    { key: "twitter", label: "X (Twitter)", linked: Boolean(user?.twitterId), dotClass: "bg-slate-900 dark:bg-slate-100" },
+  ].filter((account) => account.linked);
+
   return (
     <aside className="ui-panel rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800 md:col-span-4">
       <div className="flex items-center justify-between mb-4">
@@ -224,6 +230,28 @@ export default function ProfileSummary({
             }`}
           />
         </div>
+
+        {connectedAccounts.length > 0 && (
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Connected Accounts</label>
+            <div className="mt-2 space-y-2">
+              {connectedAccounts.map((account) => (
+                <div
+                  key={account.key}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-900"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className={`h-2 w-2 flex-shrink-0 rounded-full ${account.dotClass}`} aria-hidden="true" />
+                    <span className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{account.label}</span>
+                  </span>
+                  <span className="flex-shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                    Linked
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {isEditing && (
