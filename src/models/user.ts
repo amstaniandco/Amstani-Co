@@ -30,7 +30,12 @@ export type User = {
   state?: string;
   phone?: string;
   avatarUrl?: string;
-  
+
+  // OAuth provider links (set when the user signs in with a social provider)
+  googleId?: string;
+  facebookId?: string;
+  twitterId?: string;
+
   // Array of addresses for checkout/profile
   addresses?: Address[];
   
