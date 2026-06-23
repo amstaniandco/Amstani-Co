@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ComposableMap,
   Geographies,
@@ -10,6 +11,13 @@ import {
 import { ChevronDown } from "lucide-react";
 import { useToast } from "./global/ToastProvider";
 import { getSelectedState, setSelectedState as publishSelectedState, subscribeSelectedState } from "../lib/state-preference";
+
+function hasActiveSession(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie
+    .split(";")
+    .some((part) => part.trim().startsWith("token="));
+}
 
 type Position = [number, number];
 
@@ -266,6 +274,7 @@ export default function AmericaMap() {
   const [selectedState, setSelectedStateLocal] = useState<string>("");
   const [geoData, setGeoData] = useState<object | null>(null);
   const toast = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     let active = true;
@@ -294,6 +303,12 @@ export default function AmericaMap() {
   }, []);
 
   const handleExplore = () => {
+    if (!hasActiveSession()) {
+      toast.error("Please log in to explore stores by state.");
+      router.push("/login");
+      return;
+    }
+
     if (!selectedState) {
       toast.error("Select a state first.");
       return;
