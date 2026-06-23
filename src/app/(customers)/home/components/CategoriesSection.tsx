@@ -62,7 +62,7 @@ export default function CategoriesSection({ categories }: { categories: Category
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
         {displayed.map((cat) => {
           const img = getCategoryImage(cat.name, cat.imageUrl);
           return (
@@ -75,12 +75,12 @@ export default function CategoriesSection({ categories }: { categories: Category
               <img
                 src={img}
                 alt={cat.name}
-                className="aspect-[3/2] w-full object-cover brightness-90 transition-all duration-300 group-hover:brightness-100 group-hover:scale-105"
+                className="aspect-[4/3] w-full object-cover brightness-90 transition-all duration-300 group-hover:brightness-100 group-hover:scale-105 sm:aspect-[3/2]"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
                 }}
               />
-              <span className="absolute bottom-3 right-3 rounded-full bg-[#68B8C1]/90 px-3 py-1 text-[11px] font-semibold text-white shadow">
+              <span className="absolute bottom-2 right-2 rounded-full bg-[#68B8C1]/90 px-2.5 py-0.5 text-[10px] font-semibold text-white shadow sm:bottom-3 sm:right-3 sm:px-3 sm:py-1 sm:text-[11px]">
                 {cat.name}
               </span>
             </Link>
