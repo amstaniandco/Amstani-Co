@@ -28,7 +28,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   const mergedProducts = storeProducts.filter((sp) => productMap.has(sp.productId)).map((sp) => {
     const global = productMap.get(sp.productId);
 
-    const sellingPrice: number = sp.sellingPrice ?? sp.price ?? global?.price ?? 0;
+    const sellingPrice: number = sp.sellingPrice ?? global?.adminAdjustedPrice ?? sp.price ?? global?.price ?? 0;
     const discountPercent: number = (sp.isOnSale && sp.discountPercent > 0) ? sp.discountPercent : 0;
     const effectivePrice = sellingPrice * (1 - discountPercent / 100);
 
