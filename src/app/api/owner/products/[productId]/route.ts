@@ -32,9 +32,9 @@ export async function PATCH(
   const markupPercent: number = config?.markupPercent ?? 20;
   const discountCap: number = config?.discountCap ?? 20;
 
-  // Fetch global product to get adminAdjustedPrice (if admin applied a global adjustment)
+  // Fetch global product to get adminAdjustedPrice (if admin applied a global adjustment) + variants
   const globalProduct = ObjectId.isValid(productId)
-    ? await db.collection("products").findOne({ _id: new ObjectId(productId) }, { projection: { price: 1, adminAdjustedPrice: 1 } })
+    ? await db.collection("products").findOne({ _id: new ObjectId(productId) }, { projection: { price: 1, adminAdjustedPrice: 1, variants: 1 } })
     : null;
   const catalogBasePrice: number = (globalProduct?.adminAdjustedPrice as number) ?? (globalProduct?.price as number) ?? storeProduct.originalPrice ?? storeProduct.price ?? 0;
   const originalPrice: number = catalogBasePrice;
@@ -43,9 +43,10 @@ export async function PATCH(
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
   if (body.sellingPrice === null) {
-    // Owner chose "use catalog price" — clear their custom selling price
+    // Owner chose "use catalog price" — clear their custom selling price + variant overrides
     updates.sellingPrice = null;
     updates.price = null;
+    updates.variantPrices = {};
   } else if (typeof body.sellingPrice === "number") {
     const sp = Number(body.sellingPrice.toFixed(2));
     if (sp < 0) return NextResponse.json({ error: "Selling price cannot be negative." }, { status: 400 });
@@ -56,6 +57,22 @@ export async function PATCH(
     }
     updates.sellingPrice = sp;
     updates.price = sp;
+
+    // Apply the same markup % to any custom-priced variants so they stay in sync.
+    // (Skip if the request also sends explicit variantPrices — those win below.)
+    if (body.variantPrices == null) {
+      const pct = catalogBasePrice > 0 ? sp / catalogBasePrice - 1 : 0;
+      const vPrices: Record<string, number> = {};
+      for (const v of (globalProduct?.variants as Array<{ id?: string; priceOverride?: number | null }>) ?? []) {
+        if (v.priceOverride != null && v.id != null) {
+          vPrices[String(v.id)] = Math.round(Number(v.priceOverride) * (1 + pct) * 100) / 100;
+        }
+      }
+      if (Object.keys(vPrices).length > 0) {
+        const existing = (storeProduct.variantPrices as Record<string, number>) ?? {};
+        updates.variantPrices = { ...existing, ...vPrices };
+      }
+    }
   }
 
   if (typeof body.discountPercent === "number") {
