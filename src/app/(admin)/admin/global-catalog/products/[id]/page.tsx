@@ -13,6 +13,7 @@ type ProductDetail = {
   sku?: string;
   category?: string;
   price?: number;
+  adminAdjustedPrice?: number | null;
   compareAtPrice?: number | null;
   costPrice?: number | null;
   totalStock?: number;
@@ -26,7 +27,7 @@ type ProductDetail = {
   imageUrls?: string[];
   brand?: { name?: string; slug?: string };
   categories?: Array<{ category?: { name?: string; slug?: string }; isPrimary?: boolean }>;
-  variants?: Array<{ id?: string; size?: string; color?: string; stock?: number; stockQuantity?: number; skuVariant?: string; priceOverride?: number | null }>;
+  variants?: Array<{ id?: string; size?: string; color?: string; stock?: number; stockQuantity?: number; skuVariant?: string; priceOverride?: number | null; basePriceOverride?: number | null }>;
   sizeChart?: Array<{ id?: string; size?: string; measurements?: Record<string, string>; unit?: string }>;
   shipping?: { weight?: number | null; shippingClass?: string | null; dimensionL?: number | null; dimensionW?: number | null; dimensionH?: number | null } | null;
   seoTitle?: string | null;
@@ -119,7 +120,17 @@ export default function AdminProductDetailPage({ params }: { params: Promise<{ i
                     </div>
 
                     <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                      <Metric label="Price" value={`$${(product.price ?? 0).toFixed(2)}`} />
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          {product.adminAdjustedPrice != null && product.adminAdjustedPrice !== product.price ? "Adjusted Price" : "Price"}
+                        </p>
+                        <p className="mt-1 text-lg font-bold text-slate-900">
+                          ${(product.adminAdjustedPrice ?? product.price ?? 0).toFixed(2)}
+                          {product.adminAdjustedPrice != null && product.adminAdjustedPrice !== product.price && (
+                            <span className="ml-2 text-sm font-medium text-slate-400 line-through">${(product.price ?? 0).toFixed(2)}</span>
+                          )}
+                        </p>
+                      </div>
                       <Metric label="Compare At" value={product.compareAtPrice == null ? "-" : `$${product.compareAtPrice.toFixed(2)}`} />
                       <Metric label="Stock" value={String(product.totalStock ?? product.stock ?? 0)} />
                       <Metric label="Category" value={product.category || "-"} />
@@ -154,7 +165,14 @@ export default function AdminProductDetailPage({ params }: { params: Promise<{ i
                     variant.color || "-",
                     String(variant.stock ?? variant.stockQuantity ?? 0),
                     variant.skuVariant || "-",
-                    variant.priceOverride == null ? "-" : `$${variant.priceOverride.toFixed(2)}`,
+                    variant.priceOverride == null ? "-" : (
+                      <span>
+                        ${variant.priceOverride.toFixed(2)}
+                        {variant.basePriceOverride != null && variant.basePriceOverride !== variant.priceOverride && (
+                          <span className="ml-1.5 text-xs text-slate-400 line-through">${variant.basePriceOverride.toFixed(2)}</span>
+                        )}
+                      </span>
+                    ),
                   ])}
                 />
 
@@ -199,7 +217,7 @@ function InfoBlock({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-function DetailTable({ title, headers, rows }: { title: string; headers: string[]; rows: string[][] }) {
+function DetailTable({ title, headers, rows }: { title: string; headers: string[]; rows: React.ReactNode[][] }) {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-4 py-3">
