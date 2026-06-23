@@ -10,6 +10,7 @@ export type CatalogProductRow = {
   name: string;
   category?: string;
   price?: number;
+  adminAdjustedPrice?: number | null;
   status?: "active" | "draft" | "archived";
   totalStock?: number;
   stock?: number;
@@ -164,8 +165,13 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
                     </div>
                   </td>
                   <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">{product.category || "—"}</td>
-                  <td className="px-3 py-3 font-semibold text-slate-800 sm:px-4 md:px-5">
-                    ${(product.price ?? 0).toFixed(2)}
+                  <td className="px-3 py-3 sm:px-4 md:px-5">
+                    <span className="font-semibold text-slate-800">
+                      ${(product.adminAdjustedPrice ?? product.price ?? 0).toFixed(2)}
+                    </span>
+                    {product.adminAdjustedPrice != null && product.adminAdjustedPrice !== product.price && (
+                      <span className="ml-1.5 text-xs text-slate-400 line-through">${(product.price ?? 0).toFixed(2)}</span>
+                    )}
                   </td>
                   <td className="px-3 py-3 sm:px-4 md:px-5">
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
