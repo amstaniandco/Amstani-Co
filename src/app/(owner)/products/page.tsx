@@ -336,44 +336,12 @@ function PricingModal({
   // Selling price derived from the markup %
   const derivedSelling = Math.round(catalogBase * (1 + (parseFloat(markupInput) || 0) / 100) * 100) / 100;
 
-  // Variant pricing state
-  type VariantRow = { id: string; size?: string; color?: string; isCustomSize?: boolean; catalogPrice: number; input: string; saving: boolean };
-  const [variantRows,    setVariantRows]    = useState<VariantRow[]>([]);
-  const [variantsLoaded, setVariantsLoaded] = useState(false);
-  const [variantError,   setVariantError]   = useState("");
-
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [onClose]);
-
-  // Load variants + existing store overrides
-  useEffect(() => {
-    fetch(`/api/owner/products/${product.productId}/detail`)
-      .then((r) => r.json())
-      .then((data) => {
-        const variants = (data.catalog?.variants ?? []) as Array<{
-          id?: string; size?: string; color?: string; isCustomSize?: boolean; priceOverride?: number | null;
-        }>;
-        const existingPrices: Record<string, number> = data.storeProduct?.variantPrices ?? {};
-        const rows: VariantRow[] = variants
-          .filter((v) => v.priceOverride != null)
-          .map((v) => ({
-            id:            v.id ?? "",
-            size:          v.size,
-            color:         v.color,
-            isCustomSize:  v.isCustomSize,
-            catalogPrice:  v.priceOverride!,
-            input:         (existingPrices[v.id ?? ""] ?? v.priceOverride!).toFixed(2),
-            saving:        false,
-          }));
-        setVariantRows(rows);
-        setVariantsLoaded(true);
-      })
-      .catch(() => setVariantsLoaded(true));
-  }, [product.productId]);
 
   async function patch(body: Record<string, unknown>) {
     setSaving(true); setError("");
@@ -389,14 +357,9 @@ function PricingModal({
     } finally { setSaving(false); }
   }
 
-  // Changing the normal markup auto-adjusts every custom-priced variant to match.
+  // Changing the markup % applies to the product and all its custom-priced variants on save.
   function handleMarkupChange(val: string) {
     setMarkupInput(val);
-    const pct = parseFloat(val) || 0;
-    setVariantRows((prev) => prev.map((r) => ({
-      ...r,
-      input: (Math.round(r.catalogPrice * (1 + pct / 100) * 100) / 100).toFixed(2),
-    })));
   }
 
   async function savePrice() {
@@ -426,31 +389,6 @@ function PricingModal({
     const newVal = !isNewArrival;
     const ok = await patch({ isNewArrival: newVal });
     if (ok) onUpdated(product.productId, { isNewArrival: newVal });
-  }
-
-  async function saveVariantPrice(variantId: string) {
-    const row = variantRows.find((r) => r.id === variantId);
-    if (!row) return;
-    const price = parseFloat(row.input);
-    if (isNaN(price) || price < 0) { setVariantError("Enter a valid price."); return; }
-    const max = row.catalogPrice * (1 + markupPercent / 100);
-    if (price > max) { setVariantError(`Max for this variant is $ ${max.toFixed(2)}.`); return; }
-
-    setVariantError("");
-    setVariantRows((prev) => prev.map((r) => r.id === variantId ? { ...r, saving: true } : r));
-    try {
-      const res = await fetch(`/api/owner/products/${product.productId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ variantPrices: { [variantId]: price } }),
-      });
-      const data = await res.json();
-      if (!res.ok) setVariantError(data.error || "Failed to save variant price.");
-    } catch {
-      setVariantError("Failed to save variant price.");
-    } finally {
-      setVariantRows((prev) => prev.map((r) => r.id === variantId ? { ...r, saving: false } : r));
-    }
   }
 
   const effectivePrice = Math.round(derivedSelling * (1 - parseFloat(discountInput || "0") / 100) * 100) / 100;
@@ -542,52 +480,6 @@ function PricingModal({
                 </button>
               </div>
             </div>
-
-            {/* Variant price overrides */}
-            {variantsLoaded && variantRows.length > 0 && (
-              <div className="border-t border-slate-100 pt-4">
-                <p className="mb-3 text-xs font-semibold text-slate-600">
-                  Variant Prices <span className="font-normal text-slate-400">(max +{markupPercent}% above catalog)</span>
-                </p>
-                <div className="space-y-2">
-                  {variantRows.map((row) => {
-                    const max = row.catalogPrice * (1 + markupPercent / 100);
-                    const label = [row.isCustomSize ? "Custom" : row.size, row.color].filter(Boolean).join(" · ") || "Variant";
-                    return (
-                      <div key={row.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                        <div className="mb-1.5 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-700">{label}</span>
-                          <span className="text-[10px] text-slate-400">catalog $ {row.catalogPrice.toFixed(2)} · max $ {max.toFixed(2)}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">$</span>
-                            <input
-                              type="number" min="0" max={max} step="0.01"
-                              value={row.input}
-                              onChange={(e) =>
-                                setVariantRows((prev) =>
-                                  prev.map((r) => r.id === row.id ? { ...r, input: e.target.value } : r)
-                                )
-                              }
-                              className="w-full rounded-lg border border-slate-200 py-1.5 pl-11 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
-                            />
-                          </div>
-                          <button
-                            onClick={() => saveVariantPrice(row.id)}
-                            disabled={row.saving}
-                            className="rounded-lg bg-teal-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-600 disabled:opacity-60"
-                          >
-                            {row.saving ? "…" : "Save"}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {variantError && <p className="mt-2 text-xs font-medium text-red-500">{variantError}</p>}
-              </div>
-            )}
 
             {/* Tags */}
             <div className="border-t border-slate-100 pt-4">
