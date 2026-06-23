@@ -39,6 +39,7 @@ export async function GET(
       storeProduct: {
         sellingPrice: storeProduct.sellingPrice ?? null,
         originalPrice: storeProduct.originalPrice ?? storeProduct.price ?? null,
+        adminAdjustedPrice: (catalogProduct?.adminAdjustedPrice as number) ?? null,
         discountPercent: storeProduct.discountPercent ?? 0,
         isOnSale: storeProduct.isOnSale ?? false,
         isNewArrival: storeProduct.isNewArrival ?? false,
