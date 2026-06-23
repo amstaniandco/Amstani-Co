@@ -152,7 +152,9 @@ export async function DELETE() {
           deletedAt: new Date(),
           updatedAt: new Date(),
         },
-        $unset: { password: "" },
+        // Clear credentials and OAuth links so re-authenticating (incl. social
+        // login) never matches this anonymized record — it starts a fresh account.
+        $unset: { password: "", googleId: "", facebookId: "", twitterId: "" },
       }
     );
 
