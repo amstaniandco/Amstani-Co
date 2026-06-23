@@ -156,13 +156,22 @@ export async function POST(req: Request) {
     matchedVariant?.id && storeVariantPrices[matchedVariant.id] != null
       ? storeVariantPrices[matchedVariant.id]
       : matchedVariant?.priceOverride ?? null;
-  // Final raw price before discount
-  const rawPrice: number = Number(variantBasePrice ?? storeProd?.sellingPrice ?? product.price ?? price ?? 0);
+  // Final raw price before discount: prefer store sellingPrice, then adminAdjustedPrice, then original price
+  const rawPrice: number = Number(
+    variantBasePrice ??
+    storeProd?.sellingPrice ??
+    (product as Record<string, unknown>).adminAdjustedPrice ??
+    product.price ??
+    price ??
+    0
+  );
   // Apply store discount
   const derivedPrice = Math.round(rawPrice * (1 - storeDiscount / 100) * 100) / 100;
 
   const derivedSku = matchedVariant?.skuVariant ?? matchedVariant?.sku ?? product.sku ?? sku ?? "";
   const derivedImage = product.mainImage ?? mainImage ?? product.images?.[0]?.url ?? product.images?.[0]?.imageUrl ?? product.images?.[0] ?? null;
+  const weightKg: number = Number((product.shipping as Record<string, unknown> | null)?.weight) || 0;
+  const originalPrice: number = Number(product.price) || 0;
 
   const normalizedItem: Record<string, unknown> = {
     productId,
@@ -171,6 +180,8 @@ export async function POST(req: Request) {
     name: product.name ?? name ?? "Product",
     sku: derivedSku,
     price: derivedPrice,
+    originalPrice,
+    weightKg,
     mainImage: derivedImage,
     quantity: Math.max(1, Number(quantity) || 1),
     selectedVariants: variantSnapshot,
