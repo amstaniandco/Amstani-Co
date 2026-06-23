@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     let products = activeRows.map((row) => {
       const global = productMap.get(row.productId);
       const store = storeMap.get(row.storeId);
-      const sellingPrice: number = row.sellingPrice ?? row.price ?? global?.price ?? 0;
+      const sellingPrice: number = row.sellingPrice ?? global?.adminAdjustedPrice ?? row.price ?? global?.price ?? 0;
       const discountPercent: number =
         row.isOnSale && (row.discountPercent ?? 0) > 0 ? row.discountPercent : 0;
       const effectivePrice = Math.round(sellingPrice * (1 - discountPercent / 100) * 100) / 100;
