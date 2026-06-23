@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import GoLiveModal from "@/src/components/owner/GoLiveModal";
+import { useConfirm } from "@/src/components/global/ConfirmProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -121,6 +122,7 @@ function formatDate(value: string) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function OwnerCommunicationsPage() {
+  const confirm = useConfirm();
   const [storeName, setStoreName] = useState("My Store");
   const [storeStatus, setStoreStatus] = useState("pending");
   const [isLive, setIsLive] = useState(false);
@@ -264,7 +266,7 @@ export default function OwnerCommunicationsPage() {
   };
 
   const handleDelete = async (item: Announcement) => {
-    if (!window.confirm("Delete this announcement?")) return;
+    if (!(await confirm("Delete this announcement?"))) return;
     const res = await fetch(`/api/owner/announcements?id=${item._id}`, { method: "DELETE" });
     if (!res.ok) return;
     setAnnouncements((prev) => prev.filter((a) => a._id !== item._id));
