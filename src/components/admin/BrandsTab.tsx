@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Edit2, Package, Power, Search, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Edit2, Package, Power, Search, Sparkles, Trash2, Wand2, X } from "lucide-react";
 
 type BrandProduct = {
   _id: string;
@@ -11,6 +11,7 @@ type BrandProduct = {
   status: string;
   mainImage?: string | null;
   brandSuspended?: boolean;
+  allowCustomOrders?: boolean;
 };
 
 type Brand = {
@@ -21,6 +22,7 @@ type Brand = {
   source?: string;
   status?: "active" | "suspended";
   sourceBrandId?: string;
+  customOrdersEnabled?: boolean;
 };
 
 type ConfirmDialog = {
@@ -179,6 +181,38 @@ export default function BrandsTab() {
       setBrandProducts((prev) => { const next = { ...prev }; delete next[brand._id]; return next; });
     } catch {
       setError("Failed to update brand");
+    }
+  };
+
+  const confirmCustomOrders = (brand: Brand) => {
+    const enabling = !brand.customOrdersEnabled;
+    const count = brand.productCount ?? 0;
+    setConfirm({
+      title: enabling ? `Enable custom orders for "${brand.name}"?` : `Disable custom orders for "${brand.name}"?`,
+      message: enabling
+        ? `All ${count} product${count !== 1 ? "s" : ""} in this brand will allow custom orders.`
+        : `Custom orders will be turned off for all ${count} product${count !== 1 ? "s" : ""} in this brand.`,
+      confirmLabel: enabling ? "Enable" : "Disable",
+      variant: enabling ? "success" : "warning",
+      onConfirm: () => doCustomOrders(brand),
+    });
+  };
+
+  const doCustomOrders = async (brand: Brand) => {
+    const action = brand.customOrdersEnabled ? "disableCustomOrders" : "enableCustomOrders";
+    try {
+      const res = await fetch(`/api/admin/global-catalog/brands/${brand._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Failed to update custom orders"); return; }
+      setBrands((prev) => prev.map((b) => (b._id === brand._id ? { ...b, customOrdersEnabled: data.brand.customOrdersEnabled } : b)));
+      // Drop cached products so the expanded list re-fetches the new flag
+      setBrandProducts((prev) => { const next = { ...prev }; delete next[brand._id]; return next; });
+    } catch {
+      setError("Failed to update custom orders");
     }
   };
 
@@ -342,6 +376,9 @@ export default function BrandsTab() {
                           {isSuspended && (
                             <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-600">Suspended</span>
                           )}
+                          {brand.customOrdersEnabled && (
+                            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-600">Custom Orders</span>
+                          )}
                         </div>
                         <p className="text-xs text-slate-400">
                           {brand.productCount ?? 0} product{(brand.productCount ?? 0) !== 1 ? "s" : ""} · {brand.source || "local"}
@@ -352,6 +389,15 @@ export default function BrandsTab() {
                     <div className="flex items-center gap-1">
                       <button type="button" onClick={() => openEditModal(brand)} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" aria-label="Edit brand">
                         <Edit2 size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => confirmCustomOrders(brand)}
+                        className={`rounded-lg p-1.5 transition ${brand.customOrdersEnabled ? "text-purple-500 hover:bg-purple-100 hover:text-purple-700" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"}`}
+                        aria-label={brand.customOrdersEnabled ? "Disable custom orders" : "Enable custom orders"}
+                        title={brand.customOrdersEnabled ? "Custom orders ON — click to disable" : "Enable custom orders for all products"}
+                      >
+                        <Wand2 size={15} />
                       </button>
                       <button
                         type="button"
@@ -392,6 +438,11 @@ export default function BrandsTab() {
                                 <p className="truncate text-xs font-medium text-slate-700">{p.name}</p>
                                 <p className="text-xs text-slate-400">{p.sku ? `SKU: ${p.sku} · ` : ""}PKR {p.price?.toLocaleString()}</p>
                               </div>
+                              {p.allowCustomOrders && (
+                                <span className="flex shrink-0 items-center justify-center rounded-full bg-purple-100 p-1 text-purple-600" title="Custom orders enabled">
+                                  <Sparkles size={12} />
+                                </span>
+                              )}
                               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${p.status === "active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
                                 {p.status}
                               </span>
