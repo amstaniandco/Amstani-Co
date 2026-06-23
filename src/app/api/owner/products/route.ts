@@ -40,7 +40,7 @@ export async function GET() {
   const catalogDocs = productIds.length
     ? await db.collection("products")
         .find({ _id: { $in: productIds }, brandSuspended: { $ne: true } })
-        .project({ _id: 1, brand: 1, category: 1, description: 1, allowCustomOrders: 1 })
+        .project({ _id: 1, brand: 1, category: 1, description: 1, allowCustomOrders: 1, adminAdjustedPrice: 1 })
         .toArray()
     : [];
 
@@ -58,6 +58,7 @@ export async function GET() {
         category: (cat?.category as string | undefined) ?? null,
         description: (cat?.description as string | undefined) ?? null,
         allowCustomOrders: (cat?.allowCustomOrders as boolean | undefined) ?? false,
+        adminAdjustedPrice: (cat?.adminAdjustedPrice as number | undefined) ?? null,
       };
     });
 
