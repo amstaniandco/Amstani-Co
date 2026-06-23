@@ -76,12 +76,12 @@ export async function POST(request: NextRequest) {
       const result = await usersCollection.insertOne(newUser);
       user = { ...newUser, _id: result.insertedId };
     } else {
-      // Patch providerIdField if missing
-      if (!user[providerIdField]) {
-        await usersCollection.updateOne(
-          { _id: user._id },
-          { $set: { [providerIdField]: providerId, updatedAt: new Date() } }
-        );
+      // Patch providerIdField and/or a missing state on the existing account
+      const patch: Record<string, unknown> = { updatedAt: new Date() };
+      if (!user[providerIdField]) patch[providerIdField] = providerId;
+      if (!user.state) patch.state = state;
+      if (Object.keys(patch).length > 1) {
+        await usersCollection.updateOne({ _id: user._id }, { $set: patch });
       }
     }
 
