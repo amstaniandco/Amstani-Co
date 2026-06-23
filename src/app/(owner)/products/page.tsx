@@ -225,21 +225,36 @@ function ProductDetailModal({
                     <table className="min-w-full text-sm">
                       <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                          {["Size", "Color", "Stock", "SKU Variant", "Price Override"].map((h) => (
+                          {["Size", "Color", "Stock", "Catalog", "Your Price", "Customer Pays"].map((h) => (
                             <th key={h} className="px-4 py-3">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {catalog.variants!.map((v, i) => (
-                          <tr key={v.id ?? i}>
-                            <td className="px-4 py-3 text-slate-700">{v.size || "—"}</td>
-                            <td className="px-4 py-3 text-slate-700">{v.color || "—"}</td>
-                            <td className="px-4 py-3 text-slate-700">{v.stock ?? v.stockQuantity ?? 0}</td>
-                            <td className="px-4 py-3 font-mono text-xs text-slate-500">{v.skuVariant || "—"}</td>
-                            <td className="px-4 py-3 text-slate-700">{v.priceOverride != null ? `$${v.priceOverride.toFixed(2)}` : "—"}</td>
-                          </tr>
-                        ))}
+                        {catalog.variants!.map((v, i) => {
+                          const storeVP = storeProduct?.variantPrices ?? {};
+                          const hasCustom = v.priceOverride != null;
+                          const yourPrice = hasCustom ? (storeVP[v.id ?? ""] ?? v.priceOverride!) : null;
+                          const onSale = (storeProduct?.isOnSale ?? false) && discount > 0;
+                          const customerPays = yourPrice != null ? Math.round(yourPrice * (1 - (onSale ? discount : 0) / 100) * 100) / 100 : null;
+                          return (
+                            <tr key={v.id ?? i}>
+                              <td className="px-4 py-3 text-slate-700">{v.size || "—"}</td>
+                              <td className="px-4 py-3 text-slate-700">{v.color || "—"}</td>
+                              <td className="px-4 py-3 text-slate-700">{v.stock ?? v.stockQuantity ?? 0}</td>
+                              <td className="px-4 py-3 text-slate-500">{hasCustom ? `$${v.priceOverride!.toFixed(2)}` : "—"}</td>
+                              <td className="px-4 py-3 font-semibold text-slate-800">{yourPrice != null ? `$${yourPrice.toFixed(2)}` : "—"}</td>
+                              <td className="px-4 py-3">
+                                {customerPays != null ? (
+                                  <span className="font-bold text-teal-600">${customerPays.toFixed(2)}</span>
+                                ) : "—"}
+                                {onSale && customerPays != null && yourPrice != null && customerPays !== yourPrice && (
+                                  <span className="ml-1.5 text-[10px] text-amber-500 font-semibold">{discount}% OFF</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
