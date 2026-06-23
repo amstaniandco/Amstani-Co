@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         status: { $nin: ["archived", "draft"] },
         brandSuspended: { $ne: true },
       })
-      .project({ _id: 1, price: 1 })
+      .project({ _id: 1, price: 1, variants: 1 })
       .toArray();
 
     if (!products.length) {
@@ -47,22 +47,48 @@ export async function POST(req: Request) {
     }
 
     const factor = type === "increase" ? 1 + percent / 100 : 1 - percent / 100;
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+
+    type Variant = Record<string, unknown> & { priceOverride?: number | null; basePriceOverride?: number | null };
+
+    // Re-scale any per-variant custom prices (priceOverride) by the same factor.
+    // The untouched original is kept in basePriceOverride so reset can restore it.
+    function adjustVariants(variants: Variant[] | undefined): Variant[] {
+      if (!Array.isArray(variants)) return [];
+      return variants.map((v) => {
+        if (v.priceOverride == null && v.basePriceOverride == null) return v;
+        const original = v.basePriceOverride ?? v.priceOverride ?? 0;
+        // strip basePriceOverride; rebuild explicitly
+        const rest: Variant = { ...v };
+        delete rest.basePriceOverride;
+        if (type === "reset") {
+          return { ...rest, priceOverride: round2(Number(original)) };
+        }
+        return { ...rest, basePriceOverride: round2(Number(original)), priceOverride: round2(Number(original) * factor) };
+      });
+    }
 
     const bulkOps = products.map((p) => {
+      const variants = adjustVariants(p.variants as Variant[] | undefined);
+      const hasVariants = Array.isArray(p.variants) && p.variants.length > 0;
+
       if (type === "reset") {
         return {
           updateOne: {
             filter: { _id: p._id },
-            update: { $unset: { adminAdjustedPrice: "" } },
+            update: {
+              $unset: { adminAdjustedPrice: "" },
+              ...(hasVariants ? { $set: { variants } } : {}),
+            },
           },
         };
       }
       const basePrice = Number(p.price) || 0;
-      const adminAdjustedPrice = Math.round(basePrice * factor * 100) / 100;
+      const adminAdjustedPrice = round2(basePrice * factor);
       return {
         updateOne: {
           filter: { _id: p._id },
-          update: { $set: { adminAdjustedPrice } },
+          update: { $set: { adminAdjustedPrice, ...(hasVariants ? { variants } : {}) } },
         },
       };
     });
