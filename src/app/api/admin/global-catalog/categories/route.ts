@@ -29,6 +29,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const name = String(body.name || "").trim();
     if (!name) return NextResponse.json({ error: "Category name is required" }, { status: 400 });
+    const imageUrl = String(body.imageUrl || "").trim();
 
     const client = await clientPromise;
     const collection = client.db(DB_NAME).collection("categories");
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
     const result = await collection.insertOne({
       name,
       slug,
+      imageUrl,
       source: "admin",
       productCount: 0,
       sizeVariables: [],
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
       updatedAt: now,
     });
 
-    return NextResponse.json({ category: { _id: result.insertedId, name, slug, productCount: 0 } }, { status: 201 });
+    return NextResponse.json({ category: { _id: result.insertedId, name, slug, imageUrl, productCount: 0 } }, { status: 201 });
   } catch (error) {
     console.error("POST /api/admin/global-catalog/categories error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
