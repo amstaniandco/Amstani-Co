@@ -19,7 +19,10 @@
       "Bash(mkdir -p \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\owner\\\\products\\\\[productId]\\\\detail\")",
       "Bash(xargs grep -l \"wishlist\")",
       "PowerShell(git add -A)",
-      "PowerShell(git commit -m \"feat\\(admin\\): delete store and revert owner role to user\")"
+      "PowerShell(git commit -m \"feat\\(admin\\): delete store and revert owner role to user\")",
+      "PowerShell(git push origin main)",
+      "PowerShell(npm run build)",
+      "PowerShell(git commit -m \"feat\\(auth\\): add Continue with X button to signup\")"
     ],
     "additionalDirectories": [
       "c:\\Development\\Amstani-Co\\src\\app\\api\\owner\\products\\[productId]"
