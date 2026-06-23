@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PaymentMethod } from "../../../../models/user";
 import { useToast } from "../../../../components/global/ToastProvider";
+import { useConfirm } from "../../../../components/global/ConfirmProvider";
 
 interface CardsSectionProps {
   cards: PaymentMethod[];
@@ -12,6 +13,7 @@ interface CardsSectionProps {
 
 export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSectionProps) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
   };
 
   const handleDelete = async (cardId: string) => {
-    if (!confirm("Are you sure you want to delete this card?")) return;
+    if (!(await confirm("Are you sure you want to delete this card?"))) return;
 
     setDeletingId(cardId);
     try {
