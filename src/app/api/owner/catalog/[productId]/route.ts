@@ -27,14 +27,38 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ produc
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const config = await db.collection("pricing_config").findOne({ _id: CONFIG_ID as any });
   const markupPercent: number = config?.markupPercent ?? 20;
-  const maxPrice = (entry.originalPrice ?? 0) * (1 + markupPercent / 100);
+  const discountCap: number = config?.discountCap ?? 20;
+
+  // Fetch adminAdjustedPrice from global product — use it as the cap base
+  let adminAdjustedPrice: number | null = null;
+  if (ObjectId.isValid(productId)) {
+    const gp = await db.collection("products").findOne(
+      { _id: new ObjectId(productId) },
+      { projection: { adminAdjustedPrice: 1 } }
+    );
+    adminAdjustedPrice = (gp?.adminAdjustedPrice as number) ?? null;
+  }
+
+  const catalogBase = adminAdjustedPrice ?? (entry.originalPrice as number) ?? 0;
+  const maxPrice = catalogBase * (1 + markupPercent / 100);
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
   if (typeof body.price === "number") {
     if (body.price < 0) return NextResponse.json({ error: "Price cannot be negative." }, { status: 400 });
     if (body.price > maxPrice) return NextResponse.json({ error: `Price cannot exceed $${maxPrice.toFixed(2)}.` }, { status: 400 });
-    updates.price = Number(body.price.toFixed(2));
+    updates.price = Math.round(body.price * 100) / 100;
+  }
+
+  if (typeof body.discountPercent === "number") {
+    const dp = Math.round(body.discountPercent * 100) / 100;
+    if (dp < 0 || dp > discountCap) return NextResponse.json({ error: `Discount cannot exceed ${discountCap}%.` }, { status: 400 });
+    updates.discountPercent = dp;
+  }
+
+  if (typeof body.isOnSale === "boolean") {
+    updates.isOnSale = body.isOnSale;
+    if (!body.isOnSale) updates.discountPercent = 0;
   }
 
   await db.collection("owner_catalog").updateOne({ storeId, productId }, { $set: updates });
