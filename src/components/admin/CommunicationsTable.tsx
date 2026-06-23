@@ -3,6 +3,7 @@
 import { CalendarDays, Clock3, Copy, Eye, ImagePlus, MoreVertical, Power, Send, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
+import { useConfirm } from "../global/ConfirmProvider";
 
 type Communication = {
   _id: string;
@@ -48,6 +49,7 @@ export default function CommunicationsTable({
   isComposerOpen = false,
   onCloseComposer,
 }: CommunicationsTableProps) {
+  const confirm = useConfirm();
   const [items, setItems] = useState<Communication[]>([]);
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -132,7 +134,7 @@ export default function CommunicationsTable({
   };
 
   const handleDelete = async (item: Communication) => {
-    const confirmed = window.confirm("Delete this communication?");
+    const confirmed = await confirm("Delete this communication?");
     if (!confirmed) return;
     const res = await fetch(`/api/admin/communications?id=${item._id}`, { method: "DELETE" });
     if (!res.ok) return;
