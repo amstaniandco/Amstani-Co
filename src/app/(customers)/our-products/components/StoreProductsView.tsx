@@ -6,29 +6,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Box, ChevronLeft, ChevronRight, Heart, ShoppingCart, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import { useWishlist } from "../../../../hooks/useWishlist";
+import { useCategoryImages, FALLBACK_CATEGORY_IMAGE } from "../../../../hooks/useCategoryImages";
 import { fetchAndUpdateCartCount } from "../../../../lib/cart-events";
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  tops: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop",
-  bottoms: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200&h=200&fit=crop",
-  pants: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200&h=200&fit=crop",
-  jeans: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=200&fit=crop",
-  shoes: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop",
-  sneakers: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop",
-  accessories: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=200&h=200&fit=crop",
-  dresses: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=200&h=200&fit=crop",
-  outerwear: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=200&h=200&fit=crop",
-  jackets: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=200&h=200&fit=crop",
-  bags: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&h=200&fit=crop",
-  men: "https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=200&h=200&fit=crop",
-  women: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=200&h=200&fit=crop",
-  kids: "https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=200&h=200&fit=crop",
-  others: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&h=200&fit=crop",
-};
-const FALLBACK_CAT_IMG = "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&h=200&fit=crop";
-function getCatImage(name: string) {
-  return CATEGORY_IMAGES[name.toLowerCase().trim()] ?? FALLBACK_CAT_IMG;
-}
+const FALLBACK_CAT_IMG = FALLBACK_CATEGORY_IMAGE;
 
 type ProductVariant = {
   size?: string | number;
@@ -337,6 +318,7 @@ export default function StoreProductsView() {
   const [quickView, setQuickView] = useState<CatalogProduct | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const { getCategoryImage: getCatImage } = useCategoryImages();
 
   // Sync URL → state when navigating from category strip on home page
   useEffect(() => {
