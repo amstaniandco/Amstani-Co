@@ -41,7 +41,7 @@ export async function GET(req: Request, { params }: Ctx) {
 
   // Effective price from store (already accounts for discount in store_products route,
   // but here we compute it fresh for the single-product detail page)
-  const basePrice: number = storeSellingPrice ?? (product.price as number) ?? 0;
+  const basePrice: number = storeSellingPrice ?? (product.adminAdjustedPrice as number) ?? (product.price as number) ?? 0;
   const effectivePrice: number = Math.round(basePrice * (1 - storeDiscountPercent / 100) * 100) / 100;
 
   // Merge store owner's variant price overrides so the customer sees the correct price
