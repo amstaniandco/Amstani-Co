@@ -43,7 +43,7 @@ export async function GET() {
     const products = activeRows.map((sp) => {
       const global = productMap.get(sp.productId);
       const store = storeMap.get(sp.storeId);
-      const sellingPrice: number = sp.sellingPrice ?? sp.price ?? global?.price ?? 0;
+      const sellingPrice: number = sp.sellingPrice ?? global?.adminAdjustedPrice ?? sp.price ?? global?.price ?? 0;
       const discountPercent: number = sp.discountPercent ?? 0;
       const effectivePrice = Math.round(sellingPrice * (1 - discountPercent / 100) * 100) / 100;
       const images: string[] = [];
