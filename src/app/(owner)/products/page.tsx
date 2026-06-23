@@ -21,6 +21,7 @@ type ProductRow = {
   category?: string | null;
   description?: string | null;
   listedAt?: string | null;
+  adminAdjustedPrice?: number | null;
 };
 
 type CatalogDetail = {
@@ -50,6 +51,7 @@ type CatalogDetail = {
 type StoreProductDetail = {
   sellingPrice: number | null;
   originalPrice: number | null;
+  adminAdjustedPrice: number | null;
   discountPercent: number;
   isOnSale: boolean;
   isNewArrival: boolean;
@@ -306,14 +308,23 @@ function PricingModal({
   onUpdated: (productId: string, changes: Partial<ProductRow>) => void;
   onClose: () => void;
 }) {
+  const catalogBase = useRef<number>(
+    product.adminAdjustedPrice != null && product.adminAdjustedPrice > 0
+      ? product.adminAdjustedPrice
+      : product.originalPrice != null && product.originalPrice > 0
+        ? product.originalPrice
+        : product.price ?? 0
+  ).current;
+
   const originalPrice = useRef<number>(
     product.originalPrice != null && product.originalPrice > 0
       ? product.originalPrice
       : product.price ?? 0
   ).current;
 
-  const maxSellingPrice = originalPrice * (1 + markupPercent / 100);
-  const currentSelling  = product.sellingPrice ?? originalPrice;
+  const hasAdminAdjust = product.adminAdjustedPrice != null && product.adminAdjustedPrice !== originalPrice;
+  const maxSellingPrice = catalogBase * (1 + markupPercent / 100);
+  const currentSelling  = product.sellingPrice ?? catalogBase;
   const currentDiscount = product.discountPercent ?? 0;
   const isOnSale        = product.isOnSale ?? false;
 
@@ -378,6 +389,7 @@ function PricingModal({
   async function savePrice() {
     const sp = parseFloat(priceInput);
     if (isNaN(sp) || sp < 0) { setError("Enter a valid price."); return; }
+    if (sp > maxSellingPrice) { setError(`Max allowed is $${maxSellingPrice.toFixed(2)} (${markupPercent}% over catalog).`); return; }
     const ok = await patch({ sellingPrice: sp });
     if (ok) onUpdated(product.productId, { sellingPrice: sp });
   }
@@ -408,7 +420,7 @@ function PricingModal({
     const price = parseFloat(row.input);
     if (isNaN(price) || price < 0) { setVariantError("Enter a valid price."); return; }
     const max = row.catalogPrice * (1 + markupPercent / 100);
-    if (price > max) { setVariantError(`Max for this variant is PKR ${max.toFixed(2)}.`); return; }
+    if (price > max) { setVariantError(`Max for this variant is $ ${max.toFixed(2)}.`); return; }
 
     setVariantError("");
     setVariantRows((prev) => prev.map((r) => r.id === variantId ? { ...r, saving: true } : r));
@@ -427,7 +439,7 @@ function PricingModal({
     }
   }
 
-  const effectivePrice = parseFloat(priceInput || "0") * (1 - parseFloat(discountInput || "0") / 100);
+  const effectivePrice = Math.round(parseFloat(priceInput || "0") * (1 - parseFloat(discountInput || "0") / 100) * 100) / 100;
 
   return (
     <div
@@ -448,18 +460,23 @@ function PricingModal({
 
         <div className="overflow-y-auto px-5 py-5">
           <div className="space-y-5">
-            {/* Price overview */}
+            {/* Price overview cards */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">Catalog Price</p>
-                <p className="text-base font-bold text-slate-600">PKR {originalPrice.toFixed(2)}</p>
-                <p className="mt-0.5 text-[10px] text-slate-400">max PKR {maxSellingPrice.toFixed(2)}</p>
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                  {hasAdminAdjust ? "Admin-Adjusted Price" : "Catalog Price"}
+                </p>
+                <p className="text-base font-bold text-slate-600">${catalogBase.toFixed(2)}</p>
+                {hasAdminAdjust && (
+                  <p className="mt-0.5 text-[10px] text-slate-400">original ${originalPrice.toFixed(2)}</p>
+                )}
+                <p className="mt-0.5 text-[10px] text-slate-400">max ${maxSellingPrice.toFixed(2)}</p>
               </div>
               <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-teal-500">Customer Pays</p>
-                <p className="text-base font-extrabold text-teal-600">PKR {effectivePrice.toFixed(2)}</p>
+                <p className="text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
                 {isOnSale && parseFloat(discountInput) > 0 && (
-                  <p className="mt-0.5 text-[10px] text-slate-400 line-through">PKR {parseFloat(priceInput).toFixed(2)}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400 line-through">${parseFloat(priceInput).toFixed(2)}</p>
                 )}
               </div>
             </div>
@@ -467,15 +484,15 @@ function PricingModal({
             {/* Selling price */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                Your Selling Price <span className="font-normal text-slate-400">(max PKR {maxSellingPrice.toFixed(2)})</span>
+                Your Selling Price <span className="font-normal text-slate-400">(max ${maxSellingPrice.toFixed(2)})</span>
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">PKR</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
                   <input
                     type="number" min="0" max={maxSellingPrice} step="0.01"
                     value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 py-2 pl-12 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full rounded-xl border border-slate-200 py-2 pl-8 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
                 </div>
                 <button onClick={savePrice} disabled={saving}
@@ -525,11 +542,11 @@ function PricingModal({
                       <div key={row.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                         <div className="mb-1.5 flex items-center justify-between">
                           <span className="text-xs font-semibold text-slate-700">{label}</span>
-                          <span className="text-[10px] text-slate-400">catalog PKR {row.catalogPrice.toFixed(2)} · max PKR {max.toFixed(2)}</span>
+                          <span className="text-[10px] text-slate-400">catalog $ {row.catalogPrice.toFixed(2)} · max $ {max.toFixed(2)}</span>
                         </div>
                         <div className="flex gap-2">
                           <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">PKR</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">$</span>
                             <input
                               type="number" min="0" max={max} step="0.01"
                               value={row.input}
