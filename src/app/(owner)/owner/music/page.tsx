@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Pause, Play, Store, Trash2, Upload } from "lucide-react";
+import { useConfirm } from "../../../../components/global/ConfirmProvider";
 
 type Track = {
   _id: string;
@@ -12,6 +13,7 @@ type Track = {
 };
 
 export default function OwnerMusicPage() {
+  const confirm = useConfirm();
   const [storeName, setStoreName] = useState("My Store");
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +112,7 @@ export default function OwnerMusicPage() {
 
   // ── Delete ──────────────────────────────────────────────────────────────────
   const handleDelete = async (track: Track) => {
-    if (!window.confirm(`Delete "${track.name}"?`)) return;
+    if (!(await confirm(`Delete "${track.name}"?`))) return;
     // stop preview if playing
     if (playingId === track._id) {
       audioRef.current?.pause();
