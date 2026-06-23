@@ -26,9 +26,12 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const duplicate = await collection.findOne({ _id: { $ne: objectId }, $or: [{ name }, { slug }] });
     if (duplicate) return NextResponse.json({ error: "Category already exists" }, { status: 409 });
 
+    const update: Record<string, unknown> = { name, slug, updatedAt: new Date() };
+    if (body.imageUrl !== undefined) update.imageUrl = String(body.imageUrl || "").trim();
+
     const result = await collection.findOneAndUpdate(
       { _id: objectId },
-      { $set: { name, slug, updatedAt: new Date() } },
+      { $set: update },
       { returnDocument: "after" }
     );
     if (!result) return NextResponse.json({ error: "Category not found" }, { status: 404 });
