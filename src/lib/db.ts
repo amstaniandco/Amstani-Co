@@ -6,20 +6,21 @@ if (!process.env.MONGODB_URI) {
 
 const uri = process.env.MONGODB_URI;
 
-// The Stable API (serverApi/strict) is an Atlas feature and is not supported
-// by a local mongod, so only enable it for SRV/Atlas connection strings.
-const isAtlas = uri.startsWith("mongodb+srv://");
+// The Stable API (serverApi/strict) is supported by Atlas but not by a local
+// mongod, so disable it ONLY for local connections. Any remote/production URI
+// (Atlas SRV or standard) keeps the original Stable API behavior.
+const isLocal = /^mongodb:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(uri);
 
 const options: MongoClientOptions = {
-  ...(isAtlas
-    ? {
+  ...(isLocal
+    ? {}
+    : {
         serverApi: {
           version: ServerApiVersion.v1,
           strict: true,
           deprecationErrors: true,
         },
-      }
-    : {}),
+      }),
   serverSelectionTimeoutMS: 10000,
 };
 
