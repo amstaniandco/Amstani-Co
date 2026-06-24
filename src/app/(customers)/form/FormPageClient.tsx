@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import FormMapCard from "./components/FormMapCard";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 
 type UsStatesGeoJson = {
   features?: Array<{
@@ -120,14 +121,23 @@ export default function FormPageClient() {
       )}
       <div className="w-full rounded-4xl bg-white shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="bg-[#3f4447] px-8 py-6">
-          <h1 className="text-2xl font-semibold text-white">
-            Store Ownership Application
-          </h1>
-          <p className="text-sm text-gray-300 mt-1">
-            Official registration for the State Founder Program. Please provide
-            accurate legal documentation.
-          </p>
+        <div className="flex items-start justify-between gap-4 bg-[#3f4447] px-8 py-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-white">
+              Store Ownership Application
+            </h1>
+            <p className="text-sm text-gray-300 mt-1">
+              Official registration for the State Founder Program. Please provide
+              accurate legal documentation.
+            </p>
+          </div>
+          <Link
+            href={storeId ? `/store?storeId=${storeId}` : "/store"}
+            aria-label="Close and return to store"
+            className="shrink-0 rounded-full p-2 text-gray-300 transition hover:bg-white/10 hover:text-white"
+          >
+            <X className="h-5 w-5" />
+          </Link>
         </div>
 
         {/* Content */}
