@@ -242,14 +242,14 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
             rel="noopener noreferrer"
             className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white hover:bg-[#4f9ea7] flex items-center justify-center"
           >
-            Join WhatsApp Call
+            Open WhatsApp Chat
           </a>
         ) : (
           <button
             disabled
             className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white opacity-50 cursor-not-allowed"
           >
-            Join WhatsApp Call
+            Open WhatsApp Chat
           </button>
         )}
       </div>

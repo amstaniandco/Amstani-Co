@@ -200,7 +200,7 @@ export default function OwnerTimingsPage() {
         {/* Timing card */}
         <div className="rounded-[18px] bg-white dark:bg-slate-800 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
           <h3 className="text-[1.45rem] font-bold text-slate-900 dark:text-slate-100">Set Store Timings</h3>
-          <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400">Minimum 6 hours of live is mandatory</p>
+          <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400">Go live 5 days per week, 6 hours each day</p>
 
           {saveMsg && (
             <div className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
@@ -267,7 +267,7 @@ export default function OwnerTimingsPage() {
           <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400">
             {warnings >= 3
               ? "Maximum warnings reached — admin has been notified."
-              : "Failing to go live 6 hours daily may lead to account suspension."}
+              : "Missing the 5-days-per-week live requirement may lead to account suspension."}
           </p>
 
           <p className={`mt-5 text-center text-[2.15rem] font-bold leading-none ${
@@ -287,7 +287,7 @@ export default function OwnerTimingsPage() {
               {Array.from({ length: warnings }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
                   <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                  Warning {i + 1}: Live session ended before 6 hours
+                  Warning {i + 1}: Weekly live requirement missed
                 </div>
               ))}
             </div>
@@ -295,7 +295,7 @@ export default function OwnerTimingsPage() {
 
           {warnings >= 3 && (
             <div className="mt-4 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2.5 text-xs text-red-700 dark:text-red-300">
-              Your account is at risk of suspension. Please maintain 6 hours of daily live time.
+              Your account is at risk of suspension. Please complete 5 live days per week with 6 hours each day.
             </div>
           )}
         </div>

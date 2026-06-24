@@ -15,7 +15,6 @@ export type TutorialStep = {
 };
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
-
   // ── Profile ───────────────────────────────────────────────────────────────
   {
     page: "/owner/profile",
@@ -79,7 +78,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     target: null,
     title: "Your Products",
     description:
-      "This page lists every product currently live in your store. You can view details, adjust pricing, toggle sales and new-arrival flags, and monitor stock.",
+      "This page lists every product currently live in your store. You can view details, adjust pricing, toggle sales, new-arrival flags, and monitor stock.",
   },
   {
     page: "/products",
@@ -94,7 +93,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     target: "owner-add-products-btn",
     title: "Add Products",
     description:
-      "Click here to open the product catalog and add new items to your store. You can set your own quantity and the system applies platform pricing rules.",
+      "Click here to open the new product request form and request new items to your store. Products musts have been ordered from AmstaniWholesale.com",
     position: "bottom",
   },
   {
@@ -203,14 +202,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     target: null,
     title: "Store Chats",
     description:
-      "Two chat channels: one with the Amstani admin team and one for direct customer messages. Keep your conversations up to date for the best store rating.",
+      "Two chat channels: one with the Super Admin and one for direct customer messages. Keep your conversations up to date for the best store rating.",
   },
   {
     page: "/chats",
     target: "owner-chats-section",
     title: "Chat Panel",
     description:
-      "Select 'Admin' to contact the platform team or pick a customer thread from the list on the left. New unread messages show a red dot on the sidebar badge.",
+      "Select 'Super Admin' to contact the platform team or pick a customer thread from the list on the left. New unread messages show a red dot on the sidebar badge.",
     position: "top",
   },
   {
@@ -286,7 +285,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     target: "owner-timings-section",
     title: "Live Hours & Sessions",
     description:
-      "Set your 'From' and 'To' times and click Save. Each live session is logged. You get warning points if you go live outside your declared hours — keep them accurate!",
+      "Set your 'From' and 'To' times and click Save. Each live session is logged. Go live 5 days per week for 6 hours each day to avoid weekly warning points.",
     position: "top",
   },
   {

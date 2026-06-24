@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Eye, Plus, RotateCcw, Search, Store, Tag, TrendingDown, TrendingUp, X } from "lucide-react";
+import {
+  Eye,
+  Plus,
+  RotateCcw,
+  Search,
+  Store,
+  Tag,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from "lucide-react";
 
 type ProductRow = {
   productId: string;
@@ -41,9 +51,28 @@ type CatalogDetail = {
   fullDescription?: string;
   imageUrls?: string[];
   brand?: { name?: string };
-  variants?: Array<{ id?: string; size?: string; color?: string; stock?: number; stockQuantity?: number; skuVariant?: string; priceOverride?: number | null }>;
-  sizeChart?: Array<{ id?: string; size?: string; measurements?: Record<string, string>; unit?: string }>;
-  shipping?: { weight?: number | null; shippingClass?: string | null; dimensionL?: number | null; dimensionW?: number | null; dimensionH?: number | null } | null;
+  variants?: Array<{
+    id?: string;
+    size?: string;
+    color?: string;
+    stock?: number;
+    stockQuantity?: number;
+    skuVariant?: string;
+    priceOverride?: number | null;
+  }>;
+  sizeChart?: Array<{
+    id?: string;
+    size?: string;
+    measurements?: Record<string, string>;
+    unit?: string;
+  }>;
+  shipping?: {
+    weight?: number | null;
+    shippingClass?: string | null;
+    dimensionL?: number | null;
+    dimensionW?: number | null;
+    dimensionH?: number | null;
+  } | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
 };
@@ -69,7 +98,9 @@ function ProductDetailModal({
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [storeProduct, setStoreProduct] = useState<StoreProductDetail | null>(null);
+  const [storeProduct, setStoreProduct] = useState<StoreProductDetail | null>(
+    null,
+  );
   const [catalog, setCatalog] = useState<CatalogDetail | null>(null);
   const [activeImage, setActiveImage] = useState(0);
 
@@ -87,7 +118,8 @@ function ProductDetailModal({
   }, [productId]);
 
   // The owner's "original" is the admin-set price (their base cost)
-  const originalPrice = storeProduct?.adminAdjustedPrice ?? storeProduct?.originalPrice ?? 0;
+  const originalPrice =
+    storeProduct?.adminAdjustedPrice ?? storeProduct?.originalPrice ?? 0;
   const sellingPrice = storeProduct?.sellingPrice ?? originalPrice;
   const discount = storeProduct?.discountPercent ?? 0;
   const effectivePrice = sellingPrice * (1 - discount / 100);
@@ -95,17 +127,29 @@ function ProductDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: "92vh" }}>
+      <div
+        className="flex w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl"
+        style={{ maxHeight: "92vh" }}
+      >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
           <h3 className="text-lg font-bold text-slate-900">Product Detail</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-700"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Body */}
         <div className="overflow-y-auto px-5 py-5 space-y-6">
-          {loading && <p className="py-12 text-center text-sm text-slate-400">Loading…</p>}
-          {error && <p className="py-12 text-center text-sm text-red-500">{error}</p>}
+          {loading && (
+            <p className="py-12 text-center text-sm text-slate-400">Loading…</p>
+          )}
+          {error && (
+            <p className="py-12 text-center text-sm text-red-500">{error}</p>
+          )}
 
           {!loading && !error && catalog && (
             <>
@@ -115,9 +159,15 @@ function ProductDetailModal({
                   <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     {images[activeImage] ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={images[activeImage]} alt={catalog.name} className="aspect-square w-full object-cover" />
+                      <img
+                        src={images[activeImage]}
+                        alt={catalog.name}
+                        className="aspect-square w-full object-cover"
+                      />
                     ) : (
-                      <div className="flex aspect-square items-center justify-center text-xs text-slate-400">No image</div>
+                      <div className="flex aspect-square items-center justify-center text-xs text-slate-400">
+                        No image
+                      </div>
                     )}
                   </div>
                   {images.length > 1 && (
@@ -139,54 +189,94 @@ function ProductDetailModal({
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <h4 className="text-xl font-bold leading-tight text-slate-900">{catalog.name}</h4>
-                      <p className="mt-0.5 text-xs text-slate-500">{catalog.sku || "—"} · {catalog.brand?.name || "No brand"}</p>
+                      <h4 className="text-xl font-bold leading-tight text-slate-900">
+                        {catalog.name}
+                      </h4>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {catalog.sku || "—"} ·{" "}
+                        {catalog.brand?.name || "No brand"}
+                      </p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${catalog.isPublished ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${catalog.isPublished ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}
+                    >
                       {catalog.isPublished ? "Published" : "Draft"}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Original Price</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-700">${originalPrice.toFixed(2)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        Original Price
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">
+                        ${originalPrice.toFixed(2)}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Your Selling Price</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-700">${sellingPrice.toFixed(2)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        Your Selling Price
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">
+                        ${sellingPrice.toFixed(2)}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Customer Pays</p>
-                      <p className="mt-0.5 text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        Customer Pays
+                      </p>
+                      <p className="mt-0.5 text-base font-extrabold text-teal-600">
+                        ${effectivePrice.toFixed(2)}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Compare At</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-700">{catalog.compareAtPrice != null ? `$${catalog.compareAtPrice.toFixed(2)}` : "—"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        Compare At
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">
+                        {catalog.compareAtPrice != null
+                          ? `$${catalog.compareAtPrice.toFixed(2)}`
+                          : "—"}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Stock</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-700">{storeProduct?.quantity ?? 0} units</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        Stock
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">
+                        {storeProduct?.quantity ?? 0} units
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Category</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-700">{catalog.category || "—"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        Category
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-700">
+                        {catalog.category || "—"}
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     {storeProduct?.isOnSale && discount > 0 && (
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{discount}% Sale</span>
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                        {discount}% Sale
+                      </span>
                     )}
                     {storeProduct?.isNewArrival && (
-                      <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700">✦ New Arrival</span>
+                      <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700">
+                        ✦ New Arrival
+                      </span>
                     )}
                     {catalog.isFeatured && (
-                      <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">★ Featured</span>
+                      <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+                        ★ Featured
+                      </span>
                     )}
                     {storeProduct?.listedAt && (
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
-                        Listed {new Date(storeProduct.listedAt).toLocaleDateString()}
+                        Listed{" "}
+                        {new Date(storeProduct.listedAt).toLocaleDateString()}
                       </span>
                     )}
                   </div>
@@ -196,37 +286,65 @@ function ProductDetailModal({
               {/* Description */}
               {(catalog.fullDescription || catalog.description) && (
                 <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Description</p>
-                  <p className="whitespace-pre-line text-sm leading-6 text-slate-700">{catalog.fullDescription || catalog.description}</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    Description
+                  </p>
+                  <p className="whitespace-pre-line text-sm leading-6 text-slate-700">
+                    {catalog.fullDescription || catalog.description}
+                  </p>
                 </div>
               )}
 
               {/* Catalog & Shipping info blocks */}
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Catalog Info</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    Catalog Info
+                  </p>
                   <p>Stock Status: {catalog.stockStatus || "—"}</p>
                   <p>Total Stock: {catalog.totalStock ?? catalog.stock ?? 0}</p>
                   <p>Featured: {catalog.isFeatured ? "Yes" : "No"}</p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Shipping</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    Shipping
+                  </p>
                   <p>Weight: {catalog.shipping?.weight ?? "—"}</p>
                   <p>Class: {catalog.shipping?.shippingClass || "—"}</p>
-                  <p>Dimensions: {[catalog.shipping?.dimensionL, catalog.shipping?.dimensionW, catalog.shipping?.dimensionH].map((v) => v ?? "—").join(" × ")}</p>
+                  <p>
+                    Dimensions:{" "}
+                    {[
+                      catalog.shipping?.dimensionL,
+                      catalog.shipping?.dimensionW,
+                      catalog.shipping?.dimensionH,
+                    ]
+                      .map((v) => v ?? "—")
+                      .join(" × ")}
+                  </p>
                 </div>
               </div>
 
               {/* Variants */}
               {(catalog.variants?.length ?? 0) > 0 && (
                 <div className="overflow-hidden rounded-xl border border-slate-200">
-                  <p className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Variants</p>
+                  <p className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    Variants
+                  </p>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                       <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                          {["Size", "Color", "Stock", "Catalog", "Your Price", "Customer Pays"].map((h) => (
-                            <th key={h} className="px-4 py-3">{h}</th>
+                          {[
+                            "Size",
+                            "Color",
+                            "Stock",
+                            "Catalog",
+                            "Your Price",
+                            "Customer Pays",
+                          ].map((h) => (
+                            <th key={h} className="px-4 py-3">
+                              {h}
+                            </th>
                           ))}
                         </tr>
                       </thead>
@@ -234,23 +352,56 @@ function ProductDetailModal({
                         {catalog.variants!.map((v, i) => {
                           const storeVP = storeProduct?.variantPrices ?? {};
                           const hasCustom = v.priceOverride != null;
-                          const yourPrice = hasCustom ? (storeVP[v.id ?? ""] ?? v.priceOverride!) : null;
-                          const onSale = (storeProduct?.isOnSale ?? false) && discount > 0;
-                          const customerPays = yourPrice != null ? Math.round(yourPrice * (1 - (onSale ? discount : 0) / 100) * 100) / 100 : null;
+                          const yourPrice = hasCustom
+                            ? (storeVP[v.id ?? ""] ?? v.priceOverride!)
+                            : null;
+                          const onSale =
+                            (storeProduct?.isOnSale ?? false) && discount > 0;
+                          const customerPays =
+                            yourPrice != null
+                              ? Math.round(
+                                  yourPrice *
+                                    (1 - (onSale ? discount : 0) / 100) *
+                                    100,
+                                ) / 100
+                              : null;
                           return (
                             <tr key={v.id ?? i}>
-                              <td className="px-4 py-3 text-slate-700">{v.size || "—"}</td>
-                              <td className="px-4 py-3 text-slate-700">{v.color || "—"}</td>
-                              <td className="px-4 py-3 text-slate-700">{v.stock ?? v.stockQuantity ?? 0}</td>
-                              <td className="px-4 py-3 text-slate-500">{hasCustom ? `$${v.priceOverride!.toFixed(2)}` : "—"}</td>
-                              <td className="px-4 py-3 font-semibold text-slate-800">{yourPrice != null ? `$${yourPrice.toFixed(2)}` : "—"}</td>
+                              <td className="px-4 py-3 text-slate-700">
+                                {v.size || "—"}
+                              </td>
+                              <td className="px-4 py-3 text-slate-700">
+                                {v.color || "—"}
+                              </td>
+                              <td className="px-4 py-3 text-slate-700">
+                                {v.stock ?? v.stockQuantity ?? 0}
+                              </td>
+                              <td className="px-4 py-3 text-slate-500">
+                                {hasCustom
+                                  ? `$${v.priceOverride!.toFixed(2)}`
+                                  : "—"}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-slate-800">
+                                {yourPrice != null
+                                  ? `$${yourPrice.toFixed(2)}`
+                                  : "—"}
+                              </td>
                               <td className="px-4 py-3">
                                 {customerPays != null ? (
-                                  <span className="font-bold text-teal-600">${customerPays.toFixed(2)}</span>
-                                ) : "—"}
-                                {onSale && customerPays != null && yourPrice != null && customerPays !== yourPrice && (
-                                  <span className="ml-1.5 text-[10px] text-amber-500 font-semibold">{discount}% OFF</span>
+                                  <span className="font-bold text-teal-600">
+                                    ${customerPays.toFixed(2)}
+                                  </span>
+                                ) : (
+                                  "—"
                                 )}
+                                {onSale &&
+                                  customerPays != null &&
+                                  yourPrice != null &&
+                                  customerPays !== yourPrice && (
+                                    <span className="ml-1.5 text-[10px] text-amber-500 font-semibold">
+                                      {discount}% OFF
+                                    </span>
+                                  )}
                               </td>
                             </tr>
                           );
@@ -264,24 +415,34 @@ function ProductDetailModal({
               {/* Size chart */}
               {(catalog.sizeChart?.length ?? 0) > 0 && (
                 <div className="overflow-hidden rounded-xl border border-slate-200">
-                  <p className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">Size Chart</p>
+                  <p className="border-b border-slate-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    Size Chart
+                  </p>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                       <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           {["Size", "Measurements", "Unit"].map((h) => (
-                            <th key={h} className="px-4 py-3">{h}</th>
+                            <th key={h} className="px-4 py-3">
+                              {h}
+                            </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {catalog.sizeChart!.map((row, i) => (
                           <tr key={row.id ?? i}>
-                            <td className="px-4 py-3 text-slate-700">{row.size || "—"}</td>
                             <td className="px-4 py-3 text-slate-700">
-                              {Object.entries(row.measurements ?? {}).map(([k, v]) => `${k}: ${v}`).join(", ") || "—"}
+                              {row.size || "—"}
                             </td>
-                            <td className="px-4 py-3 text-slate-700">{row.unit || "—"}</td>
+                            <td className="px-4 py-3 text-slate-700">
+                              {Object.entries(row.measurements ?? {})
+                                .map(([k, v]) => `${k}: ${v}`)
+                                .join(", ") || "—"}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700">
+                              {row.unit || "—"}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -293,7 +454,9 @@ function ProductDetailModal({
               {/* SEO */}
               {(catalog.seoTitle || catalog.seoDescription) && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">SEO</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    SEO
+                  </p>
                   <p>Title: {catalog.seoTitle || "—"}</p>
                   <p>Description: {catalog.seoDescription || "—"}</p>
                 </div>
@@ -307,7 +470,10 @@ function ProductDetailModal({
 }
 
 function ProductThumb({ src, alt }: { src?: string | null; alt: string }) {
-  if (src) return <img src={src} alt={alt} className="h-9 w-9 rounded-md object-cover" />;
+  if (src)
+    return (
+      <img src={src} alt={alt} className="h-9 w-9 rounded-md object-cover" />
+    );
   return <div className="h-9 w-9 rounded-md bg-slate-200" />;
 }
 
@@ -330,36 +496,49 @@ function PricingModal({
       ? product.adminAdjustedPrice
       : product.originalPrice != null && product.originalPrice > 0
         ? product.originalPrice
-        : product.price ?? 0
+        : (product.price ?? 0),
   ).current;
 
   const maxSellingPrice = catalogBase * (1 + markupPercent / 100);
-  const currentSelling  = product.sellingPrice ?? catalogBase;
+  const currentSelling = product.sellingPrice ?? catalogBase;
   const currentDiscount = product.discountPercent ?? 0;
-  const isOnSale        = product.isOnSale ?? false;
+  const isOnSale = product.isOnSale ?? false;
 
   // Current markup % of selling price over the catalog base
-  const currentMarkupPct = catalogBase > 0
-    ? Math.max(0, Math.round(((currentSelling - catalogBase) / catalogBase) * 1000) / 10)
-    : 0;
+  const currentMarkupPct =
+    catalogBase > 0
+      ? Math.max(
+          0,
+          Math.round(((currentSelling - catalogBase) / catalogBase) * 1000) /
+            10,
+        )
+      : 0;
 
-  const [markupInput,   setMarkupInput]   = useState(String(currentMarkupPct));
+  const [markupInput, setMarkupInput] = useState(String(currentMarkupPct));
   const [discountInput, setDiscountInput] = useState(String(currentDiscount));
-  const [saving,        setSaving]        = useState(false);
-  const [error,         setError]         = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   // Selling price derived from the markup %
-  const derivedSelling = Math.round(catalogBase * (1 + (parseFloat(markupInput) || 0) / 100) * 100) / 100;
+  const derivedSelling =
+    Math.round(catalogBase * (1 + (parseFloat(markupInput) || 0) / 100) * 100) /
+    100;
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
   }, [onClose]);
 
   async function patch(body: Record<string, unknown>) {
-    setSaving(true); setError("");
+    setSaving(true);
+    setError("");
     try {
       const res = await fetch(`/api/owner/products/${product.productId}`, {
         method: "PATCH",
@@ -367,9 +546,14 @@ function PricingModal({
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to update."); return false; }
+      if (!res.ok) {
+        setError(data.error || "Failed to update.");
+        return false;
+      }
       return true;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   // Changing the markup % applies to the product and all its custom-priced variants on save.
@@ -379,8 +563,14 @@ function PricingModal({
 
   async function savePrice() {
     const pct = parseFloat(markupInput);
-    if (isNaN(pct) || pct < 0) { setError("Enter a valid markup percentage."); return; }
-    if (pct > markupPercent) { setError(`Markup cannot exceed ${markupPercent}% (platform limit).`); return; }
+    if (isNaN(pct) || pct < 0) {
+      setError("Enter a valid markup percentage.");
+      return;
+    }
+    if (pct > markupPercent) {
+      setError(`Markup cannot exceed ${markupPercent}% (platform limit).`);
+      return;
+    }
     const sp = Math.round(catalogBase * (1 + pct / 100) * 100) / 100;
     const ok = await patch({ sellingPrice: sp });
     if (ok) onUpdated(product.productId, { sellingPrice: sp });
@@ -388,15 +578,26 @@ function PricingModal({
 
   async function saveDiscount() {
     const dp = parseFloat(discountInput);
-    if (isNaN(dp) || dp < 0 || dp > discountCap) { setError(`Discount must be 0–${discountCap}%.`); return; }
+    if (isNaN(dp) || dp < 0 || dp > discountCap) {
+      setError(`Discount must be 0–${discountCap}%.`);
+      return;
+    }
     const ok = await patch({ discountPercent: dp, isOnSale: dp > 0 });
-    if (ok) onUpdated(product.productId, { discountPercent: dp, isOnSale: dp > 0 });
+    if (ok)
+      onUpdated(product.productId, { discountPercent: dp, isOnSale: dp > 0 });
   }
 
   async function toggleSale() {
     const newVal = !isOnSale;
-    const ok = await patch({ isOnSale: newVal, discountPercent: newVal ? currentDiscount : 0 });
-    if (ok) onUpdated(product.productId, { isOnSale: newVal, discountPercent: newVal ? currentDiscount : 0 });
+    const ok = await patch({
+      isOnSale: newVal,
+      discountPercent: newVal ? currentDiscount : 0,
+    });
+    if (ok)
+      onUpdated(product.productId, {
+        isOnSale: newVal,
+        discountPercent: newVal ? currentDiscount : 0,
+      });
   }
 
   const isNewArrival = product.isNewArrival ?? false;
@@ -406,21 +607,34 @@ function PricingModal({
     if (ok) onUpdated(product.productId, { isNewArrival: newVal });
   }
 
-  const effectivePrice = Math.round(derivedSelling * (1 - parseFloat(discountInput || "0") / 100) * 100) / 100;
+  const effectivePrice =
+    Math.round(
+      derivedSelling * (1 - parseFloat(discountInput || "0") / 100) * 100,
+    ) / 100;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: "90vh" }}>
+      <div
+        className="flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl"
+        style={{ maxHeight: "90vh" }}
+      >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
           <div className="min-w-0">
-            <h3 className="truncate font-bold text-slate-900">{product.name}</h3>
+            <h3 className="truncate font-bold text-slate-900">
+              {product.name}
+            </h3>
             <p className="mt-0.5 text-xs text-slate-400">Pricing & Tags</p>
           </div>
-          <button onClick={onClose} className="ml-3 shrink-0 text-slate-400 transition hover:text-slate-700">
+          <button
+            onClick={onClose}
+            className="ml-3 shrink-0 text-slate-400 transition hover:text-slate-700"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -433,14 +647,24 @@ function PricingModal({
                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
                   Original Price
                 </p>
-                <p className="text-base font-bold text-slate-600">${catalogBase.toFixed(2)}</p>
-                <p className="mt-0.5 text-[10px] text-slate-400">max ${maxSellingPrice.toFixed(2)}</p>
+                <p className="text-base font-bold text-slate-600">
+                  ${catalogBase.toFixed(2)}
+                </p>
+                <p className="mt-0.5 text-[10px] text-slate-400">
+                  max ${maxSellingPrice.toFixed(2)}
+                </p>
               </div>
               <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
-                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-teal-500">Customer Pays</p>
-                <p className="text-base font-extrabold text-teal-600">${effectivePrice.toFixed(2)}</p>
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-teal-500">
+                  Customer Pays
+                </p>
+                <p className="text-base font-extrabold text-teal-600">
+                  ${effectivePrice.toFixed(2)}
+                </p>
                 {isOnSale && parseFloat(discountInput) > 0 && (
-                  <p className="mt-0.5 text-[10px] text-slate-400 line-through">${derivedSelling.toFixed(2)}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400 line-through">
+                    ${derivedSelling.toFixed(2)}
+                  </p>
                 )}
               </div>
             </div>
@@ -448,49 +672,82 @@ function PricingModal({
             {/* Price increase (markup %) */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                Increase Price <span className="font-normal text-slate-400">(markup, max {markupPercent}%)</span>
+                Increase Price{" "}
+                <span className="font-normal text-slate-400">
+                  (markup, max {markupPercent}%)
+                </span>
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <input
-                    type="number" min="0" max={markupPercent} step="0.1"
-                    value={markupInput} onChange={(e) => handleMarkupChange(e.target.value)}
+                    type="number"
+                    min="0"
+                    max={markupPercent}
+                    step="0.1"
+                    value={markupInput}
+                    onChange={(e) => handleMarkupChange(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                    %
+                  </span>
                 </div>
-                <button onClick={savePrice} disabled={saving}
-                  className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:opacity-60">
+                <button
+                  onClick={savePrice}
+                  disabled={saving}
+                  className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:opacity-60"
+                >
                   {saving ? "…" : "Save"}
                 </button>
               </div>
               <p className="mt-1 text-[11px] text-slate-400">
-                Selling at <span className="font-semibold text-slate-600">${derivedSelling.toFixed(2)}</span>
-                {parseFloat(markupInput) > 0 ? ` (+${parseFloat(markupInput)}% over $${catalogBase.toFixed(2)})` : " (catalog price)"}
+                Selling at{" "}
+                <span className="font-semibold text-slate-600">
+                  ${derivedSelling.toFixed(2)}
+                </span>
+                {parseFloat(markupInput) > 0
+                  ? ` (+${parseFloat(markupInput)}% over $${catalogBase.toFixed(2)})`
+                  : " (catalog price)"}
               </p>
             </div>
 
             {/* Discount */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                Sale Discount <span className="font-normal text-slate-400">(max {discountCap}%)</span>
+                Sale Discount{" "}
+                <span className="font-normal text-slate-400">
+                  (max {discountCap}%)
+                </span>
               </label>
               <div className="flex gap-2">
-                <button onClick={toggleSale} disabled={saving}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:opacity-60 ${isOnSale ? "border-amber-500 bg-amber-500 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-                  <Tag className="h-3.5 w-3.5" />{isOnSale ? "ON" : "OFF"}
+                <button
+                  onClick={toggleSale}
+                  disabled={saving}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:opacity-60 ${isOnSale ? "border-amber-500 bg-amber-500 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                >
+                  <Tag className="h-3.5 w-3.5" />
+                  {isOnSale ? "ON" : "OFF"}
                 </button>
                 <div className="relative flex-1">
                   <input
-                    type="number" min="0" max={discountCap} step="1"
-                    value={discountInput} onChange={(e) => setDiscountInput(e.target.value)}
+                    type="number"
+                    min="0"
+                    max={discountCap}
+                    step="1"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
                     disabled={!isOnSale}
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-slate-50 disabled:text-slate-400"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                    %
+                  </span>
                 </div>
-                <button onClick={saveDiscount} disabled={saving || !isOnSale}
-                  className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-40">
+                <button
+                  onClick={saveDiscount}
+                  disabled={saving || !isOnSale}
+                  className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-40"
+                >
                   {saving ? "…" : "Save"}
                 </button>
               </div>
@@ -498,16 +755,23 @@ function PricingModal({
 
             {/* Tags */}
             <div className="border-t border-slate-100 pt-4">
-              <p className="mb-2 text-xs font-semibold text-slate-500">Product Tags</p>
+              <p className="mb-2 text-xs font-semibold text-slate-500">
+                Product Tags
+              </p>
               <div className="flex flex-wrap gap-2">
-                <button onClick={toggleNewArrival} disabled={saving}
-                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${isNewArrival ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}>
+                <button
+                  onClick={toggleNewArrival}
+                  disabled={saving}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${isNewArrival ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 text-slate-500 hover:border-[#68B8C1] hover:text-[#68B8C1]"}`}
+                >
                   ✦ {isNewArrival ? "New Arrival (ON)" : "Mark as New Arrival"}
                 </button>
               </div>
             </div>
 
-            {error && <p className="text-xs font-medium text-red-500">{error}</p>}
+            {error && (
+              <p className="text-xs font-medium text-red-500">{error}</p>
+            )}
           </div>
         </div>
       </div>
@@ -515,9 +779,16 @@ function PricingModal({
   );
 }
 
-function DetailsModal({ product, onClose }: { product: ProductRow; onClose: () => void }) {
+function DetailsModal({
+  product,
+  onClose,
+}: {
+  product: ProductRow;
+  onClose: () => void;
+}) {
   // The owner's "original" is the admin-set price (their base cost)
-  const originalPrice = product.adminAdjustedPrice ?? product.originalPrice ?? product.price ?? 0;
+  const originalPrice =
+    product.adminAdjustedPrice ?? product.originalPrice ?? product.price ?? 0;
   const sellingPrice = product.sellingPrice ?? originalPrice;
   const discount = product.discountPercent ?? 0;
   const effective = sellingPrice * (1 - discount / 100);
@@ -527,58 +798,111 @@ function DetailsModal({ product, onClose }: { product: ProductRow; onClose: () =
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h3 className="font-bold text-slate-900 text-lg">Product Details</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-700"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
         <div className="overflow-y-auto px-5 py-4 flex flex-col gap-4">
           <div className="flex gap-4">
             {product.mainImage ? (
-              <img src={product.mainImage} alt={product.name} className="h-24 w-24 rounded-xl object-cover flex-shrink-0 border border-slate-100" />
+              <img
+                src={product.mainImage}
+                alt={product.name}
+                className="h-24 w-24 rounded-xl object-cover flex-shrink-0 border border-slate-100"
+              />
             ) : (
               <div className="h-24 w-24 rounded-xl bg-slate-100 flex-shrink-0" />
             )}
             <div className="min-w-0">
-              <h4 className="font-bold text-slate-900 text-base leading-tight">{product.name}</h4>
-              {product.brand && <p className="mt-1 text-xs text-slate-500">Brand: <span className="font-semibold text-slate-700">{product.brand}</span></p>}
-              {product.category && <p className="text-xs text-slate-500">Category: <span className="font-semibold text-slate-700">{product.category}</span></p>}
-              <p className="text-xs text-slate-500 font-mono mt-1">SKU: {product.sku || "—"}</p>
+              <h4 className="font-bold text-slate-900 text-base leading-tight">
+                {product.name}
+              </h4>
+              {product.brand && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Brand:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {product.brand}
+                  </span>
+                </p>
+              )}
+              {product.category && (
+                <p className="text-xs text-slate-500">
+                  Category:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {product.category}
+                  </span>
+                </p>
+              )}
+              <p className="text-xs text-slate-500 font-mono mt-1">
+                SKU: {product.sku || "—"}
+              </p>
             </div>
           </div>
 
           {product.description && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Description</p>
-              <p className="text-sm text-slate-600 leading-relaxed">{product.description}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">
+                Description
+              </p>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {product.description}
+              </p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Original Price</p>
-              <p className="text-sm font-bold text-slate-700 mt-0.5">${originalPrice.toFixed(2)}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Original Price
+              </p>
+              <p className="text-sm font-bold text-slate-700 mt-0.5">
+                ${originalPrice.toFixed(2)}
+              </p>
             </div>
             <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Your Selling Price</p>
-              <p className="text-sm font-bold text-slate-700 mt-0.5">${sellingPrice.toFixed(2)}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Your Selling Price
+              </p>
+              <p className="text-sm font-bold text-slate-700 mt-0.5">
+                ${sellingPrice.toFixed(2)}
+              </p>
             </div>
             <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Customer Pays</p>
-              <p className="text-base font-extrabold text-teal-600 mt-0.5">${effective.toFixed(2)}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Customer Pays
+              </p>
+              <p className="text-base font-extrabold text-teal-600 mt-0.5">
+                ${effective.toFixed(2)}
+              </p>
             </div>
             <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Stock</p>
-              <p className="text-sm font-bold text-slate-700 mt-0.5">{product.quantity} units</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Stock
+              </p>
+              <p className="text-sm font-bold text-slate-700 mt-0.5">
+                {product.quantity} units
+              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {product.isOnSale && discount > 0 && (
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{discount}% Sale</span>
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                {discount}% Sale
+              </span>
             )}
             {product.isNewArrival && (
-              <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700">✦ New Arrival</span>
+              <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700">
+                ✦ New Arrival
+              </span>
             )}
             {!product.isOnSale && !product.isNewArrival && (
-              <span className="text-xs text-slate-400 italic">No active tags</span>
+              <span className="text-xs text-slate-400 italic">
+                No active tags
+              </span>
             )}
           </div>
         </div>
@@ -596,11 +920,11 @@ function BulkPricingPanel({
   discountCap: number;
   onApplied: () => void;
 }) {
-  const [mode,      setMode]      = useState<"markup" | "discount">("markup");
-  const [pctInput,  setPctInput]  = useState("");
-  const [applying,  setApplying]  = useState(false);
+  const [mode, setMode] = useState<"markup" | "discount">("markup");
+  const [pctInput, setPctInput] = useState("");
+  const [applying, setApplying] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [msg,       setMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const cap = mode === "markup" ? markupPercent : discountCap;
 
@@ -615,73 +939,133 @@ function BulkPricingPanel({
 
   async function apply() {
     const pct = parseFloat(pctInput);
-    if (isNaN(pct) || pct < 0) { setMsg({ ok: false, text: "Enter a valid percentage." }); return; }
-    if (pct > cap) { setMsg({ ok: false, text: `Max allowed: ${cap}% (platform limit).` }); return; }
-    setApplying(true); setMsg(null);
+    if (isNaN(pct) || pct < 0) {
+      setMsg({ ok: false, text: "Enter a valid percentage." });
+      return;
+    }
+    if (pct > cap) {
+      setMsg({ ok: false, text: `Max allowed: ${cap}% (platform limit).` });
+      return;
+    }
+    setApplying(true);
+    setMsg(null);
     try {
       const { res, data } = await send({ type: mode, percent: pct });
-      if (!res.ok) { setMsg({ ok: false, text: data.error || "Failed." }); return; }
-      setMsg({ ok: true, text: `Applied ${mode === "markup" ? "+" : "−"}${pct}% to ${data.updatedCount} products.` });
+      if (!res.ok) {
+        setMsg({ ok: false, text: data.error || "Failed." });
+        return;
+      }
+      setMsg({
+        ok: true,
+        text: `Applied ${mode === "markup" ? "+" : "−"}${pct}% to ${data.updatedCount} products.`,
+      });
       setPctInput("");
       onApplied();
-    } finally { setApplying(false); }
+    } finally {
+      setApplying(false);
+    }
   }
 
   async function resetAll() {
-    setResetting(true); setMsg(null);
+    setResetting(true);
+    setMsg(null);
     try {
       const { res, data } = await send({ type: "reset" });
-      if (!res.ok) { setMsg({ ok: false, text: data.error || "Failed." }); return; }
-      setMsg({ ok: true, text: `Reset ${data.updatedCount} products to catalog prices.` });
+      if (!res.ok) {
+        setMsg({ ok: false, text: data.error || "Failed." });
+        return;
+      }
+      setMsg({
+        ok: true,
+        text: `Reset ${data.updatedCount} products to catalog prices.`,
+      });
       setPctInput("");
       onApplied();
-    } finally { setResetting(false); }
+    } finally {
+      setResetting(false);
+    }
   }
 
   return (
     <section className="mt-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-      <p className="text-sm font-bold text-slate-800">Bulk Pricing — apply to all products</p>
+      <p className="text-sm font-bold text-slate-800">
+        Bulk Pricing — apply to all products
+      </p>
       <p className="mt-0.5 text-xs text-slate-500">
-        Increase prices (max <span className="font-semibold">{markupPercent}%</span>) or apply a discount (max <span className="font-semibold">{discountCap}%</span>) across every product at once. Individual prices can still be fine-tuned afterwards.
+        Increase prices (max{" "}
+        <span className="font-semibold">{markupPercent}%</span>) or apply a
+        discount (max <span className="font-semibold">{discountCap}%</span>)
+        across every product at once. Individual prices can still be fine-tuned
+        afterwards.
       </p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <div className="flex rounded-xl border border-slate-200 overflow-hidden">
-          <button type="button" onClick={() => setMode("markup")}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition ${mode === "markup" ? "bg-teal-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}>
+          <button
+            type="button"
+            onClick={() => setMode("markup")}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition ${mode === "markup" ? "bg-teal-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+          >
             <TrendingUp className="h-4 w-4" /> Increase
           </button>
-          <button type="button" onClick={() => setMode("discount")}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition ${mode === "discount" ? "bg-amber-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}>
+          <button
+            type="button"
+            onClick={() => setMode("discount")}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition ${mode === "discount" ? "bg-amber-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+          >
             <TrendingDown className="h-4 w-4" /> Discount
           </button>
         </div>
 
         <div className="flex-1 min-w-[130px]">
           <div className="relative">
-            <input type="number" min="0" max={cap} step="0.1"
-              value={pctInput} onChange={(e) => setPctInput(e.target.value)}
+            <input
+              type="number"
+              min="0"
+              max={cap}
+              step="0.1"
+              value={pctInput}
+              onChange={(e) => setPctInput(e.target.value)}
               placeholder={`0–${cap}`}
-              className="w-full rounded-xl border border-slate-200 py-2 pl-4 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">%</span>
+              className="w-full rounded-xl border border-slate-200 py-2 pl-4 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
+              %
+            </span>
           </div>
         </div>
 
-        <button onClick={apply} disabled={applying || !pctInput}
-          className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition disabled:opacity-50 ${mode === "markup" ? "bg-teal-500 hover:bg-teal-600" : "bg-amber-500 hover:bg-amber-600"}`}>
-          {applying ? "Applying…" : `Apply ${mode === "markup" ? "Increase" : "Discount"}`}
+        <button
+          onClick={apply}
+          disabled={applying || !pctInput}
+          className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition disabled:opacity-50 ${mode === "markup" ? "bg-teal-500 hover:bg-teal-600" : "bg-amber-500 hover:bg-amber-600"}`}
+        >
+          {applying
+            ? "Applying…"
+            : `Apply ${mode === "markup" ? "Increase" : "Discount"}`}
         </button>
 
-        <button onClick={resetAll} disabled={resetting}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50">
-          <RotateCcw className="h-4 w-4" />{resetting ? "Resetting…" : "Reset All"}
+        <button
+          onClick={resetAll}
+          disabled={resetting}
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {resetting ? "Resetting…" : "Reset All"}
         </button>
       </div>
 
       {msg && (
-        <div className={`mt-3 flex items-start justify-between rounded-xl px-4 py-2.5 text-sm ${msg.ok ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+        <div
+          className={`mt-3 flex items-start justify-between rounded-xl px-4 py-2.5 text-sm ${msg.ok ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"}`}
+        >
           <span>{msg.text}</span>
-          <button onClick={() => setMsg(null)} className="ml-4 shrink-0 opacity-60 hover:opacity-100">✕</button>
+          <button
+            onClick={() => setMsg(null)}
+            className="ml-4 shrink-0 opacity-60 hover:opacity-100"
+          >
+            ✕
+          </button>
         </div>
       )}
     </section>
@@ -712,11 +1096,14 @@ export default function OwnerProductsPage() {
     const since = localStorage.getItem("sb_seen_owner_listing_requests") ?? "";
     const params = since ? `?since_requests=${encodeURIComponent(since)}` : "";
     fetch(`/api/owner/sidebar-counts${params}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data) setRequestsBadge(data.listing_requests ?? 0); })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setRequestsBadge(data.listing_requests ?? 0);
+      })
       .catch(() => {});
     const handler = (e: Event) => {
-      if ((e as CustomEvent<string>).detail === "owner_listing_requests") setRequestsBadge(0);
+      if ((e as CustomEvent<string>).detail === "owner_listing_requests")
+        setRequestsBadge(0);
     };
     window.addEventListener("sb-seen", handler);
     return () => window.removeEventListener("sb-seen", handler);
@@ -738,17 +1125,27 @@ export default function OwnerProductsPage() {
   }, []);
 
   function handleUpdated(productId: string, changes: Partial<ProductRow>) {
-    setProducts((prev) => prev.map((p) => (p.productId === productId ? { ...p, ...changes } : p)));
+    setProducts((prev) =>
+      prev.map((p) => (p.productId === productId ? { ...p, ...changes } : p)),
+    );
   }
 
   // Derived filter options
-  const categories = Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[];
-  const brands = Array.from(new Set(products.map((p) => p.brand).filter(Boolean))) as string[];
+  const categories = Array.from(
+    new Set(products.map((p) => p.category).filter(Boolean)),
+  ) as string[];
+  const brands = Array.from(
+    new Set(products.map((p) => p.brand).filter(Boolean)),
+  ) as string[];
 
   const filteredProducts = products.filter((p) => {
     if (search) {
       const q = search.toLowerCase();
-      if (!p.name.toLowerCase().includes(q) && !(p.sku || "").toLowerCase().includes(q)) return false;
+      if (
+        !p.name.toLowerCase().includes(q) &&
+        !(p.sku || "").toLowerCase().includes(q)
+      )
+        return false;
     }
     if (filterCategory !== "all" && p.category !== filterCategory) return false;
     if (filterBrand !== "all" && p.brand !== filterBrand) return false;
@@ -763,12 +1160,21 @@ export default function OwnerProductsPage() {
     return true;
   });
 
-  const hasFilters = search || filterCategory !== "all" || filterBrand !== "all" || filterSale !== "all" || filterNewArrival !== "all" || filterStock !== "all" || filterCustomOrder !== "all";
+  const hasFilters =
+    search ||
+    filterCategory !== "all" ||
+    filterBrand !== "all" ||
+    filterSale !== "all" ||
+    filterNewArrival !== "all" ||
+    filterStock !== "all" ||
+    filterCustomOrder !== "all";
 
   if (loading) {
     return (
       <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
-        <div className="px-7 py-16 text-center text-sm text-slate-400">Loading products…</div>
+        <div className="px-7 py-16 text-center text-sm text-slate-400">
+          Loading products…
+        </div>
       </div>
     );
   }
@@ -777,26 +1183,46 @@ export default function OwnerProductsPage() {
     <>
       <section className="flex items-center gap-2 text-slate-900">
         <Store className="h-5 w-5 text-[#65bbc5]" />
-        <h1 className="text-xl font-semibold sm:text-2xl">{storeName || "My Store"}</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">
+          {storeName || "My Store"}
+        </h1>
       </section>
 
       <section className="mt-4 rounded-2xl bg-white border border-slate-200 px-5 py-4 shadow-sm">
-        <p className="text-sm font-semibold text-slate-700">Platform Pricing Rules</p>
+        <p className="text-sm font-semibold text-slate-700">
+          Platform Pricing Rules
+        </p>
         <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
-          <span>Max markup: <strong className="text-teal-600">+{markupPercent}%</strong> above original price</span>
-          <span>Max discount: <strong className="text-amber-600">{discountCap}%</strong> off selling price</span>
+          <span>
+            Max markup:{" "}
+            <strong className="text-teal-600">+{markupPercent}%</strong> above
+            original price
+          </span>
+          <span>
+            Max discount:{" "}
+            <strong className="text-amber-600">{discountCap}%</strong> off
+            selling price
+          </span>
         </div>
       </section>
 
-      <BulkPricingPanel markupPercent={markupPercent} discountCap={discountCap} onApplied={loadProducts} />
+      <BulkPricingPanel
+        markupPercent={markupPercent}
+        discountCap={discountCap}
+        onApplied={loadProducts}
+      />
 
       <section data-tutorial-id="owner-products-section" className="mt-4">
         <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
           {/* Header row */}
           <div className="flex flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-7">
             <h3 className="text-2xl font-bold text-slate-900">Products</h3>
-            <Link href="/products/add" data-tutorial-id="owner-add-products-btn" className="relative inline-flex items-center gap-2 rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5]">
-              <Plus className="h-4 w-4" /> Add Products
+            <Link
+              href="/products/add"
+              data-tutorial-id="owner-add-products-btn"
+              className="relative inline-flex items-center gap-2 rounded-2xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5]"
+            >
+              <Plus className="h-4 w-4" /> Request Products
               {requestsBadge > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white">
                   {requestsBadge > 99 ? "99+" : requestsBadge}
@@ -820,44 +1246,70 @@ export default function OwnerProductsPage() {
               </div>
 
               {categories.length > 0 && (
-                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400">
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                >
                   <option value="all">All Categories</option>
-                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
               )}
 
               {brands.length > 0 && (
-                <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)}
-                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400">
+                <select
+                  value={filterBrand}
+                  onChange={(e) => setFilterBrand(e.target.value)}
+                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                >
                   <option value="all">All Brands</option>
-                  {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+                  {brands.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
                 </select>
               )}
 
-              <select value={filterSale} onChange={(e) => setFilterSale(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400">
+              <select
+                value={filterSale}
+                onChange={(e) => setFilterSale(e.target.value)}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              >
                 <option value="all">All Sale Status</option>
                 <option value="on">On Sale</option>
                 <option value="off">Not On Sale</option>
               </select>
 
-              <select value={filterNewArrival} onChange={(e) => setFilterNewArrival(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400">
+              <select
+                value={filterNewArrival}
+                onChange={(e) => setFilterNewArrival(e.target.value)}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              >
                 <option value="all">All Arrivals</option>
                 <option value="yes">New Arrivals Only</option>
                 <option value="no">Not New Arrival</option>
               </select>
 
-              <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400">
+              <select
+                value={filterStock}
+                onChange={(e) => setFilterStock(e.target.value)}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              >
                 <option value="all">All Stock</option>
                 <option value="instock">In Stock</option>
                 <option value="outofstock">Out of Stock</option>
               </select>
 
-              <select value={filterCustomOrder} onChange={(e) => setFilterCustomOrder(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400">
+              <select
+                value={filterCustomOrder}
+                onChange={(e) => setFilterCustomOrder(e.target.value)}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              >
                 <option value="all">All Custom Orders</option>
                 <option value="yes">Custom Order Enabled</option>
                 <option value="no">Custom Order Disabled</option>
@@ -865,7 +1317,15 @@ export default function OwnerProductsPage() {
 
               {hasFilters && (
                 <button
-                  onClick={() => { setSearch(""); setFilterCategory("all"); setFilterBrand("all"); setFilterSale("all"); setFilterNewArrival("all"); setFilterStock("all"); setFilterCustomOrder("all"); }}
+                  onClick={() => {
+                    setSearch("");
+                    setFilterCategory("all");
+                    setFilterBrand("all");
+                    setFilterSale("all");
+                    setFilterNewArrival("all");
+                    setFilterStock("all");
+                    setFilterCustomOrder("all");
+                  }}
                   className="h-9 rounded-xl border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                 >
                   Clear
@@ -876,7 +1336,9 @@ export default function OwnerProductsPage() {
 
           {filteredProducts.length === 0 ? (
             <div className="px-7 pb-16 pt-4 text-center text-sm text-slate-400">
-              {products.length === 0 ? "No products yet. Submit a listing request." : "No products match your filters."}
+              {products.length === 0
+                ? "No products yet. Submit a listing request."
+                : "No products match your filters."}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -894,19 +1356,30 @@ export default function OwnerProductsPage() {
                 <div className="divide-y divide-slate-100">
                   {filteredProducts.map((product) => {
                     // The owner's "original" is the admin-set price (their base cost)
-                    const origP = product.adminAdjustedPrice ?? product.originalPrice ?? product.price ?? 0;
+                    const origP =
+                      product.adminAdjustedPrice ??
+                      product.originalPrice ??
+                      product.price ??
+                      0;
                     const sellP = product.sellingPrice ?? origP;
                     const isOnSale = product.isOnSale ?? false;
                     const discount = product.discountPercent ?? 0;
                     return (
                       <div key={product.productId}>
                         <div className="grid grid-cols-[48px_1.6fr_0.65fr_0.7fr_0.7fr_0.8fr_0.9fr] items-center px-4 py-4 text-sm sm:px-7">
-                          <ProductThumb src={product.mainImage} alt={product.name} />
+                          <ProductThumb
+                            src={product.mainImage}
+                            alt={product.name}
+                          />
                           <div>
-                            <div className="font-semibold text-slate-700 truncate pr-2">{product.name}</div>
+                            <div className="font-semibold text-slate-700 truncate pr-2">
+                              {product.name}
+                            </div>
                             {(product.brand || product.category) && (
                               <div className="text-[11px] text-slate-400 mt-0.5 truncate">
-                                {[product.brand, product.category].filter(Boolean).join(" · ")}
+                                {[product.brand, product.category]
+                                  .filter(Boolean)
+                                  .join(" · ")}
                               </div>
                             )}
                             {product.allowCustomOrders && (
@@ -915,30 +1388,45 @@ export default function OwnerProductsPage() {
                               </span>
                             )}
                           </div>
-                          <div className="font-mono text-xs text-slate-500">{product.sku || "—"}</div>
-                          <div className="text-slate-500 text-xs">${origP.toFixed(2)}</div>
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">${sellP.toFixed(2)}</p>
-                            {isOnSale && discount > 0 && <p className="text-[10px] text-amber-500 font-semibold">{discount}% OFF</p>}
+                          <div className="font-mono text-xs text-slate-500">
+                            {product.sku || "—"}
                           </div>
-                          <div className="text-slate-700">{product.quantity}</div>
+                          <div className="text-slate-500 text-xs">
+                            ${origP.toFixed(2)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">
+                              ${sellP.toFixed(2)}
+                            </p>
+                            {isOnSale && discount > 0 && (
+                              <p className="text-[10px] text-amber-500 font-semibold">
+                                {discount}% OFF
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-slate-700">
+                            {product.quantity}
+                          </div>
                           <div className="flex justify-end gap-1.5">
                             <button
-                              onClick={() => setDetailProductId(product.productId)}
+                              onClick={() =>
+                                setDetailProductId(product.productId)
+                              }
                               title="View full details"
                               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-50"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => setPricingProductId(product.productId)}
+                              onClick={() =>
+                                setPricingProductId(product.productId)
+                              }
                               className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                             >
                               Pricing
                             </button>
                           </div>
                         </div>
-
                       </div>
                     );
                   })}
@@ -949,12 +1437,31 @@ export default function OwnerProductsPage() {
         </div>
       </section>
 
-      {detailProductId && <ProductDetailModal productId={detailProductId} onClose={() => setDetailProductId(null)} />}
-      {detailProduct && <DetailsModal product={detailProduct} onClose={() => setDetailProduct(null)} />}
-      {pricingProductId && (() => {
-        const p = products.find((x) => x.productId === pricingProductId);
-        return p ? <PricingModal product={p} markupPercent={markupPercent} discountCap={discountCap} onUpdated={handleUpdated} onClose={() => setPricingProductId(null)} /> : null;
-      })()}
+      {detailProductId && (
+        <ProductDetailModal
+          productId={detailProductId}
+          onClose={() => setDetailProductId(null)}
+        />
+      )}
+      {detailProduct && (
+        <DetailsModal
+          product={detailProduct}
+          onClose={() => setDetailProduct(null)}
+        />
+      )}
+      {pricingProductId &&
+        (() => {
+          const p = products.find((x) => x.productId === pricingProductId);
+          return p ? (
+            <PricingModal
+              product={p}
+              markupPercent={markupPercent}
+              discountCap={discountCap}
+              onUpdated={handleUpdated}
+              onClose={() => setPricingProductId(null)}
+            />
+          ) : null;
+        })()}
     </>
   );
 }

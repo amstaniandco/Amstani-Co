@@ -305,7 +305,7 @@ function AdminStoresPageContent() {
               <div className="flex items-center gap-2 mb-3">
                 <TriangleAlert className="h-5 w-5 text-amber-600 flex-shrink-0" />
                 <h2 className="text-sm font-bold text-amber-800">
-                  Compliance Warnings — {liveWarnings.length} Store{liveWarnings.length !== 1 ? "s" : ""} at 3/3
+                  Weekly Live Compliance — {liveWarnings.length} Store{liveWarnings.length !== 1 ? "s" : ""} at 3/3
                 </h2>
               </div>
               {liveWarnings.length === 0 ? (

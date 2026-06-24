@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
 
 function FacebookIcon() {
@@ -51,7 +51,7 @@ function WhatsAppIcon() {
 
 const PLATFORMS = [
   { key: "instagram", label: "Instagram Live", icon: InstagramIcon, placeholder: "https://www.instagram.com/..." },
-  { key: "whatsapp", label: "WhatsApp Call", icon: WhatsAppIcon, placeholder: "https://wa.me/..." },
+  { key: "whatsapp", label: "WhatsApp Chat", icon: WhatsAppIcon, placeholder: "+1 555 123 4567" },
   { key: "facebook", label: "Facebook Live", icon: FacebookIcon, placeholder: "https://www.facebook.com/..." },
   { key: "tiktok", label: "TikTok Live", icon: TikTokIcon, placeholder: "https://www.tiktok.com/..." },
 ] as const;
@@ -68,13 +68,22 @@ export default function GoLiveModal({ isOpen, onClose, onGoLive, loading, presel
   const [selectedPlatform, setSelectedPlatform] = useState(preselectedPlatform || "instagram");
   const [link, setLink] = useState("");
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedPlatform(preselectedPlatform || "instagram");
+    setLink("");
+  }, [isOpen, preselectedPlatform]);
+
   if (!isOpen) return null;
 
   const platform = PLATFORMS.find((p) => p.key === selectedPlatform) || PLATFORMS[0];
+  const isWhatsApp = platform.key === "whatsapp";
+  const whatsappNumber = link.replace(/\D/g, "");
+  const canSubmit = isWhatsApp ? whatsappNumber.length >= 7 : Boolean(link.trim());
 
   const handleSubmit = () => {
-    if (!link.trim()) return;
-    onGoLive(link.trim());
+    if (!canSubmit) return;
+    onGoLive(isWhatsApp ? `https://wa.me/${whatsappNumber}` : link.trim());
   };
 
   return (
@@ -92,7 +101,7 @@ export default function GoLiveModal({ isOpen, onClose, onGoLive, loading, presel
         </div>
 
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Choose a platform and paste your live link to go live.
+          Choose a platform and add the details customers will use to join.
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
@@ -103,7 +112,10 @@ export default function GoLiveModal({ isOpen, onClose, onGoLive, loading, presel
               <button
                 key={p.key}
                 type="button"
-                onClick={() => setSelectedPlatform(p.key)}
+                onClick={() => {
+                  setSelectedPlatform(p.key);
+                  setLink("");
+                }}
                 className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                   isSelected
                     ? "border-[#65bbc5] bg-[#e8f8fa] text-[#2a8c98] dark:border-cyan-500 dark:bg-cyan-900/30 dark:text-cyan-300"
@@ -119,16 +131,21 @@ export default function GoLiveModal({ isOpen, onClose, onGoLive, loading, presel
 
         <div className="mt-4">
           <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
-            Your {platform.label} link
+            {isWhatsApp ? "WhatsApp phone number" : `Your ${platform.label} link`}
           </label>
           <input
-            type="url"
+            type={isWhatsApp ? "tel" : "url"}
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder={platform.placeholder}
             className="h-10 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 text-sm text-slate-700 dark:bg-slate-700 dark:text-slate-100 outline-none focus:ring-2 focus:ring-[#65bbc5]"
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           />
+          {isWhatsApp && (
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+              Include country code. Customers will open WhatsApp chat through wa.me.
+            </p>
+          )}
         </div>
 
         <div className="mt-5 flex gap-3">
@@ -142,7 +159,7 @@ export default function GoLiveModal({ isOpen, onClose, onGoLive, loading, presel
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!link.trim() || loading}
+            disabled={!canSubmit || loading}
             className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#65bbc5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#53aab5] disabled:opacity-50 dark:bg-cyan-600 dark:hover:bg-cyan-700"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

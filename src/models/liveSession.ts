@@ -7,6 +7,6 @@ export type LiveSession = {
   startedAt: Date;
   endedAt: Date;
   durationMinutes: number;
-  warning: boolean;      // true if < 360 minutes
+  warning: boolean;      // true if this session was shorter than 6 hours
   createdAt?: Date;
 };

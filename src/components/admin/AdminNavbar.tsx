@@ -34,7 +34,7 @@ type SearchResult = {
 
 type AdminNotification = {
   id: string;
-  type: "application" | "signup" | "listing" | "claim" | "chat";
+  type: "application" | "signup" | "listing" | "claim" | "chat" | "live_warning";
   title: string;
   message: string;
   href: string;
@@ -57,6 +57,7 @@ const NOTIF_ICON: Record<AdminNotification["type"], typeof StoreIcon> = {
   listing: Package,
   claim: TriangleAlert,
   chat: Mail,
+  live_warning: TriangleAlert,
 };
 
 const SEEN_KEY = "admin_notifs_seen";

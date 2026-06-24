@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { evaluateWeeklyLiveCompliance, REQUIRED_LIVE_MINUTES_PER_DAY } from "../../../../lib/live-compliance";
 
 export async function GET() {
   try {
@@ -27,23 +28,14 @@ export async function GET() {
       });
     }
 
-    const now = new Date();
-    // Auto-reset warnings if past reset date
-    if (store.warningsResetAt && new Date(store.warningsResetAt) < now && (store.warnings || 0) > 0) {
-      await db.collection("stores").updateOne(
-        { _id: store._id },
-        { $set: { warnings: 0, warningsResetAt: null, updatedAt: now } }
-      );
-      store.warnings = 0;
-      store.warningsResetAt = null;
-    }
+    const compliance = await evaluateWeeklyLiveCompliance(db, store);
 
     const followerCount = await db.collection("storeFollowers").countDocuments({ storeId: store._id });
 
     return NextResponse.json({
       dailyTimings: store.dailyTimings || { from: "09:00", to: "15:00" },
-      warnings: store.warnings || 0,
-      warningsResetAt: store.warningsResetAt || null,
+      warnings: compliance.warnings,
+      warningsResetAt: compliance.warningsResetAt || null,
       isLive: store.isLive || false,
       liveLink: store.liveLink || null,
       liveSessionStartedAt: store.liveSessionStartedAt || null,
@@ -74,7 +66,7 @@ export async function PUT(req: Request) {
     let duration = (toHour * 60 + toMin) - (fromHour * 60 + fromMin);
     if (duration < 0) duration += 24 * 60; // overnight
 
-    if (duration < 360) {
+    if (duration < REQUIRED_LIVE_MINUTES_PER_DAY) {
       return NextResponse.json({ error: "Schedule must be at least 6 hours" }, { status: 400 });
     }
 

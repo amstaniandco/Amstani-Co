@@ -246,12 +246,9 @@ function StripePageInner() {
               )}
 
               <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">How payouts work</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Important</p>
                 <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                  <li>• Customer pays at checkout</li>
-                  <li>• Amstani keeps 20% as the platform fee</li>
-                  <li>• Your 80% is transferred to this Stripe account automatically</li>
-                  <li>• Stripe deposits it to your bank on their normal payout schedule</li>
+                  <li>Amstani & Co will only charge $15 per month maintainance charges from each store</li>
                 </ul>
               </div>
             </>

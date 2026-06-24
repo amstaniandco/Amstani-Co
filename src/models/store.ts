@@ -46,6 +46,8 @@ export type Store = {
 
   warnings?: number;
   warningsResetAt?: Date | string | null;
+  liveComplianceLastCheckedWeek?: string | null; // Monday date key for the last evaluated week
+  liveComplianceEscalatedAt?: Date | string | null;
 
   createdAt?: Date | string;
   updatedAt?: Date | string;

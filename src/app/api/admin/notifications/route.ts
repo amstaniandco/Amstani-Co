@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { evaluateWeeklyLiveCompliance } from "../../../../lib/live-compliance";
 
 export type AdminNotification = {
   id: string;
-  type: "application" | "signup" | "listing" | "claim" | "chat";
+  type: "application" | "signup" | "listing" | "claim" | "chat" | "live_warning";
   title: string;
   message: string;
   href: string;
@@ -20,7 +22,10 @@ export async function GET() {
   const client = await clientPromise;
   const db = client.db(DB_NAME);
 
-  const [applications, signups, listings, claims, ownerMessages] = await Promise.all([
+  const activeStores = await db.collection("stores").find({ status: "active" }).toArray();
+  await Promise.all(activeStores.map((store) => evaluateWeeklyLiveCompliance(db, store)));
+
+  const [applications, signups, listings, claims, ownerMessages, adminLiveNotifications, liveWarnings] = await Promise.all([
     // Store applications forwarded to admin, awaiting review
     db.collection("store_applications")
       .find({ status: "forwarded_to_admin" })
@@ -46,6 +51,35 @@ export async function GET() {
       .find({ sender: "owner" })
       .sort({ createdAt: -1 })
       .limit(10).toArray(),
+    db.collection("notifications")
+      .find({ userId: new ObjectId(user.id), type: "live_compliance_admin" })
+      .sort({ createdAt: -1 })
+      .limit(15)
+      .toArray(),
+    db.collection("stores")
+      .aggregate([
+        { $match: { warnings: { $gte: 3 } } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "ownerId",
+            foreignField: "_id",
+            as: "owner",
+          },
+        },
+        { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            name: 1,
+            warnings: 1,
+            updatedAt: 1,
+            liveComplianceEscalatedAt: 1,
+            "owner.name": 1,
+            "owner.email": 1,
+          },
+        },
+      ])
+      .toArray(),
   ]);
 
   const notifications: AdminNotification[] = [];
@@ -102,6 +136,35 @@ export async function GET() {
       message: (m.text || m.message || "Sent you a message").toString().slice(0, 80),
       href: "/admin/stores",
       createdAt: new Date(m.createdAt || Date.now()).toISOString(),
+    });
+  }
+
+  for (const n of adminLiveNotifications) {
+    notifications.push({
+      id: n._id.toString(),
+      type: "live_warning",
+      title: n.title || "Store missed weekly live requirement",
+      message: n.message || "A store missed the weekly live compliance requirement.",
+      href: n.metadata?.href || "/admin/stores?tab=warnings",
+      createdAt: new Date(n.createdAt || Date.now()).toISOString(),
+    });
+  }
+
+  const storedLiveWarningStoreIds = new Set(
+    adminLiveNotifications
+      .map((n) => n.metadata?.storeId)
+      .filter((id): id is string => typeof id === "string")
+  );
+
+  for (const w of liveWarnings) {
+    if (storedLiveWarningStoreIds.has(w._id.toString())) continue;
+    notifications.push({
+      id: w._id.toString(),
+      type: "live_warning",
+      title: "Store live warning limit reached",
+      message: `${w.name || "A store"} reached 3/3 weekly live compliance warnings${w.owner?.email ? ` (${w.owner.email})` : ""}.`,
+      href: "/admin/stores?tab=warnings",
+      createdAt: new Date(w.liveComplianceEscalatedAt || w.updatedAt || Date.now()).toISOString(),
     });
   }
 

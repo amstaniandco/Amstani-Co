@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
+import { evaluateWeeklyLiveCompliance, REQUIRED_LIVE_MINUTES_PER_DAY } from "../../../../../lib/live-compliance";
 
 export async function POST() {
   try {
@@ -19,7 +20,7 @@ export async function POST() {
     const now = new Date();
     const startedAt = store.liveSessionStartedAt ? new Date(store.liveSessionStartedAt) : now;
     const durationMinutes = Math.floor((now.getTime() - startedAt.getTime()) / 60000);
-    const isWarning = durationMinutes < 360;
+    const isShortSession = durationMinutes < REQUIRED_LIVE_MINUTES_PER_DAY;
 
     const dateStr = startedAt.toLocaleDateString("en-GB", {
       day: "2-digit", month: "2-digit", year: "numeric",
@@ -31,26 +32,9 @@ export async function POST() {
       startedAt,
       endedAt: now,
       durationMinutes,
-      warning: isWarning,
+      warning: isShortSession,
       createdAt: now,
     });
-
-    // Handle warnings with auto-reset
-    let newWarnings = store.warnings || 0;
-    let warningsResetAt: Date | null = store.warningsResetAt ? new Date(store.warningsResetAt) : null;
-
-    if (warningsResetAt && warningsResetAt < now) {
-      newWarnings = 0;
-      warningsResetAt = null;
-    }
-
-    if (isWarning) {
-      newWarnings = Math.min(newWarnings + 1, 3);
-      if (!warningsResetAt) {
-        warningsResetAt = new Date();
-        warningsResetAt.setDate(warningsResetAt.getDate() + 30);
-      }
-    }
 
     await db.collection("stores").updateOne(
       { _id: store._id },
@@ -59,18 +43,18 @@ export async function POST() {
           isLive: false,
           liveLink: null,
           liveSessionStartedAt: null,
-          warnings: newWarnings,
-          warningsResetAt: warningsResetAt || null,
           updatedAt: now,
         },
       }
     );
 
+    const compliance = await evaluateWeeklyLiveCompliance(db, store, now);
+
     return NextResponse.json({
       message: "Store is now offline",
       durationMinutes,
-      warning: isWarning,
-      warnings: newWarnings,
+      warning: isShortSession,
+      warnings: compliance.warnings,
     }, { status: 200 });
   } catch (error) {
     console.error("POST /api/owner/store/go-offline error:", error);

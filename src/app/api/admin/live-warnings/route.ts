@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { evaluateWeeklyLiveCompliance } from "../../../../lib/live-compliance";
 
 export async function GET() {
   try {
@@ -10,6 +11,8 @@ export async function GET() {
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
+    const activeStores = await db.collection("stores").find({ status: "active" }).toArray();
+    await Promise.all(activeStores.map((store) => evaluateWeeklyLiveCompliance(db, store)));
 
     const stores = await db
       .collection("stores")
@@ -71,7 +74,7 @@ export async function DELETE(req: Request) {
 
     await db.collection("stores").updateOne(
       { _id: new ObjectId(storeId) },
-      { $set: { warnings: 0, warningsResetAt: new Date(), updatedAt: new Date() } }
+      { $set: { warnings: 0, warningsResetAt: new Date(), liveComplianceEscalatedAt: null, updatedAt: new Date() } }
     );
 
     return NextResponse.json({ ok: true });

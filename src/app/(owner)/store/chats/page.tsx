@@ -89,7 +89,7 @@ const channels: ChannelItem[] = [
   { key: "facebook", title: "Facebook Live", icon: FacebookBrandIcon },
   { key: "instagram", title: "Instagram Live", icon: InstagramBrandIcon },
   { key: "tiktok", title: "TikTok Live", icon: TikTokBrandIcon },
-  { key: "whatsapp", title: "WhatsApp Call", icon: WhatsAppBrandIcon },
+  { key: "whatsapp", title: "WhatsApp Chat", icon: WhatsAppBrandIcon },
 ];
 
 function messagePreview(message?: ChatMessage | null) {
