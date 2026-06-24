@@ -211,6 +211,7 @@ export default function StoreCatalogClient() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("");
   const [selected, setSelected] = useState<CatalogProduct | null>(null);
 
   useEffect(() => {
@@ -225,9 +226,11 @@ export default function StoreCatalogClient() {
   }, [storeId]);
 
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))] as string[];
+  const brands = [...new Set(products.map((p) => p.brand?.name).filter(Boolean))] as string[];
 
   const filtered = products.filter((p) => {
     if (selectedCategory && p.category !== selectedCategory) return false;
+    if (selectedBrand && p.brand?.name !== selectedBrand) return false;
     if (search.trim()) {
       const q = search.toLowerCase();
       if (!p.name.toLowerCase().includes(q) && !(p.sku ?? "").toLowerCase().includes(q)) return false;
@@ -274,6 +277,16 @@ export default function StoreCatalogClient() {
             >
               <option value="">All Categories</option>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+          {brands.length > 0 && (
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#68B8C1] shadow-sm"
+            >
+              <option value="">All Brands</option>
+              {brands.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           )}
         </div>
