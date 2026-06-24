@@ -119,7 +119,7 @@ export default function FormPageClient() {
           <div className="text-xs opacity-95">{notice.message}</div>
         </div>
       )}
-      <div className="w-full rounded-4xl bg-white shadow-xl overflow-hidden">
+      <div className="w-full rounded-4xl bg-white shadow-xl overflow-hidden dark:bg-slate-800">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 bg-[#3f4447] px-8 py-6">
           <div>
@@ -141,10 +141,10 @@ export default function FormPageClient() {
         </div>
 
         {/* Content */}
-        <div className="grid md:grid-cols-2 gap-8 p-8">
+        <div className="grid grid-cols-1 gap-6 p-4 sm:gap-8 sm:p-8 md:grid-cols-2">
           {/* LEFT SIDE - MAP */}
           <div>
-            <h3 className="text-sm font-bold text-black uppercase tracking-[0.24em] mb-3">
+            <h3 className="text-sm font-bold text-black uppercase tracking-[0.24em] mb-3 dark:text-slate-100">
               Select Jurisdiction
             </h3>
 
@@ -156,7 +156,7 @@ export default function FormPageClient() {
 
           {/* RIGHT SIDE - FORM */}
           <div>
-            <h3 className="text-sm font-bold text-black uppercase tracking-[0.24em] mb-3">
+            <h3 className="text-sm font-bold text-black uppercase tracking-[0.24em] mb-3 dark:text-slate-100">
               Identity Credentials
             </h3>
 
@@ -167,7 +167,7 @@ export default function FormPageClient() {
                 <select
                   value={state}
                   onChange={(e) => setState(e.target.value)}
-                  className="w-full rounded-3xl bg-white px-10 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400 appearance-none"
+                  className="w-full rounded-3xl bg-white px-10 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400 appearance-none dark:bg-slate-700 dark:text-slate-100"
                 >
                   <option value="">Search for a State...</option>
                   {states.map((entry) => (
@@ -185,7 +185,7 @@ export default function FormPageClient() {
                 placeholder="Legal Full Name (as per Passport)"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400"
+                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
               />
 
               <input
@@ -193,7 +193,7 @@ export default function FormPageClient() {
                 placeholder="Physical Address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400"
+                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
               />
 
               <input
@@ -201,7 +201,7 @@ export default function FormPageClient() {
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400"
+                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
               />
 
               <input
@@ -209,16 +209,16 @@ export default function FormPageClient() {
                 placeholder="Phone Number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400"
+                className="w-full rounded-3xl bg-white px-4 py-3 text-sm text-black outline-none shadow-sm focus:ring-2 focus:ring-teal-400 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
               />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col gap-4 px-8 py-6 sm:flex-row sm:items-center sm:justify-between bg-gray-50 shadow-inner">
-          <p className="flex items-center gap-2 text-sm text-black/70">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-white text-xs font-bold text-black">
+        <div className="flex flex-col gap-4 px-8 py-6 sm:flex-row sm:items-center sm:justify-between bg-gray-50 shadow-inner dark:bg-slate-900">
+          <p className="flex items-center gap-2 text-sm text-black/70 dark:text-slate-300">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-white text-xs font-bold text-black dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
               i
             </span>
             Confidential high-security application environment.

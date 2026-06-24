@@ -12,104 +12,13 @@ import {
 import { ChevronDown } from "lucide-react";
 import { useToast } from "./global/ToastProvider";
 import { getSelectedState, setSelectedState as publishSelectedState, subscribeSelectedState } from "../lib/state-preference";
+import { EXCLUDED_US_MAP_REGIONS, getStateLabelPosition, STATE_ABBREVIATIONS, type Position, type StateFeature } from "../lib/us-map-geo";
 
 function hasActiveSession(): boolean {
   if (typeof document === "undefined") return false;
   return document.cookie
     .split(";")
     .some((part) => part.trim().startsWith("token="));
-}
-
-type Position = [number, number];
-
-type StateFeature = {
-  rsmKey: string;
-  geometry?: {
-    type?: "Polygon" | "MultiPolygon";
-    coordinates?: Position[][] | Position[][][];
-  };
-  properties?: {
-    NAME?: string;
-  };
-};
-
-function ringArea(ring: Position[]): number {
-  let area = 0;
-
-  for (let i = 0; i < ring.length; i += 1) {
-    const [x1, y1] = ring[i];
-    const [x2, y2] = ring[(i + 1) % ring.length];
-    area += x1 * y2 - x2 * y1;
-  }
-
-  return Math.abs(area / 2);
-}
-
-function polygonCenter(polygon: Position[][]): Position | null {
-  const outerRing = polygon[0];
-  if (!outerRing || outerRing.length === 0) {
-    return null;
-  }
-
-  let minLon = Infinity;
-  let maxLon = -Infinity;
-  let minLat = Infinity;
-  let maxLat = -Infinity;
-
-  for (const [lon, lat] of outerRing) {
-    if (lon < minLon) {
-      minLon = lon;
-    }
-    if (lon > maxLon) {
-      maxLon = lon;
-    }
-    if (lat < minLat) {
-      minLat = lat;
-    }
-    if (lat > maxLat) {
-      maxLat = lat;
-    }
-  }
-
-  return [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
-}
-
-function getStateLabelPosition(feature: StateFeature): Position | null {
-  const geometry = feature.geometry;
-  if (!geometry || !geometry.coordinates || !geometry.type) {
-    return null;
-  }
-
-  if (geometry.type === "Polygon") {
-    return polygonCenter(geometry.coordinates as Position[][]);
-  }
-
-  const multipolygon = geometry.coordinates as Position[][][];
-  if (multipolygon.length === 0) {
-    return null;
-  }
-
-  let bestPolygon: Position[][] | null = null;
-  let bestArea = -1;
-
-  for (const polygon of multipolygon) {
-    const outerRing = polygon[0];
-    if (!outerRing || outerRing.length === 0) {
-      continue;
-    }
-
-    const area = ringArea(outerRing);
-    if (area > bestArea) {
-      bestArea = area;
-      bestPolygon = polygon;
-    }
-  }
-
-  if (!bestPolygon) {
-    return null;
-  }
-
-  return polygonCenter(bestPolygon);
 }
 
 function StateLabel({
@@ -137,7 +46,6 @@ function StateLabel({
       y={y}
       textAnchor="middle"
       dominantBaseline="middle"
-      fontSize={10}
       fontWeight={700}
       fill="#66E5FF"
       style={{ filter: "drop-shadow(0 0 3px #00CFFF)" }}
@@ -218,59 +126,6 @@ const US_STATES = [
   "Wyoming",
 ];
 
-const STATE_ABBREVIATIONS: Record<string, string> = {
-  Alabama: "AL",
-  Alaska: "AK",
-  Arizona: "AZ",
-  Arkansas: "AR",
-  California: "CA",
-  Colorado: "CO",
-  Connecticut: "CT",
-  Delaware: "DE",
-  Florida: "FL",
-  Georgia: "GA",
-  Hawaii: "HI",
-  Idaho: "ID",
-  Illinois: "IL",
-  Indiana: "IN",
-  Iowa: "IA",
-  Kansas: "KS",
-  Kentucky: "KY",
-  Louisiana: "LA",
-  Maine: "ME",
-  Maryland: "MD",
-  Massachusetts: "MA",
-  Michigan: "MI",
-  Minnesota: "MN",
-  Mississippi: "MS",
-  Missouri: "MO",
-  Montana: "MT",
-  Nebraska: "NE",
-  Nevada: "NV",
-  "New Hampshire": "NH",
-  "New Jersey": "NJ",
-  "New Mexico": "NM",
-  "New York": "NY",
-  "North Carolina": "NC",
-  "North Dakota": "ND",
-  Ohio: "OH",
-  Oklahoma: "OK",
-  Oregon: "OR",
-  Pennsylvania: "PA",
-  "Rhode Island": "RI",
-  "South Carolina": "SC",
-  "South Dakota": "SD",
-  Tennessee: "TN",
-  Texas: "TX",
-  Utah: "UT",
-  Vermont: "VT",
-  Virginia: "VA",
-  Washington: "WA",
-  "West Virginia": "WV",
-  Wisconsin: "WI",
-  Wyoming: "WY",
-};
-
 export default function AmericaMap() {
   const [hoveredState, setHoveredState] = useState<string | null>(null);
   const [selectedState, setSelectedStateLocal] = useState<string>("");
@@ -339,7 +194,7 @@ export default function AmericaMap() {
           Explore exclusive textiles across your state. Navigate the map to discover our premium collections.
         </p>
 
-        <div className="mt-7 grid items-center gap-6 lg:grid-cols-[1fr_220px]">
+        <div className="mt-7 grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_220px]">
           <div className="w-full">
             {geoData ? (
               <ComposableMap
@@ -352,7 +207,7 @@ export default function AmericaMap() {
                   {({ geographies }: { geographies: StateFeature[] }) =>
                     geographies
                       .filter(
-                        (geo) => geo.properties?.NAME !== "District of Columbia"
+                        (geo) => !EXCLUDED_US_MAP_REGIONS.has(geo.properties?.NAME ?? "")
                       )
                       .map((geo) => {
                       const stateName = geo.properties?.NAME ?? "Unknown state";

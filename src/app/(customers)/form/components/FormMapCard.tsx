@@ -7,112 +7,32 @@ import {
   Geography,
   useMapContext,
 } from "react-simple-maps";
+import { useTheme } from "../../../../components/global/ThemeProvider";
+import {
+  EXCLUDED_US_MAP_REGIONS,
+  getStateGeographyStyle,
+  getStateLabelPosition,
+  getStateLabelStyle,
+  STATE_ABBREVIATIONS,
+  type Position,
+  type StateFeature,
+} from "../../../../lib/us-map-geo";
 
 const GEO_URL = "/us-states.json";
-
-type Position = [number, number];
-
-type StateFeature = {
-  rsmKey: string;
-  geometry?: {
-    type?: "Polygon" | "MultiPolygon";
-    coordinates?: Position[][] | Position[][][];
-  };
-  properties?: {
-    NAME?: string;
-  };
-};
 
 type FormMapCardProps = {
   selectedState?: string;
   onStateSelect?: (state: string) => void;
 };
 
-function ringArea(ring: Position[]): number {
-  let area = 0;
-
-  for (let i = 0; i < ring.length; i += 1) {
-    const [x1, y1] = ring[i];
-    const [x2, y2] = ring[(i + 1) % ring.length];
-    area += x1 * y2 - x2 * y1;
-  }
-
-  return Math.abs(area / 2);
-}
-
-function polygonCenter(polygon: Position[][]): Position | null {
-  const outerRing = polygon[0];
-  if (!outerRing || outerRing.length === 0) {
-    return null;
-  }
-
-  let minLon = Infinity;
-  let maxLon = -Infinity;
-  let minLat = Infinity;
-  let maxLat = -Infinity;
-
-  for (const [lon, lat] of outerRing) {
-    if (lon < minLon) {
-      minLon = lon;
-    }
-    if (lon > maxLon) {
-      maxLon = lon;
-    }
-    if (lat < minLat) {
-      minLat = lat;
-    }
-    if (lat > maxLat) {
-      maxLat = lat;
-    }
-  }
-
-  return [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
-}
-
-function getStateLabelPosition(feature: StateFeature): Position | null {
-  const geometry = feature.geometry;
-  if (!geometry || !geometry.coordinates || !geometry.type) {
-    return null;
-  }
-
-  if (geometry.type === "Polygon") {
-    return polygonCenter(geometry.coordinates as Position[][]);
-  }
-
-  const multipolygon = geometry.coordinates as Position[][][];
-  if (multipolygon.length === 0) {
-    return null;
-  }
-
-  let bestPolygon: Position[][] | null = null;
-  let bestArea = -1;
-
-  for (const polygon of multipolygon) {
-    const outerRing = polygon[0];
-    if (!outerRing || outerRing.length === 0) {
-      continue;
-    }
-
-    const area = ringArea(outerRing);
-    if (area > bestArea) {
-      bestArea = area;
-      bestPolygon = polygon;
-    }
-  }
-
-  if (!bestPolygon) {
-    return null;
-  }
-
-  return polygonCenter(bestPolygon);
-}
-
 function StateLabel({
   coordinates,
   name,
+  theme,
 }: {
   coordinates: Position;
   name: string;
+  theme: "light" | "dark";
 }) {
   const { projection } = useMapContext();
   const projected = projection(coordinates);
@@ -122,6 +42,7 @@ function StateLabel({
   }
 
   const [x, y] = projected;
+  const labelStyle = getStateLabelStyle(theme);
 
   return (
     <text
@@ -129,9 +50,13 @@ function StateLabel({
       y={y}
       textAnchor="middle"
       dominantBaseline="middle"
-      fontSize={4.6}
+      fontSize={13}
       fontWeight={700}
-      fill="#d7f5fb"
+      fill={labelStyle.fill}
+      stroke="#000000"
+      strokeWidth={0.6}
+      paintOrder="stroke"
+      style={{ filter: labelStyle.filter }}
       pointerEvents="none"
     >
       {name}
@@ -143,7 +68,9 @@ export default function FormMapCard({
   selectedState,
   onStateSelect,
 }: FormMapCardProps) {
+  const { theme } = useTheme();
   const [geoData, setGeoData] = useState<object | null>(null);
+  const [hoveredState, setHoveredState] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -172,7 +99,7 @@ export default function FormMapCard({
   }, []);
 
   return (
-    <div className="w-full rounded-2xl border border-[#d9e3ea] bg-[#edf3f6] p-3">
+    <div className="w-full rounded-2xl border border-[#d9e3ea] bg-[#edf3f6] p-2 dark:border-slate-700 dark:bg-[#1d1b14] sm:p-3">
       {geoData ? (
         <ComposableMap
           projection="geoAlbersUsa"
@@ -182,45 +109,28 @@ export default function FormMapCard({
         >
           <Geographies geography={geoData}>
             {({ geographies }: { geographies: StateFeature[] }) =>
-              geographies.map((geo) => {
+              geographies
+                .filter((geo) => !EXCLUDED_US_MAP_REGIONS.has(geo.properties?.NAME ?? ""))
+                .map((geo) => {
+                const stateName = geo.properties?.NAME ?? "Unknown state";
+                const isSelected = selectedState === stateName;
+                const isHovered = hoveredState === stateName;
+                const stateLabel = STATE_ABBREVIATIONS[stateName] ?? stateName;
                 const labelPosition = getStateLabelPosition(geo);
 
                 return (
                   <Fragment key={geo.rsmKey}>
                     <Geography
                       geography={geo}
-                      onClick={() => onStateSelect?.(geo.properties?.NAME || "")}
-                      style={{
-                        default: {
-                          fill:
-                            selectedState === geo.properties?.NAME
-                              ? "#2f8ea3"
-                              : "#38aac4",
-                          stroke: "#68c4d8",
-                          strokeWidth: 0.75,
-                          outline: "none",
-                        },
-                        hover: {
-                          fill: "#4db8cf",
-                          stroke: "#79cada",
-                          strokeWidth: 0.85,
-                          outline: "none",
-                          cursor: "pointer",
-                        },
-                        pressed: {
-                          fill: "#2f8ea3",
-                          stroke: "#68c4d8",
-                          strokeWidth: 0.8,
-                          outline: "none",
-                        },
-                      }}
+                      className={theme === "dark" ? `am-map-state ${isHovered ? "am-map-state--hovered" : ""}` : ""}
+                      onMouseEnter={() => setHoveredState(stateName)}
+                      onMouseLeave={() => setHoveredState(null)}
+                      onClick={() => onStateSelect?.(stateName)}
+                      style={getStateGeographyStyle(theme, isSelected)}
                     />
 
                     {labelPosition ? (
-                      <StateLabel
-                        coordinates={labelPosition}
-                        name={geo.properties?.NAME || ""}
-                      />
+                      <StateLabel coordinates={labelPosition} name={stateLabel} theme={theme} />
                     ) : null}
                   </Fragment>
                 );
@@ -229,7 +139,7 @@ export default function FormMapCard({
           </Geographies>
         </ComposableMap>
       ) : (
-        <div className="h-[220px] w-full animate-pulse rounded-lg bg-[#d9edf2] sm:h-[255px]" />
+        <div className="h-[220px] w-full animate-pulse rounded-lg bg-[#d9edf2] dark:bg-slate-800 sm:h-[255px]" />
       )}
     </div>
   );

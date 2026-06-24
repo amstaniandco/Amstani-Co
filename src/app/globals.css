@@ -277,10 +277,31 @@ a, li, dd, dt, table, td, th {
 }
 
 .am-map-label {
+  /* The map's SVG viewBox is fixed size, so on narrow screens the whole
+     thing (labels included) is scaled down a lot — bump the source
+     font-size up so state names stay legible on mobile. */
+  font-size: 17px;
   transition: filter 200ms ease;
 }
 
+@media (min-width: 640px) {
+  .am-map-label {
+    font-size: 10px;
+  }
+}
+
 .am-map-label--hovered {
+  filter: drop-shadow(0 0 5px #66e5ff);
+}
+
+/* SignupUsMap — narrower card than AmericaMap, so its labels need a bigger
+   fixed size rather than AmericaMap's mobile/desktop split. */
+.signup-map-label {
+  font-size: 22px;
+  transition: filter 200ms ease;
+}
+
+.signup-map-label--hovered {
   filter: drop-shadow(0 0 5px #66e5ff);
 }
 

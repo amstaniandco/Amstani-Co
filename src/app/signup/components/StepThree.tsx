@@ -96,7 +96,7 @@ export default function StepThree({ onBack, onSubmit, loading }: StepProps) {
         </select>
       </div>
 
-      <div className="mb-5 rounded-2xl bg-[#1d1b14] p-3">
+      <div className="mb-5 rounded-2xl bg-slate-100 p-2 dark:bg-[#1d1b14] sm:p-3">
         <SignupUsMap
           selectedState={selectedState}
           onStateSelect={(state) => setSelectedState(state)}

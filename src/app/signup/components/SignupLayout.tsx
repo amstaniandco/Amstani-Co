@@ -25,7 +25,7 @@ export default function SignupLayout({ children, step }: SignupLayoutProps) {
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-6 py-8">
+      <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-4 py-8 sm:px-6">
         <div className="w-full max-w-[500px]">
           <Link
             href="/"

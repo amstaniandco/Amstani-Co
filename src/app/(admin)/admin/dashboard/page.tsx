@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
             </section>
 
             {/* Map + Store Revenue */}
-            <section className="mt-6 grid gap-4 xl:grid-cols-[2fr_1fr]">
+            <section className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[2fr_1fr]">
               <article className="rounded-xl border border-[#dbe6ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.04)] sm:p-5">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-xl font-bold text-slate-800">Regional Revenue Distribution</h2>
