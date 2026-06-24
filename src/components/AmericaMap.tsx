@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ComposableMap,
@@ -322,9 +323,18 @@ export default function AmericaMap() {
   return (
     <section className="mx-auto w-full max-w-[1500px] rounded-3xl bg-[#1d1b14] px-6 py-8 text-slate-100 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-6xl">
-        <h2 className="text-center text-2xl font-extrabold uppercase tracking-wide text-white sm:text-5xl">
-          Amstani & Co.
-        </h2>
+        <div className="flex items-center justify-center gap-3">
+          <Image
+            src="/assets/amstaniLogo.png"
+            alt="Amstani & Co"
+            width={56}
+            height={56}
+            className="h-10 w-10 object-contain sm:h-14 sm:w-14"
+          />
+          <h2 className="text-center text-2xl font-extrabold uppercase tracking-wide text-white sm:text-5xl">
+            Amstani & Co.
+          </h2>
+        </div>
         <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-300 sm:text-base">
           Explore exclusive textiles across your state. Navigate the map to discover our premium collections.
         </p>

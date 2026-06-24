@@ -133,33 +133,13 @@ const LogoutIcon = () => (
 
 const Logo = () => (
   <Link href="/" className="flex items-center gap-2 shrink-0">
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 28 28"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="2"
-        y="8"
-        width="5"
-        height="18"
-        rx="2.5"
-        transform="rotate(-30 2 8)"
-        fill="#4DB8B8"
-      />
-      <rect
-        x="9"
-        y="8"
-        width="5"
-        height="18"
-        rx="2.5"
-        transform="rotate(-30 9 8)"
-        fill="#4DB8B8"
-        opacity="0.6"
-      />
-    </svg>
+    <Image
+      src="/assets/amstaniLogo.png"
+      alt="Amstani & Co"
+      width={28}
+      height={28}
+      className="h-7 w-7 object-contain"
+    />
     <span className="text-white font-bold tracking-widest text-sm uppercase">
       Amstani <span className="text-gray-200 font-light">&amp; Co.</span>
     </span>

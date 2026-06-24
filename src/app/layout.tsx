@@ -11,8 +11,25 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: "Amstani & Co",
   description: "Amstani & Co — Shop local stores across America",
+  icons: {
+    icon: "/assets/amstaniLogo.png",
+    shortcut: "/assets/amstaniLogo.png",
+    apple: "/assets/amstaniLogo.png",
+  },
+  openGraph: {
+    title: "Amstani & Co",
+    description: "Amstani & Co — Shop local stores across America",
+    images: ["/assets/amstaniLogo.png"],
+  },
+  twitter: {
+    card: "summary",
+    title: "Amstani & Co",
+    description: "Amstani & Co — Shop local stores across America",
+    images: ["/assets/amstaniLogo.png"],
+  },
 };
 
 export default function RootLayout({
