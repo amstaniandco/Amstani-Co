@@ -152,7 +152,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     target: "owner-catalog-bulk-pricing",
     title: "Pre-Set Markup or Discount",
     description:
-      "Apply a markup or discount across the entire catalog now, so the pricing is already in place the moment a product is approved and listed in your store.",
+      "Apply a markup or discount across the entire catalog from here.",
     position: "bottom",
   },
   {
