@@ -13,7 +13,15 @@
       "Bash(npm install *)",
       "Bash(npx tsc *)",
       "Bash(xargs grep -l \"claim\" -i)",
-      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\owner\\\\claims\\\\[claimId]\")"
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Development\\\\Amstani-Co\\\\src\\\\app\\\\api\\\\owner\\\\claims\\\\[claimId]\")",
+      "Bash(node _tmp_check_owners.cjs)",
+      "Bash(curl -s \"http://localhost:3000/api/store-signup?email=mohsin@gmail.com&t=$\\(date +%s\\)\" -H \"Cache-Control: no-cache\")",
+      "Bash(curl -s -i \"http://localhost:3000/api/store-signup?email=mohsin@gmail.com\")",
+      "Bash(wmic process *)",
+      "Bash(powershell -Command \"Get-CimInstance Win32_Process -Filter \\\\\"Name='node.exe'\\\\\" | Select-Object ProcessId,CommandLine | Format-List\")",
+      "Bash(curl -s \"http://localhost:3000/api/store-signup?email=israr@gmail.com\")",
+      "Bash(curl -s \"http://localhost:3000/api/store-signup?email=nonexistent999@gmail.com\")",
+      "Bash(curl -s \"http://localhost:3000/api/store-signup?email=Mohsin@gmail.com\")"
     ]
   }
 }

@@ -123,6 +123,18 @@ export default function StepOne({ onNext }: StepProps) {
           Log in
         </button>
       </p>
+
+      {/* Store signup link */}
+      <p className="mt-3 text-[15px] text-gray-500 dark:text-slate-400">
+        Want to register a store?{" "}
+        <button
+          type="button"
+          onClick={() => router.push("/store-signup")}
+          className="text-teal-500 font-medium hover:text-teal-600 transition-colors duration-150"
+        >
+          Store sign up
+        </button>
+      </p>
     </div>
   );
 }

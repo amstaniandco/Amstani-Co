@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/global/ToastProvider";
 
@@ -130,6 +131,14 @@ export default function LoginPage() {
 
       <div className="w-full md:w-1/2 flex items-center justify-center px-6 py-8">
         <div className="w-full max-w-[500px]">
+          <Link
+            href="/"
+            className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-black transition-colors duration-150 hover:text-[#6FAFB3] dark:text-slate-200"
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </Link>
+
           <div className="mb-10 text-center">
             <h1 className="text-[40px] leading-tight font-extrabold tracking-tight text-black dark:text-slate-100">
               Welcome Back

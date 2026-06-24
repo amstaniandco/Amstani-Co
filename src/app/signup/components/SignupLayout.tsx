@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 type SignupLayoutProps = {
   children: ReactNode;
@@ -25,6 +27,14 @@ export default function SignupLayout({ children, step }: SignupLayoutProps) {
       {/* RIGHT SIDE */}
       <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-6 py-8">
         <div className="w-full max-w-[500px]">
+          <Link
+            href="/"
+            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-black transition-colors duration-150 hover:text-[#6FAFB3] dark:text-slate-200"
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </Link>
+
           <p className="mb-2 text-center text-sm text-gray-500 dark:text-slate-400">
             Step {step}/3
           </p>

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import clientPromise, { DB_NAME } from "../../../lib/db";
 import { getUserFromToken } from "../../../lib/auth";
+import { findApprovedStoreApplication } from "../../../lib/store-applications";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,13 +10,27 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// The public store-signup flow has no session yet, so it identifies itself with the
+// email from its admin-approved application instead of a login token.
+async function hasApprovedStoreApplication(email: string | null): Promise<boolean> {
+  if (!email) return false;
+  const client = await clientPromise;
+  const db = client.db(DB_NAME);
+  const application = await findApprovedStoreApplication(db, email);
+  return Boolean(application);
+}
+
 export async function POST(req: Request) {
   try {
-    const tokenUser = await getUserFromToken();
-    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
+    const applicantEmail = formData.get("applicantEmail") as string | null;
+
+    const tokenUser = await getUserFromToken();
+    if (!tokenUser && !(await hasApprovedStoreApplication(applicantEmail))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];

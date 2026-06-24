@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { StoreSignupFormData } from "../page";
 
@@ -11,9 +12,12 @@ type StepProps = {
 
 export default function StepOne({ formData, updateFormData, onNext }: StepProps) {
   const router = useRouter();
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (error) setError("");
     updateFormData({ [name]: value } as Partial<StoreSignupFormData>);
   };
 
@@ -23,6 +27,24 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
       formData.phoneNumber.trim() &&
       formData.state.trim()
   );
+
+  const handleNext = async () => {
+    setChecking(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/store-signup?email=${encodeURIComponent(formData.email.trim())}`);
+      const data = await res.json();
+      if (!res.ok || !data.eligible) {
+        setError(data.error || "You are not eligible for store signup yet.");
+        return;
+      }
+      onNext();
+    } catch {
+      setError("Could not verify your application. Please try again.");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   return (
     <div className="mx-auto flex w-full flex-col items-center justify-center">
@@ -54,9 +76,8 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
             name="email"
             value={formData.email}
             onChange={handleChange}
-            readOnly
             placeholder="Placeholder"
-            className="mt-2 w-full rounded-lg border border-gray-300 bg-slate-100 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+            className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -99,13 +120,20 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
           />
         </div>
 
+        {/* Eligibility error */}
+        {error && (
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
+            {error}
+          </p>
+        )}
+
         {/* Next Button */}
         <button
-          onClick={onNext}
-          disabled={!canContinue}
+          onClick={handleNext}
+          disabled={!canContinue || checking}
           className="mt-4 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Next
+          {checking ? "Checking..." : "Next"}
         </button>
       </div>
 

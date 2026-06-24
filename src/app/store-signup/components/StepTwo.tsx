@@ -19,17 +19,22 @@ export default function StepTwo({ formData, updateFormData, onNext, onBack }: St
     updateFormData({ [name]: value } as Partial<StoreSignupFormData>);
   };
 
-  const passwordMismatch = Boolean(formData.password || formData.confirmPassword) && formData.password !== formData.confirmPassword;
-  const passwordTooShort = Boolean(formData.password) && formData.password.length < 6;
-  const canContinue = !passwordMismatch && !passwordTooShort;
+  const passwordMissing = !formData.password.trim() || !formData.confirmPassword.trim();
+  const passwordMismatch = !passwordMissing && formData.password !== formData.confirmPassword;
+  const passwordTooShort = !passwordMissing && formData.password.length < 6;
+  const canContinue = !passwordMissing && !passwordMismatch && !passwordTooShort;
 
   const handleNext = () => {
-    if (passwordMismatch) {
-      toast.error("Passwords do not match.");
+    if (passwordMissing) {
+      toast.error("Password is required.");
       return;
     }
     if (passwordTooShort) {
       toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (passwordMismatch) {
+      toast.error("Passwords do not match.");
       return;
     }
 

@@ -5,6 +5,7 @@ import { getUserFromToken } from "../../../../../../lib/auth";
 import stripe, { STRIPE_CURRENCY } from "../../../../../../lib/stripe";
 
 const REFERRAL_BONUS_CENTS = 10_000; // $100
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://www.amstaniandco.com").replace(/\/$/, "");
 
 export async function PATCH(
   req: Request,
@@ -48,7 +49,7 @@ export async function PATCH(
     };
 
     if (action === "approve") {
-      update.ownerSignupLink = "http://localhost:3000/store-signup";
+      update.ownerSignupLink = `${APP_URL}/store-signup`;
 
       // Transfer $100 referral bonus to the store owner's Stripe connected account
       if (application.storeId) {

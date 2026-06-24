@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Upload, ArrowLeft, Loader } from "lucide-react";
+import { Upload, ArrowLeft, Loader, X } from "lucide-react";
 import type { StoreSignupFormData } from "../page";
 import { useToast } from "../../../components/global/ToastProvider";
 
@@ -12,26 +12,83 @@ type StepProps = {
   onBack: () => void;
 };
 
+type ImageField = "logoUrl" | "bannerUrl" | "cardMediaUrl";
+
+function ImageUploadField({
+  label,
+  imageUrl,
+  uploading,
+  onUpload,
+  onClear,
+}: {
+  label: string;
+  imageUrl: string;
+  uploading: boolean;
+  onUpload: (file: File) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div>
+      <label className="text-sm text-gray-700 dark:text-slate-300">{label}</label>
+      {imageUrl ? (
+        <div className="relative mt-2 w-full overflow-hidden rounded-lg border border-gray-300 dark:border-slate-600">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imageUrl} alt={label} className="h-32 w-full object-cover" />
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label={`Remove ${label}`}
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <label className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-5 transition-colors hover:border-teal-500 dark:border-slate-600 dark:bg-[#111827]">
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUpload(file);
+            }}
+            className="hidden"
+          />
+          <div className="flex flex-col items-center gap-2">
+            <Upload size={20} className="text-gray-400" />
+            <span className="text-sm text-gray-600 dark:text-slate-300">
+              {uploading ? "Uploading..." : "Upload Image"}
+            </span>
+          </div>
+        </label>
+      )}
+    </div>
+  );
+}
+
 export default function StepThree({ formData, updateFormData, onBack }: StepProps) {
   const router = useRouter();
   const toast = useToast();
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fileNames, setFileNames] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<Record<ImageField, boolean>>({
+    logoUrl: false,
+    bannerUrl: false,
+    cardMediaUrl: false,
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     updateFormData({ [name]: value } as Partial<StoreSignupFormData>);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: "logoUrl" | "bannerUrl" | "cardMediaUrl") => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setFileNames((prev) => ({ ...prev, [fieldName]: file.name }));
+  const handleUpload = async (file: File, fieldName: ImageField) => {
+    setUploading((prev) => ({ ...prev, [fieldName]: true }));
 
     const uploadData = new FormData();
     uploadData.append("file", file);
+    uploadData.append("applicantEmail", formData.email);
 
     try {
       const res = await fetch("/api/upload", {
@@ -47,7 +104,13 @@ export default function StepThree({ formData, updateFormData, onBack }: StepProp
       updateFormData({ [fieldName]: data.url } as Partial<StoreSignupFormData>);
     } catch {
       toast.error("Image upload failed");
+    } finally {
+      setUploading((prev) => ({ ...prev, [fieldName]: false }));
     }
+  };
+
+  const handleClear = (fieldName: ImageField) => {
+    updateFormData({ [fieldName]: "" } as Partial<StoreSignupFormData>);
   };
 
   const handleCreate = async () => {
@@ -149,55 +212,31 @@ export default function StepThree({ formData, updateFormData, onBack }: StepProp
         </div>
 
         {/* Store Icon Upload */}
-        <div>
-          <label className="text-sm text-gray-700 dark:text-slate-300">Store Icon</label>
-          <label className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-5 transition-colors hover:border-teal-500 dark:border-slate-600 dark:bg-[#111827]">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, "logoUrl")}
-              className="hidden"
-            />
-            <div className="flex flex-col items-center gap-2">
-              <Upload size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-slate-300">{fileNames.logoUrl || formData.logoUrl ? "Image ready" : "Upload Image"}</span>
-            </div>
-          </label>
-        </div>
+        <ImageUploadField
+          label="Store Icon"
+          imageUrl={formData.logoUrl}
+          uploading={uploading.logoUrl}
+          onUpload={(file) => handleUpload(file, "logoUrl")}
+          onClear={() => handleClear("logoUrl")}
+        />
 
         {/* Store Cover Upload */}
-        <div>
-          <label className="text-sm text-gray-700 dark:text-slate-300">Store Cover</label>
-          <label className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-5 transition-colors hover:border-teal-500 dark:border-slate-600 dark:bg-[#111827]">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, "bannerUrl")}
-              className="hidden"
-            />
-            <div className="flex flex-col items-center gap-2">
-              <Upload size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-slate-300">{fileNames.bannerUrl || formData.bannerUrl ? "Image ready" : "Upload Image"}</span>
-            </div>
-          </label>
-        </div>
+        <ImageUploadField
+          label="Store Cover"
+          imageUrl={formData.bannerUrl}
+          uploading={uploading.bannerUrl}
+          onUpload={(file) => handleUpload(file, "bannerUrl")}
+          onClear={() => handleClear("bannerUrl")}
+        />
 
         {/* Store Card Media Upload */}
-        <div>
-          <label className="text-sm text-gray-700 dark:text-slate-300">Store Card Media</label>
-          <label className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-5 transition-colors hover:border-teal-500 dark:border-slate-600 dark:bg-[#111827]">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileChange(e, "cardMediaUrl")}
-              className="hidden"
-            />
-            <div className="flex flex-col items-center gap-2">
-              <Upload size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-slate-300">{fileNames.cardMediaUrl || formData.cardMediaUrl ? "Image ready" : "Upload Image"}</span>
-            </div>
-          </label>
-        </div>
+        <ImageUploadField
+          label="Store Card Media"
+          imageUrl={formData.cardMediaUrl}
+          uploading={uploading.cardMediaUrl}
+          onUpload={(file) => handleUpload(file, "cardMediaUrl")}
+          onClear={() => handleClear("cardMediaUrl")}
+        />
 
         <button
           onClick={handleCreate}

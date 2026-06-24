@@ -86,7 +86,7 @@ function ApplicationsCard({ applications }: { applications: StoreApplication[] }
             </div>
             {application.status === "approved_by_admin" && (
               <div className="mt-2 text-[11px] text-emerald-700 dark:text-emerald-300 break-all">
-                Owner signup link: {application.ownerSignupLink || "http://localhost:3000/store-signup"}
+                Owner signup link: {application.ownerSignupLink || "https://www.amstaniandco.com/store-signup"}
               </div>
             )}
           </Link>

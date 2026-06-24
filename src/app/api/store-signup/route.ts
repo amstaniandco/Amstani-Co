@@ -1,110 +1,53 @@
 import { NextResponse } from "next/server";
-import { Db, ObjectId, WithId } from "mongodb";
+import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 import clientPromise, { DB_NAME } from "../../../lib/db";
-import { getUserFromToken } from "../../../lib/auth";
+import { findApprovedStoreApplication } from "../../../lib/store-applications";
+import { findUserByEmail } from "../../../lib/users";
 import { User } from "../../../models/user";
-import { Store } from "../../../models/store";
 
-type StoreApplication = WithId<{
-  applicant?: {
-    name?: string;
-    email?: string;
-    phone?: string;
-    message?: string;
-  };
-  status: string;
-}>;
+// This route's GET handler depends on live DB state (user roles, application
+// status) and must never serve a cached response for a given email.
+export const dynamic = "force-dynamic";
 
-type StoreWithCardMedia = Store & {
-  cardMediaUrl?: string;
-};
+const NOT_APPROVED_MESSAGE =
+  "No approved store application was found for this email. Make sure you use the same email as your original application and that admin has approved it.";
+const ALREADY_EXISTS_MESSAGE = "An account with this email already exists";
 
-function parseMessage(message: string | undefined) {
-  if (!message) return { address: "", state: "" };
-  const stateMatch = message.match(/State:\s*([^|]+)/i);
-  const addressMatch = message.match(/Address:\s*(.*)$/i);
-  return {
-    state: stateMatch?.[1]?.trim() || "",
-    address: addressMatch?.[1]?.trim() || "",
-  };
-}
-
-async function findApprovedApplication(db: Db, user: User): Promise<StoreApplication | null> {
-  return db.collection<StoreApplication>("store_applications").findOne({
-    status: "approved_by_admin",
-    "applicant.email": user.email,
-  });
-}
-
-export async function GET() {
+// Public — no login required. Lets Step 1 check eligibility by email up front,
+// instead of making the applicant fill out all 3 steps before finding out.
+export async function GET(req: Request) {
   try {
-    const tokenUser = await getUserFromToken();
-    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const email = new URL(req.url).searchParams.get("email") || "";
+    if (!email.trim()) {
+      return NextResponse.json({ eligible: false, error: "Email is required" }, { status: 400 });
+    }
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
-    const user = await db.collection<User>("users").findOne(
-      { _id: new ObjectId(tokenUser.id) },
-      { projection: { password: 0 } }
-    );
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-    if (user.role === "admin") {
-      return NextResponse.json({ eligible: false, reason: "Admins cannot submit store signup requests" }, { status: 403 });
+    const existingUser = await findUserByEmail(db, normalizedEmail);
+    if (existingUser && existingUser.role !== "user") {
+      return NextResponse.json({ eligible: false, error: ALREADY_EXISTS_MESSAGE });
     }
 
-    const application = await findApprovedApplication(db, user);
+    const application = await findApprovedStoreApplication(db, normalizedEmail);
     if (!application) {
-      return NextResponse.json({
-        eligible: false,
-        reason: "Your store application has not been approved by admin yet",
-        user: {
-          name: user.name,
-          email: user.email,
-          phone: user.phone ?? "",
-          state: user.state ?? "",
-        },
-      });
+      return NextResponse.json({ eligible: false, error: NOT_APPROVED_MESSAGE });
     }
 
-    const existingRequest = await db.collection("store_signup_requests").findOne({
-      applicationId: application._id,
-      userId: new ObjectId(tokenUser.id),
-    });
-    const store = await db.collection<StoreWithCardMedia>("stores").findOne({ ownerId: new ObjectId(tokenUser.id) });
-    const parsed = parseMessage(application?.applicant?.message);
-
-    return NextResponse.json({
-      eligible: true,
-      applicationId: application._id.toString(),
-      status: existingRequest?.status ?? null,
-      user: {
-        name: user.name,
-        email: user.email,
-        phone: user.phone ?? application?.applicant?.phone ?? "",
-        state: user.state ?? parsed.state ?? "",
-        address: existingRequest?.userData?.address ?? parsed.address ?? "",
-      },
-      store: {
-        name: store?.name ?? existingRequest?.storeData?.storeName ?? "",
-        description: store?.description ?? existingRequest?.storeData?.storeDescription ?? "",
-        logoUrl: store?.logoUrl ?? existingRequest?.storeData?.logoUrl ?? "",
-        bannerUrl: store?.bannerUrl ?? existingRequest?.storeData?.bannerUrl ?? "",
-        cardMediaUrl: store?.cardMediaUrl ?? existingRequest?.storeData?.cardMediaUrl ?? "",
-      },
-    });
+    return NextResponse.json({ eligible: true });
   } catch (error) {
     console.error("GET /api/store-signup error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
+// Public — no login required. Anyone with an admin-approved store application
+// (matched by email) can complete signup from this link.
 export async function POST(req: Request) {
   try {
-    const tokenUser = await getUserFromToken();
-    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const body = await req.json();
     const {
       fullName,
@@ -127,45 +70,68 @@ export async function POST(req: Request) {
     if (!storeName?.trim()) {
       return NextResponse.json({ error: "Store name is required" }, { status: 400 });
     }
-    if ((password || confirmPassword) && password !== confirmPassword) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
+    if (!password || !confirmPassword) {
+      return NextResponse.json({ error: "Password and confirm password are required" }, { status: 400 });
+    }
+    if (password !== confirmPassword) {
       return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
     }
-    if (password && password.length < 6) {
+    if (password.length < 6) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
-    const user = await db.collection<User>("users").findOne({ _id: new ObjectId(tokenUser.id) });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-    if (user.role !== "user") {
-      return NextResponse.json({ error: "Only regular users can submit store signup requests" }, { status: 403 });
-    }
-    if (email.trim().toLowerCase() !== user.email.toLowerCase()) {
-      return NextResponse.json({ error: "Use the email that was approved by admin" }, { status: 403 });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Gate: a signup request is only created if admin has approved a store
+    // application submitted under this exact email.
+    const application = await findApprovedStoreApplication(db, normalizedEmail);
+    if (!application) {
+      return NextResponse.json({ error: NOT_APPROVED_MESSAGE }, { status: 403 });
     }
 
-    const application = await findApprovedApplication(db, user);
-    if (!application) {
-      return NextResponse.json({ error: "Your store application has not been approved by admin yet" }, { status: 403 });
+    const usersCollection = db.collection<User>("users");
+    const existingUser = await findUserByEmail(db, normalizedEmail);
+    if (existingUser && existingUser.role !== "user") {
+      return NextResponse.json({ error: ALREADY_EXISTS_MESSAGE }, { status: 409 });
     }
 
     const now = new Date();
-    const userUpdate: Record<string, unknown> = {
-      name: fullName.trim(),
-      email: user.email,
-      phone: phoneNumber.trim(),
-      state: state.trim(),
-      updatedAt: now,
-    };
-    if (password) userUpdate.password = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    await db.collection("users").updateOne(
-      { _id: new ObjectId(tokenUser.id) },
-      { $set: userUpdate }
-    );
+    let ownerId: ObjectId;
+    if (existingUser?._id) {
+      ownerId = existingUser._id;
+      await db.collection("users").updateOne(
+        { _id: ownerId },
+        {
+          $set: {
+            name: fullName.trim(),
+            phone: phoneNumber.trim(),
+            state: state.trim(),
+            password: hashedPassword,
+            updatedAt: now,
+          },
+        }
+      );
+    } else {
+      const inserted = await usersCollection.insertOne({
+        name: fullName.trim(),
+        email: normalizedEmail,
+        password: hashedPassword,
+        phone: phoneNumber.trim(),
+        state: state.trim(),
+        role: "user",
+        createdAt: now,
+        updatedAt: now,
+      } as User);
+      ownerId = inserted.insertedId;
+    }
 
-    const ownerId = new ObjectId(tokenUser.id);
     const storeFields: Record<string, unknown> = {
       ownerId,
       name: storeName.trim(),
@@ -204,7 +170,7 @@ export async function POST(req: Request) {
           status: "pending",
           userData: {
             name: fullName.trim(),
-            email: user.email,
+            email: normalizedEmail,
             phone: phoneNumber.trim(),
             address: address?.trim() ?? "",
             state: state.trim(),

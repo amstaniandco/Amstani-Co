@@ -139,12 +139,12 @@ export default function OwnerProfileApplicationsPage() {
                       <td className="px-4 py-4">
                         {row.status === "approved_by_admin" ? (
                           <div className="flex flex-col gap-2">
-                            <a href={row.ownerSignupLink || "http://localhost:3000/store-signup"} className="font-bold text-emerald-700 break-all" target="_blank" rel="noreferrer">
-                              {row.ownerSignupLink || "http://localhost:3000/store-signup"}
+                            <a href={row.ownerSignupLink || "https://www.amstaniandco.com/store-signup"} className="font-bold text-emerald-700 break-all" target="_blank" rel="noreferrer">
+                              {row.ownerSignupLink || "https://www.amstaniandco.com/store-signup"}
                             </a>
                             <button
                               type="button"
-                              onClick={() => copyLink(row.id, row.ownerSignupLink || "http://localhost:3000/store-signup")}
+                              onClick={() => copyLink(row.id, row.ownerSignupLink || "https://www.amstaniandco.com/store-signup")}
                               className="w-fit rounded-md border border-emerald-600 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
                             >
                               {copiedId === row.id ? "Copied" : "Copy"}
