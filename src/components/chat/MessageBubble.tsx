@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MoreHorizontal, Pencil, Reply, Trash2 } from "lucide-react";
 
 export type Message = {
   _id: string;
   sender: "admin" | "owner" | "customer";
   senderName: string;
+  /** User id of whoever sent this — needed to tell apart "my own" messages from other customers' in a multi-party group chat */
+  senderId?: string;
   text: string;
   createdAt: string;
   deleted?: boolean;
@@ -48,16 +51,43 @@ export default function MessageBubble({
   onDelete,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ bottom: number; left?: number; right?: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(msg.text);
   const touchStartX = useRef(0);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu on outside click
+  const openMenu = () => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setMenuPos(
+        isOwn
+          ? { bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right }
+          : { bottom: window.innerHeight - rect.top + 4, left: rect.left }
+      );
+    }
+    setMenuOpen(true);
+  };
+
+  // Close on outside click/scroll. Rendered via a portal, so "outside" is
+  // checked by actual DOM containment rather than relying on every menu item
+  // to stopPropagation — a click landing on an overlapping element (a
+  // stacking-context/z-index issue) was being misread as "outside" before.
   useEffect(() => {
     if (!menuOpen) return;
+    const closeIfOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
     const close = () => setMenuOpen(false);
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("mousedown", closeIfOutside);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      document.removeEventListener("mousedown", closeIfOutside);
+      window.removeEventListener("scroll", close, true);
+    };
   }, [menuOpen]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -78,18 +108,22 @@ export default function MessageBubble({
   const menu = (
     <div className="relative flex-shrink-0">
       <button
+        ref={triggerRef}
         type="button"
-        onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (menuOpen) setMenuOpen(false);
+          else openMenu();
+        }}
         className="p-1 rounded-full hover:bg-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <MoreHorizontal className="h-4 w-4 text-slate-500" />
       </button>
-      {menuOpen && (
+      {menuOpen && menuPos && createPortal(
         <div
-          className={`absolute bottom-7 z-20 min-w-[110px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg ${
-            isOwn ? "right-0" : "left-0"
-          }`}
-          onMouseDown={(e) => e.stopPropagation()}
+          ref={menuRef}
+          style={{ position: "fixed", bottom: menuPos.bottom, left: menuPos.left, right: menuPos.right }}
+          className="z-[1000] min-w-[110px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
         >
           <button
             type="button"
@@ -116,7 +150,8 @@ export default function MessageBubble({
               </button>
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

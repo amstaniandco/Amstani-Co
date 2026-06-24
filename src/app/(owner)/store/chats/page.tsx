@@ -129,7 +129,7 @@ function useCountdown(fromTime: string, isLive: boolean, liveSessionStartedAt: s
 }
 
 export default function OwnerChatsPage() {
-  const [activeThread, setActiveThread] = useState<"admin" | "customer">("admin");
+  const [activeThread, setActiveThread] = useState<"admin" | "customer" | "group">("admin");
   const [storeId, setStoreId] = useState("");
   const [storeName, setStoreName] = useState("My Store");
   const [storeStatus, setStoreStatus] = useState("pending");
@@ -145,12 +145,15 @@ export default function OwnerChatsPage() {
   const [customerThreads, setCustomerThreads] = useState<CustomerThread[]>([]);
   const [selectedCustomerThread, setSelectedCustomerThread] = useState<CustomerThread | null>(null);
   const [customerMessages, setCustomerMessages] = useState<ChatMessage[]>([]);
+  const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
   const [replyText, setReplyText] = useState("");
   const [customerReplyText, setCustomerReplyText] = useState("");
+  const [groupReplyText, setGroupReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [customerReplyingTo, setCustomerReplyingTo] = useState<ChatMessage | null>(null);
+  const [groupReplyingTo, setGroupReplyingTo] = useState<ChatMessage | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const esRef = useRef<EventSource | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -244,6 +247,38 @@ export default function OwnerChatsPage() {
     },
     [startCustomerStream, storeId]
   );
+
+  const startGroupStream = useCallback((sid: string, afterId: string) => {
+    esRef.current?.close();
+    const url = `/api/group-conversations/${sid}/stream${afterId ? `?after=${afterId}` : ""}`;
+    const es = new EventSource(url);
+    esRef.current = es;
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === "message") {
+          setGroupMessages((prev) =>
+            prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
+          );
+        } else if (data.type === "update") {
+          setGroupMessages((prev) =>
+            prev.map((m) => m._id === data.message._id ? data.message : m)
+          );
+        }
+      } catch {}
+    };
+  }, []);
+
+  const openGroupThread = useCallback(async () => {
+    if (!storeId) return;
+    setActiveThread("group");
+    const res = await fetch(`/api/group-conversations/${storeId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const loadedMessages: ChatMessage[] = data.messages ?? [];
+    setGroupMessages(loadedMessages);
+    startGroupStream(storeId, loadedMessages.at(-1)?._id ?? "");
+  }, [startGroupStream, storeId]);
 
   useEffect(() => {
     fetch("/api/owner/timings")
@@ -399,6 +434,67 @@ export default function OwnerChatsPage() {
             : thread
         )
       );
+    }
+  };
+
+  const handleGroupEdit = async (msgId: string, newText: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/group-conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "edit", text: newText }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setGroupMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
+
+  const handleGroupDelete = async (msgId: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/group-conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete" }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setGroupMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+      if (groupReplyingTo?._id === msgId) setGroupReplyingTo(data.message);
+    }
+  };
+
+  const handleSendGroupReply = async (event: FormEvent) => {
+    event.preventDefault();
+    const trimmed = groupReplyText.trim();
+    if (!trimmed || !storeId || sending) return;
+
+    setSending(true);
+    try {
+      const body: Record<string, unknown> = { text: trimmed };
+      if (groupReplyingTo) {
+        body.replyTo = {
+          _id: groupReplyingTo._id,
+          senderName: groupReplyingTo.senderName,
+          text: groupReplyingTo.text,
+          deleted: groupReplyingTo.deleted ?? false,
+        };
+      }
+      const res = await fetch(`/api/group-conversations/${storeId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGroupMessages((prev) =>
+          prev.find((m) => m._id === data.message._id) ? prev : [...prev, data.message]
+        );
+        setGroupReplyText("");
+        setGroupReplyingTo(null);
+      }
+    } finally {
+      setSending(false);
     }
   };
 
@@ -595,6 +691,28 @@ export default function OwnerChatsPage() {
               </span>
             </button>
 
+            {/* Group Chat — public room shared by every customer + the owner */}
+            <button
+              type="button"
+              onClick={openGroupThread}
+              className={`flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left ${
+                activeThread === "group" ? "bg-slate-100" : "hover:bg-slate-100"
+              }`}
+            >
+              <div className="h-12 w-12 rounded-full bg-[#8a6fd6] flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">
+                G
+              </div>
+              <span className="flex flex-1 items-center justify-between gap-2">
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-[#8a6fd6]">Group Chat</span>
+                  <span className="mt-0.5 flex items-center gap-2 truncate text-xs text-slate-700">
+                    {messagePreview(groupMessages.at(-1))}
+                  </span>
+                </span>
+                <span className="mt-2 h-3 w-3 rounded-full bg-[#8a6fd6]" />
+              </span>
+            </button>
+
             {/* Live Chat placeholder */}
             {customerThreads.length === 0 ? (
               <button
@@ -650,15 +768,15 @@ export default function OwnerChatsPage() {
         {/* Chat area */}
         <div className="flex h-full flex-col p-4">
           <header className="mb-4 flex items-center gap-3 border-b border-[#9fb0c6] pb-3">
-            <div className="h-14 w-14 rounded-full bg-[#65bbc5] flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl">
-              {activeThread === "admin" ? "A" : (selectedCustomerThread?.customerName?.[0] ?? "C").toUpperCase()}
+            <div className={`h-14 w-14 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl ${activeThread === "group" ? "bg-[#8a6fd6]" : "bg-[#65bbc5]"}`}>
+              {activeThread === "admin" ? "A" : activeThread === "group" ? "G" : (selectedCustomerThread?.customerName?.[0] ?? "C").toUpperCase()}
             </div>
             <div>
               <p className="text-xl font-medium text-slate-900 sm:text-2xl">
-                {activeThread === "admin" ? "Super Admin" : selectedCustomerThread?.customerName ?? "Customer Chat"}
+                {activeThread === "admin" ? "Super Admin" : activeThread === "group" ? "Group Chat" : selectedCustomerThread?.customerName ?? "Customer Chat"}
               </p>
               <p className="text-sm text-slate-600">
-                {(activeThread === "admin" ? messages.length : customerMessages.length) > 0 ? "Active" : "No messages yet"}
+                {(activeThread === "admin" ? messages.length : activeThread === "group" ? groupMessages.length : customerMessages.length) > 0 ? "Active" : "No messages yet"}
               </p>
             </div>
           </header>
@@ -666,7 +784,7 @@ export default function OwnerChatsPage() {
           <div ref={messagesRef} className="flex-1 overflow-y-auto space-y-4 py-2 pr-1" style={{ maxHeight: 360 }}>
             {activeThread === "customer" && !selectedCustomerThread ? (
               <p className="text-center text-xs text-slate-400 py-8">Select a customer conversation.</p>
-            ) : (activeThread === "admin" ? messages.length : customerMessages.length) === 0 ? (
+            ) : (activeThread === "admin" ? messages.length : activeThread === "group" ? groupMessages.length : customerMessages.length) === 0 ? (
               <p className="text-center text-xs text-slate-400 py-8">No messages yet. Start the conversation!</p>
             ) : activeThread === "admin" ? (
               messages.map((message) => (
@@ -681,6 +799,21 @@ export default function OwnerChatsPage() {
                   onReply={setReplyingTo}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                />
+              ))
+            ) : activeThread === "group" ? (
+              groupMessages.map((message) => (
+                <MessageBubble
+                  key={message._id}
+                  msg={message}
+                  isOwn={message.sender === "owner"}
+                  avatarLabel={(message.senderName?.[0] ?? "C").toUpperCase()}
+                  avatarClassName="bg-[#a8b4c6] text-white"
+                  ownBubbleCls="rounded-[24px] rounded-br-sm bg-[#8a6fd6] text-white"
+                  otherBubbleCls="rounded-[24px] rounded-bl-sm bg-[#a8b4c6] text-white"
+                  onReply={setGroupReplyingTo}
+                  onEdit={handleGroupEdit}
+                  onDelete={handleGroupDelete}
                 />
               ))
             ) : (
@@ -711,7 +844,10 @@ export default function OwnerChatsPage() {
             )}
           </div>
 
-          <form onSubmit={activeThread === "admin" ? handleSendReply : handleSendCustomerReply} className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4">
+          <form
+            onSubmit={activeThread === "admin" ? handleSendReply : activeThread === "group" ? handleSendGroupReply : handleSendCustomerReply}
+            className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4"
+          >
             {/* Reply preview */}
             {activeThread === "admin" && replyingTo && (
               <div className="flex items-center justify-between rounded-lg border-l-2 border-[#65bbc5] bg-slate-50 px-3 py-1.5 text-xs">
@@ -727,6 +863,23 @@ export default function OwnerChatsPage() {
                   className="ml-2 flex-shrink-0 text-slate-400 hover:text-slate-600"
                 >
                   ✕
+                </button>
+              </div>
+            )}
+            {activeThread === "group" && groupReplyingTo && (
+              <div className="flex items-center justify-between rounded-lg border-l-2 border-[#8a6fd6] bg-slate-50 px-3 py-1.5 text-xs">
+                <div className="min-w-0">
+                  <p className="font-semibold text-[#8a6fd6]">Replying to {groupReplyingTo.senderName}</p>
+                  <p className="truncate text-slate-500">
+                    {groupReplyingTo.deleted ? <em>This message was deleted</em> : groupReplyingTo.text}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGroupReplyingTo(null)}
+                  className="ml-2 flex-shrink-0 text-slate-400 hover:text-slate-600"
+                >
+                  x
                 </button>
               </div>
             )}
@@ -750,10 +903,12 @@ export default function OwnerChatsPage() {
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={activeThread === "admin" ? replyText : customerReplyText}
+                value={activeThread === "admin" ? replyText : activeThread === "group" ? groupReplyText : customerReplyText}
                 onChange={(event) =>
                   activeThread === "admin"
                     ? handleReplyChange(event.target.value)
+                    : activeThread === "group"
+                    ? setGroupReplyText(event.target.value)
                     : setCustomerReplyText(event.target.value)
                 }
                 placeholder="Write your reply..."
@@ -761,7 +916,11 @@ export default function OwnerChatsPage() {
               />
               <button
                 type="submit"
-                disabled={sending || !(activeThread === "admin" ? replyText : customerReplyText).trim() || (activeThread === "customer" && !selectedCustomerThread)}
+                disabled={
+                  sending ||
+                  !(activeThread === "admin" ? replyText : activeThread === "group" ? groupReplyText : customerReplyText).trim() ||
+                  (activeThread === "customer" && !selectedCustomerThread)
+                }
                 className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-[#65bbc5] px-4 text-sm font-semibold text-white transition hover:bg-[#53aab5] disabled:opacity-50"
               >
                 <SendHorizontal className="h-4 w-4" />

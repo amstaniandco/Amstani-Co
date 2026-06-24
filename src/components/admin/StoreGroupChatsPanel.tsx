@@ -18,9 +18,8 @@ type ReadOnlyMessage = {
   };
 };
 
-type CustomerThread = {
+type StoreGroupChat = {
   _id: string;
-  customerName: string;
   storeName: string;
   lastMessage: string;
   updatedAt: string;
@@ -82,18 +81,18 @@ function ReadOnlyBubble({ message }: { message: ReadOnlyMessage }) {
   );
 }
 
-export default function CustomerOwnerChatsPanel() {
-  const [threads, setThreads] = useState<CustomerThread[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState("");
+export default function StoreGroupChatsPanel() {
+  const [stores, setStores] = useState<StoreGroupChat[]>([]);
+  const [activeStoreId, setActiveStoreId] = useState("");
   const [messages, setMessages] = useState<ReadOnlyMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
 
-  const loadMessages = useCallback(async (threadId: string) => {
-    if (!threadId) return;
+  const loadMessages = useCallback(async (storeId: string) => {
+    if (!storeId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/customer-conversations?chatId=${threadId}`);
+      const res = await fetch(`/api/admin/group-conversations?storeId=${storeId}`);
       if (!res.ok) return;
       const data = await res.json();
       setMessages(data.messages ?? []);
@@ -103,14 +102,14 @@ export default function CustomerOwnerChatsPanel() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/admin/customer-conversations")
+    fetch("/api/admin/group-conversations")
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
-        const loadedThreads: CustomerThread[] = data?.chats ?? [];
-        setThreads(loadedThreads);
-        if (loadedThreads[0]) {
-          setActiveThreadId(loadedThreads[0]._id);
-          loadMessages(loadedThreads[0]._id);
+        const loadedStores: StoreGroupChat[] = data?.stores ?? [];
+        setStores(loadedStores);
+        if (loadedStores[0]) {
+          setActiveStoreId(loadedStores[0]._id);
+          loadMessages(loadedStores[0]._id);
         }
       })
       .catch(() => {});
@@ -121,12 +120,12 @@ export default function CustomerOwnerChatsPanel() {
     if (box) box.scrollTop = box.scrollHeight;
   }, [messages]);
 
-  const activeThread = threads.find((thread) => thread._id === activeThreadId);
+  const activeStore = stores.find((store) => store._id === activeStoreId);
 
   return (
     <section className="overflow-hidden rounded-xl border border-[#d8e1e7] bg-white shadow-[0_10px_25px_rgba(15,23,42,0.04)] sm:rounded-[18px]">
       <div className="flex flex-col gap-2 border-b border-[#e5edf1] bg-[#f8fbfc] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-        <h3 className="text-sm font-semibold text-slate-800">Customer Owner Conversations</h3>
+        <h3 className="text-sm font-semibold text-slate-800">Store Group Chats</h3>
         <span className="max-w-full truncate rounded-full border border-[#d7e0e6] bg-white px-3 py-1 text-xs text-slate-600 sm:max-w-[260px]">
           View only
         </span>
@@ -134,18 +133,18 @@ export default function CustomerOwnerChatsPanel() {
 
       <div className="grid border-b border-[#edf2f5] md:grid-cols-[260px_1fr]" style={{ minHeight: 400 }}>
         <div className="hidden border-b border-[#edf2f5] bg-[#f9fbfc] md:flex md:flex-col md:border-b-0 md:border-r overflow-y-auto" style={{ maxHeight: 400 }}>
-          {threads.length === 0 ? (
-            <p className="px-4 py-6 text-center text-xs text-slate-400">No customer conversations yet.</p>
+          {stores.length === 0 ? (
+            <p className="px-4 py-6 text-center text-xs text-slate-400">No store group chats yet.</p>
           ) : (
-            threads.map((thread) => {
-              const isActive = thread._id === activeThreadId;
+            stores.map((store) => {
+              const isActive = store._id === activeStoreId;
               return (
                 <button
-                  key={thread._id}
+                  key={store._id}
                   type="button"
                   onClick={() => {
-                    setActiveThreadId(thread._id);
-                    loadMessages(thread._id);
+                    setActiveStoreId(store._id);
+                    loadMessages(store._id);
                   }}
                   className={`w-full border-b border-[#edf2f5] px-4 py-3 text-left transition ${
                     isActive ? "bg-[#e8f4f7] hover:bg-[#e0eef2]" : "bg-white hover:bg-[#f5f7f9]"
@@ -157,12 +156,11 @@ export default function CustomerOwnerChatsPanel() {
                         isActive ? "bg-[#54b9c9] text-white" : "bg-[#dfe7ec] text-slate-700"
                       }`}
                     >
-                      {thread.customerName.charAt(0)}
+                      {store.storeName.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold text-slate-900">{thread.customerName}</p>
-                      <p className="truncate text-[10px] text-slate-500">{thread.storeName}</p>
-                      <p className="mt-1 truncate text-[10px] text-slate-400">{previewText(thread.lastMessage)}</p>
+                      <p className="truncate text-xs font-semibold text-slate-900">{store.storeName}</p>
+                      <p className="mt-1 truncate text-[10px] text-slate-400">{previewText(store.lastMessage)}</p>
                     </div>
                   </div>
                 </button>
@@ -174,16 +172,16 @@ export default function CustomerOwnerChatsPanel() {
         <div className="flex flex-col bg-[#fdfefe]">
           <div className="border-b border-[#edf2f5] px-3 py-3 sm:px-4">
             <p className="text-xs font-semibold text-slate-800">
-              {activeThread ? `${activeThread.customerName} and ${activeThread.storeName}` : "Select a conversation"}
+              {activeStore ? `${activeStore.storeName} — Group Chat` : "Select a store"}
             </p>
-            {activeThread?.updatedAt && (
-              <p className="mt-1 text-[10px] text-slate-400">Updated {formatTime(activeThread.updatedAt)}</p>
+            {activeStore?.updatedAt && (
+              <p className="mt-1 text-[10px] text-slate-400">Updated {formatTime(activeStore.updatedAt)}</p>
             )}
           </div>
 
           <div ref={messagesRef} className="overflow-y-auto space-y-3 px-3 py-4 sm:px-4 sm:py-5" style={{ height: 320 }}>
-            {!activeThreadId ? (
-              <p className="py-8 text-center text-xs text-slate-400">No conversation selected.</p>
+            {!activeStoreId ? (
+              <p className="py-8 text-center text-xs text-slate-400">No store selected.</p>
             ) : loading ? (
               <p className="py-8 text-center text-xs text-slate-400">Loading messages...</p>
             ) : messages.length === 0 ? (
@@ -197,24 +195,24 @@ export default function CustomerOwnerChatsPanel() {
 
       <div className="block border-t border-[#edf2f5] bg-[#f9fbfc] md:hidden">
         <div className="flex gap-2 overflow-x-auto px-3 py-3 sm:px-4">
-          {threads.length === 0 ? (
-            <span className="py-1 text-xs text-slate-400">No customer conversations</span>
+          {stores.length === 0 ? (
+            <span className="py-1 text-xs text-slate-400">No store group chats</span>
           ) : (
-            threads.map((thread) => (
+            stores.map((store) => (
               <button
-                key={thread._id}
+                key={store._id}
                 type="button"
                 onClick={() => {
-                  setActiveThreadId(thread._id);
-                  loadMessages(thread._id);
+                  setActiveStoreId(store._id);
+                  loadMessages(store._id);
                 }}
                 className={`flex-shrink-0 rounded-lg border px-3 py-2 text-xs font-medium transition ${
-                  thread._id === activeThreadId
+                  store._id === activeStoreId
                     ? "border-[#54b9c9] bg-[#e8f4f7] text-[#2f7f8d]"
                     : "border-[#dfe7ec] bg-white text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                {thread.customerName}
+                {store.storeName}
               </button>
             ))
           )}

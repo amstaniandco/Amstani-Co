@@ -11,7 +11,7 @@ import { useToast } from "../../../../components/global/ToastProvider";
 import { useConfirm } from "../../../../components/global/ConfirmProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
-import CustomerOwnerChatsPanel from "../../../../components/admin/CustomerOwnerChatsPanel";
+import StoreGroupChatsPanel from "../../../../components/admin/StoreGroupChatsPanel";
 import StoreChatPanel from "../../../../components/admin/StoreChatPanel";
 import StoreManagementTable, {
   type StoreRow,
@@ -555,7 +555,7 @@ function AdminStoresPageContent() {
                   onSelectStore={setActiveChatId}
                   panelType="owner"
                 />
-                <CustomerOwnerChatsPanel />
+                <StoreGroupChatsPanel />
               </div>
             </>
           )}
