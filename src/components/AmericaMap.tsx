@@ -322,7 +322,7 @@ export default function AmericaMap() {
   return (
     <section className="mx-auto w-full max-w-[1500px] rounded-3xl bg-[#1d1b14] px-6 py-8 text-slate-100 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-6xl">
-        <h2 className="text-center text-4xl font-extrabold uppercase tracking-wide text-white sm:text-5xl">
+        <h2 className="text-center text-2xl font-extrabold uppercase tracking-wide text-white sm:text-5xl">
           Amstani & Co.
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-300 sm:text-base">

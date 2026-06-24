@@ -32,7 +32,7 @@ export default function GovernanceStandardsSection() {
   return (
     <section className="relative w-full overflow-hidden bg-[#f6f7f9] py-12 dark:bg-slate-900 sm:py-14">
       <div className="relative w-full px-5 sm:px-8 lg:px-12">
-        <h2 className="text-left text-[30px] font-semibold tracking-tight text-[#0f172a] dark:text-slate-100 sm:text-[42px]">
+        <h2 className="text-center text-[20px] font-semibold tracking-tight text-[#0f172a] dark:text-slate-100 sm:text-left sm:text-[42px]">
           Governance and Standards
         </h2>
 

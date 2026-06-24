@@ -128,7 +128,7 @@ export default function BroadcastingRoomSection() {
     <section className="bg-[#f2f3f6] py-8 dark:bg-slate-900 sm:py-10">
       <div className="w-full px-6">
         <div className="rounded-xl border border-slate-200 bg-[#f5f6f8] px-4 py-5 dark:border-slate-700 dark:bg-slate-800 sm:px-6 sm:py-6">
-          <h2 className="text-[28px] font-semibold leading-none text-slate-900 dark:text-slate-100 sm:text-[40px]">
+          <h2 className="text-[18px] font-semibold leading-none text-slate-900 dark:text-slate-100 sm:text-[40px]">
             Broadcasting Room
           </h2>
           <p className="mt-1.5 text-xs font-normal text-slate-500 dark:text-slate-400 sm:text-[18px]">
