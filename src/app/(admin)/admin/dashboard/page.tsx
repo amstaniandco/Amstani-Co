@@ -70,11 +70,11 @@ function Modal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[9990] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-[9990] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm sm:p-6"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+        className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -161,12 +161,12 @@ export default function AdminDashboardPage() {
 
             {/* Header + Metric Cards */}
             <section>
-              <h1 className="text-4xl font-bold leading-tight text-[#4ba7b3]">Global Dashboard</h1>
+              <h1 className="text-2xl font-bold leading-tight text-[#4ba7b3] sm:text-4xl">Global Dashboard</h1>
               <p className="mt-1 text-sm text-slate-500">
                 Enterprise performance overview and logistics command center.
               </p>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {loading
                   ? Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="rounded-xl border border-[#e2eaee] bg-white p-4">
@@ -270,7 +270,7 @@ export default function AdminDashboardPage() {
             {/* Leaderboard */}
             <section className="mt-6 rounded-xl border border-[#dbe6ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.04)] sm:p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="whitespace-nowrap text-[clamp(1rem,4.6vw,1.5rem)] font-bold text-slate-800">Top Performing Stores</h2>
+                <h2 className="text-[clamp(1rem,4.6vw,1.5rem)] font-bold text-slate-800">Top Performing Stores</h2>
                 <button
                   type="button"
                   onClick={() => setShowLeaderboard(true)}
@@ -281,8 +281,8 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-[#dbe6ea]">
-                <table className="w-full border-collapse text-left text-sm">
+              <div className="overflow-x-auto rounded-lg border border-[#dbe6ea]">
+                <table className="w-full min-w-[480px] border-collapse text-left text-sm">
                   <thead className="bg-[#f3f8fa] text-[11px] uppercase tracking-[0.08em] text-slate-500">
                     <tr>
                       <th className="px-4 py-3">Rank</th>
@@ -333,8 +333,8 @@ export default function AdminDashboardPage() {
                 </a>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-[#dbe6ea]">
-                <table className="w-full border-collapse text-left text-sm">
+              <div className="overflow-x-auto rounded-lg border border-[#dbe6ea]">
+                <table className="w-full min-w-[560px] border-collapse text-left text-sm">
                   <thead className="bg-[#f3f8fa] text-[11px] uppercase tracking-[0.08em] text-slate-500">
                     <tr>
                       <th className="px-4 py-3">Store</th>
@@ -440,8 +440,8 @@ export default function AdminDashboardPage() {
           {leaderboard.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-400">No data yet.</p>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-[#dbe6ea]">
-              <table className="w-full border-collapse text-left text-sm">
+            <div className="overflow-x-auto rounded-lg border border-[#dbe6ea]">
+              <table className="w-full min-w-[480px] border-collapse text-left text-sm">
                 <thead className="bg-[#f3f8fa] text-[11px] uppercase tracking-[0.08em] text-slate-500">
                   <tr>
                     <th className="px-4 py-3">Rank</th>

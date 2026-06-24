@@ -293,41 +293,49 @@ export default function AdminNavbar({
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 top-12 z-50 w-[340px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.3)]">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                  <p className="text-sm font-bold text-slate-900">Notifications</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                    {notifs.length}
-                  </span>
-                </div>
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+                onClick={() => setNotifOpen(false)}
+              >
+                <div
+                  className="flex max-h-[60vh] w-full max-w-[360px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.3)]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
+                    <p className="text-sm font-bold text-slate-900">Notifications</p>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                      {notifs.length}
+                    </span>
+                  </div>
 
-                <div className="max-h-[400px] overflow-y-auto">
-                  {notifs.length === 0 ? (
-                    <p className="px-4 py-10 text-center text-sm text-slate-400">You're all caught up 🎉</p>
-                  ) : (
-                    notifs.map((n) => {
-                      const Icon = NOTIF_ICON[n.type];
-                      return (
-                        <button
-                          key={`${n.type}-${n.id}`}
-                          type="button"
-                          onClick={() => go(n.href)}
-                          className="flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3 text-left transition last:border-0 hover:bg-slate-50"
-                        >
-                          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#eef5f7] text-[#338ca0]">
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-semibold text-slate-800">{n.title}</span>
-                            <span className="mt-0.5 block text-xs leading-snug text-slate-500">{n.message}</span>
-                            <span className="mt-1 block text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                              {timeAgo(n.createdAt)}
+                  <div className="flex-1 overflow-y-auto">
+                    {notifs.length === 0 ? (
+                      <p className="px-4 py-10 text-center text-sm text-slate-400">You&apos;re all caught up 🎉</p>
+                    ) : (
+                      notifs.map((n) => {
+                        const Icon = NOTIF_ICON[n.type];
+                        return (
+                          <button
+                            key={`${n.type}-${n.id}`}
+                            type="button"
+                            onClick={() => go(n.href)}
+                            className="flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3 text-left transition last:border-0 hover:bg-slate-50"
+                          >
+                            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#eef5f7] text-[#338ca0]">
+                              <Icon className="h-4 w-4" />
                             </span>
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-semibold text-slate-800">{n.title}</span>
+                              <span className="mt-0.5 block text-xs leading-snug text-slate-500">{n.message}</span>
+                              <span className="mt-1 block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                {timeAgo(n.createdAt)}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
             )}
