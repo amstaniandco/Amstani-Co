@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MapPin, Star, Store } from "lucide-react";
-import { getSelectedState, subscribeSelectedState } from "../../lib/state-preference";
+import {
+  getSelectedState,
+  subscribeSelectedState,
+} from "../../lib/state-preference";
 
 type StoreCard = {
   id: string;
@@ -35,21 +38,27 @@ export default function DigitalMallSection() {
         const data = await response.json();
         if (!mounted) return;
 
-        const mapped: StoreCard[] = (data.stores ?? []).map((store: Record<string, any>) => {
-          const imageSource = (store.bannerUrl || store.logoUrl || "").trim();
-          const image = imageSource.startsWith("https://") ? imageSource : "/assets/placeholder-store.svg";
+        const mapped: StoreCard[] = (data.stores ?? []).map(
+          (store: Record<string, any>) => {
+            const imageSource = (store.bannerUrl || store.logoUrl || "").trim();
+            const image = imageSource.startsWith("https://")
+              ? imageSource
+              : "/assets/placeholder-store.svg";
 
-          return {
-            id: String(store._id),
-            image,
-            title: store.name || "Store",
-            description: store.description || "Explore this verified store on Amstani & Co.",
-            state: store.owner?.state || "",
-            rating: store.rating ? String(store.rating) : "4.9",
-            live: Boolean(store.isLive),
-            liveLink: store.liveLink ?? null,
-          };
-        });
+            return {
+              id: String(store._id),
+              image,
+              title: store.name || "Store",
+              description:
+                store.description ||
+                "Explore this verified store on Amstani & Co.",
+              state: store.owner?.state || "",
+              rating: store.rating ? String(store.rating) : "4.9",
+              live: Boolean(store.isLive),
+              liveLink: store.liveLink ?? null,
+            };
+          },
+        );
 
         setStores(mapped);
       } catch {
@@ -91,8 +100,10 @@ export default function DigitalMallSection() {
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Real stores from across the platform.
             </p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#56aebb] dark:text-[#7fd3df]">
-              {selectedState ? `${selectedState} • ${storeCountLabel}` : storeCountLabel}
+            <p className="mt-1 text-xs text-center font-semibold uppercase tracking-[0.18em] text-[#56aebb] dark:text-[#7fd3df]">
+              {selectedState
+                ? `${selectedState} • ${storeCountLabel}`
+                : storeCountLabel}
             </p>
           </div>
         </div>
@@ -130,8 +141,12 @@ export default function DigitalMallSection() {
                   </div>
 
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <h3 className="text-lg font-semibold leading-tight">{store.title}</h3>
-                    <p className="mt-1 line-clamp-2 text-xs text-white/85">{store.description}</p>
+                    <h3 className="text-lg font-semibold leading-tight">
+                      {store.title}
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-xs text-white/85">
+                      {store.description}
+                    </p>
 
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-1 text-xs text-white/90">

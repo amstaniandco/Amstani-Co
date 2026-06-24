@@ -9,11 +9,13 @@ export default async function StoreOfferPage({
   const storeId = params?.storeId;
   return (
     <div className="w-full bg-[#f7f7f7] py-6">
-      <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-2xl items-center px-4 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-slate-600">Store</p>
-            <h1 className="text-2xl font-bold text-slate-900">Offering stores for purchase</h1>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Offering stores for purchase
+            </h1>
           </div>
           <Link
             href="/store"
@@ -25,7 +27,8 @@ export default async function StoreOfferPage({
 
         <div className="rounded-3xl bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-600">
-            Connect to learn more about available opportunities and own your e-commerce textile marketplace now.
+            Connect to learn more about available opportunities and own your
+            e-commerce textile marketplace now.
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
