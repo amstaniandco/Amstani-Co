@@ -1,10 +1,66 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, Shield } from "lucide-react";
+import { Building2, RefreshCw, Shield } from "lucide-react";
 
 type TaxRateEntry = { name: string; rate: number };
 type TaxRates = Record<string, TaxRateEntry>;
+
+// Official state-level sales tax rates (2025, Tax Foundation / state statutes).
+// Local/county averages are excluded — these are base state rates only.
+const OFFICIAL_US_RATES: TaxRates = {
+  AL: { name: "Alabama",        rate: 4.00 },
+  AK: { name: "Alaska",         rate: 0.00 },
+  AZ: { name: "Arizona",        rate: 5.60 },
+  AR: { name: "Arkansas",       rate: 6.50 },
+  CA: { name: "California",     rate: 7.25 },
+  CO: { name: "Colorado",       rate: 2.90 },
+  CT: { name: "Connecticut",    rate: 6.35 },
+  DE: { name: "Delaware",       rate: 0.00 },
+  FL: { name: "Florida",        rate: 6.00 },
+  GA: { name: "Georgia",        rate: 4.00 },
+  HI: { name: "Hawaii",         rate: 4.00 },
+  ID: { name: "Idaho",          rate: 6.00 },
+  IL: { name: "Illinois",       rate: 6.25 },
+  IN: { name: "Indiana",        rate: 7.00 },
+  IA: { name: "Iowa",           rate: 6.00 },
+  KS: { name: "Kansas",         rate: 6.50 },
+  KY: { name: "Kentucky",       rate: 6.00 },
+  LA: { name: "Louisiana",      rate: 4.45 },
+  ME: { name: "Maine",          rate: 5.50 },
+  MD: { name: "Maryland",       rate: 6.00 },
+  MA: { name: "Massachusetts",  rate: 6.25 },
+  MI: { name: "Michigan",       rate: 6.00 },
+  MN: { name: "Minnesota",      rate: 6.88 },
+  MS: { name: "Mississippi",    rate: 7.00 },
+  MO: { name: "Missouri",       rate: 4.23 },
+  MT: { name: "Montana",        rate: 0.00 },
+  NE: { name: "Nebraska",       rate: 5.50 },
+  NV: { name: "Nevada",         rate: 6.85 },
+  NH: { name: "New Hampshire",  rate: 0.00 },
+  NJ: { name: "New Jersey",     rate: 6.63 },
+  NM: { name: "New Mexico",     rate: 5.00 },
+  NY: { name: "New York",       rate: 4.00 },
+  NC: { name: "North Carolina", rate: 4.75 },
+  ND: { name: "North Dakota",   rate: 5.00 },
+  OH: { name: "Ohio",           rate: 5.75 },
+  OK: { name: "Oklahoma",       rate: 4.50 },
+  OR: { name: "Oregon",         rate: 0.00 },
+  PA: { name: "Pennsylvania",   rate: 6.00 },
+  RI: { name: "Rhode Island",   rate: 7.00 },
+  SC: { name: "South Carolina", rate: 6.00 },
+  SD: { name: "South Dakota",   rate: 4.50 },
+  TN: { name: "Tennessee",      rate: 7.00 },
+  TX: { name: "Texas",          rate: 6.25 },
+  UT: { name: "Utah",           rate: 6.10 },
+  VT: { name: "Vermont",        rate: 6.00 },
+  VA: { name: "Virginia",       rate: 5.30 },
+  WA: { name: "Washington",     rate: 6.50 },
+  WV: { name: "West Virginia",  rate: 6.00 },
+  WI: { name: "Wisconsin",      rate: 5.00 },
+  WY: { name: "Wyoming",        rate: 4.00 },
+  DC: { name: "Washington D.C.", rate: 6.00 },
+};
 
 export default function TaxPricingPage() {
   const [taxRates, setTaxRates] = useState<TaxRates>({});
@@ -18,12 +74,31 @@ export default function TaxPricingPage() {
     fetch("/api/admin/pricing-rules")
       .then((r) => r.json())
       .then((data) => {
-        setTaxRates(data.taxRates ?? {});
+        // Merge saved rates with official list — any state not yet saved gets its official rate
+        const saved: TaxRates = data.taxRates ?? {};
+        const merged: TaxRates = { ...OFFICIAL_US_RATES };
+        for (const code of Object.keys(merged)) {
+          if (saved[code] !== undefined) {
+            merged[code] = { ...merged[code], rate: saved[code].rate };
+          }
+        }
+        setTaxRates(merged);
         setMarkupPercent(String(data.markupPercent ?? 20));
         setDiscountCap(String(data.discountCap ?? 20));
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleFillOfficialRates = () => {
+    setTaxRates((prev) => {
+      const updated = { ...prev };
+      for (const [code, entry] of Object.entries(OFFICIAL_US_RATES)) {
+        updated[code] = { ...entry };
+      }
+      return updated;
+    });
+    setSaveMsg("Official 2025 rates loaded — review and save to apply.");
+  };
 
   const handleTaxChange = (code: string, value: string) => {
     const rate = parseFloat(value);
@@ -75,13 +150,25 @@ export default function TaxPricingPage() {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* Global Tax Engine */}
       <div className="rounded-xl md:rounded-[26px] border border-slate-200 bg-white px-4 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:px-5 sm:py-6">
-        <div className="mb-5 flex items-center gap-3">
-          <Building2 size={24} className="text-slate-700" />
-          <h2 className="text-lg font-bold text-slate-900">Global Tax Engine</h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Building2 size={24} className="text-slate-700" />
+            <h2 className="text-lg font-bold text-slate-900">Global Tax Engine</h2>
+          </div>
+          <button
+            type="button"
+            onClick={handleFillOfficialRates}
+            disabled={loading}
+            title="Auto-fill all states with official 2025 US state sales tax rates"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#6FAFB3] bg-[#f0fafa] px-3 py-1.5 text-xs font-semibold text-[#3d8f97] transition hover:bg-[#ddf3f5] disabled:opacity-50"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Fill Official Rates
+          </button>
         </div>
 
         <p className="mb-4 text-xs text-slate-500">
-          Tax rates are applied to orders based on the customer's shipping state.
+          Tax rates are applied to orders based on the customer&apos;s shipping state. Click <strong>Fill Official Rates</strong> to auto-populate with 2025 US state sales tax rates.
         </p>
 
         {loading ? (
