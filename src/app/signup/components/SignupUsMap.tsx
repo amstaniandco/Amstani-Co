@@ -146,13 +146,67 @@ function StateLabel({
       dominantBaseline="middle"
       fontSize={4.6}
       fontWeight={700}
-      fill="#d7f5fb"
+      fill="#66E5FF"
+      style={{ filter: "drop-shadow(0 0 3px #00CFFF)" }}
       pointerEvents="none"
     >
       {name}
     </text>
   );
 }
+
+const STATE_ABBREVIATIONS: Record<string, string> = {
+  Alabama: "AL",
+  Alaska: "AK",
+  Arizona: "AZ",
+  Arkansas: "AR",
+  California: "CA",
+  Colorado: "CO",
+  Connecticut: "CT",
+  Delaware: "DE",
+  Florida: "FL",
+  Georgia: "GA",
+  Hawaii: "HI",
+  Idaho: "ID",
+  Illinois: "IL",
+  Indiana: "IN",
+  Iowa: "IA",
+  Kansas: "KS",
+  Kentucky: "KY",
+  Louisiana: "LA",
+  Maine: "ME",
+  Maryland: "MD",
+  Massachusetts: "MA",
+  Michigan: "MI",
+  Minnesota: "MN",
+  Mississippi: "MS",
+  Missouri: "MO",
+  Montana: "MT",
+  Nebraska: "NE",
+  Nevada: "NV",
+  "New Hampshire": "NH",
+  "New Jersey": "NJ",
+  "New Mexico": "NM",
+  "New York": "NY",
+  "North Carolina": "NC",
+  "North Dakota": "ND",
+  Ohio: "OH",
+  Oklahoma: "OK",
+  Oregon: "OR",
+  Pennsylvania: "PA",
+  "Rhode Island": "RI",
+  "South Carolina": "SC",
+  "South Dakota": "SD",
+  Tennessee: "TN",
+  Texas: "TX",
+  Utah: "UT",
+  Vermont: "VT",
+  Virginia: "VA",
+  Washington: "WA",
+  "West Virginia": "WV",
+  Wisconsin: "WI",
+  Wyoming: "WY",
+};
 
 export default function SignupUsMap({
   selectedState,
@@ -191,40 +245,49 @@ export default function SignupUsMap({
         >
           <Geographies geography={geoData}>
             {({ geographies }: { geographies: StateFeature[] }) =>
-              geographies.map((geo) => {
+              geographies
+                .filter(
+                  (geo) => geo.properties?.NAME !== "District of Columbia"
+                )
+                .map((geo) => {
                 const stateName = geo.properties?.NAME ?? "Unknown state";
+                const isSelected = selectedState === stateName;
+                const stateLabel = STATE_ABBREVIATIONS[stateName] ?? stateName;
                 const labelPosition = getStateLabelPosition(geo);
 
                 return (
                   <Fragment key={geo.rsmKey}>
                     <Geography
                       geography={geo}
+                      className="am-map-state"
                       onClick={() => onStateSelect?.(stateName)}
                       style={{
                         default: {
-                          fill: selectedState === stateName ? "#2f8ea3" : "#38aac4",
+                          fill: isSelected
+                            ? "rgba(102, 229, 255, 0.3)"
+                            : "rgba(0, 207, 255, 0.06)",
                           outline: "none",
-                          stroke: "#68c4d8",
-                          strokeWidth: 0.75,
+                          stroke: isSelected ? "#66E5FF" : "#00CFFF",
+                          strokeWidth: isSelected ? 1.4 : 1,
                         },
                         hover: {
-                          fill: "#4db8cf",
+                          fill: "rgba(51, 217, 255, 0.18)",
                           outline: "none",
-                          stroke: "#79cada",
-                          strokeWidth: 0.85,
+                          stroke: "#33D9FF",
+                          strokeWidth: 1.4,
                           cursor: "pointer",
                         },
                         pressed: {
-                          fill: "#2f8ea3",
+                          fill: "rgba(102, 229, 255, 0.25)",
                           outline: "none",
-                          stroke: "#68c4d8",
-                          strokeWidth: 0.8,
+                          stroke: "#66E5FF",
+                          strokeWidth: 1.4,
                         },
                       }}
                     />
 
                     {labelPosition ? (
-                      <StateLabel coordinates={labelPosition} name={stateName} />
+                      <StateLabel coordinates={labelPosition} name={stateLabel} />
                     ) : null}
                   </Fragment>
                 );
