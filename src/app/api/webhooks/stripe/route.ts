@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import Stripe from "stripe";
 import stripe from "../../../../lib/stripe";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
+import { applyMonthlyImplementationFee } from "../../../../lib/store-billing";
 
 type StoreBreakdownEntry = {
   storeId: string;
@@ -74,20 +75,75 @@ export async function POST(req: Request) {
       }
     }
 
-    // Transfer 100% to each store owner that has a connected Stripe account
+    // Transfer store funds after collecting the monthly implementation fee.
     for (const entry of storeBreakdown) {
       if (!entry.stripeAccountId || entry.transferAmount <= 0) continue;
 
       try {
+        const billing = await applyMonthlyImplementationFee(db, {
+          storeId: entry.storeId,
+          orderId: entry.orderId,
+          paymentIntentId: pi.id,
+          transferAmountCents: entry.transferAmount,
+        });
+
+        if (billing.netTransferCents <= 0) {
+          await db.collection("orders").updateOne(
+            { _id: new ObjectId(entry.orderId) },
+            {
+              $set: {
+                stripeTransferStatus: "withheld_for_monthly_fee",
+                implementationFeeCents: billing.deductedCents,
+                netTransferCents: 0,
+                monthlyFeePeriod: billing.period,
+                updatedAt: new Date(),
+              },
+            }
+          );
+          continue;
+        }
+
         await stripe.transfers.create({
-          amount: entry.transferAmount,
+          amount: billing.netTransferCents,
           currency: pi.currency,
           destination: entry.stripeAccountId,
           source_transaction: pi.latest_charge as string,
-          metadata: { orderId: entry.orderId, storeId: entry.storeId },
+          metadata: {
+            orderId: entry.orderId,
+            storeId: entry.storeId,
+            grossTransferCents: String(billing.grossTransferCents),
+            implementationFeeCents: String(billing.deductedCents),
+            billingPeriod: billing.period,
+          },
         });
+
+        await db.collection("orders").updateOne(
+          { _id: new ObjectId(entry.orderId) },
+          {
+            $set: {
+              stripeTransferStatus: "transferred",
+              grossTransferCents: billing.grossTransferCents,
+              implementationFeeCents: billing.deductedCents,
+              netTransferCents: billing.netTransferCents,
+              monthlyFeePeriod: billing.period,
+              updatedAt: new Date(),
+            },
+          }
+        );
       } catch (err) {
         console.error(`[stripe webhook] Transfer failed for ${entry.stripeAccountId}:`, err);
+        if (ObjectId.isValid(entry.orderId)) {
+          await db.collection("orders").updateOne(
+            { _id: new ObjectId(entry.orderId) },
+            {
+              $set: {
+                stripeTransferStatus: "failed",
+                stripeTransferError: err instanceof Error ? err.message : String(err),
+                updatedAt: new Date(),
+              },
+            }
+          );
+        }
       }
     }
   }

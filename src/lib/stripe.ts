@@ -11,3 +11,4 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 export default stripe;
 
 export const STRIPE_CURRENCY = "usd";
+export const MONTHLY_IMPLEMENTATION_FEE_CENTS = 1500;

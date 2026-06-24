@@ -8,11 +8,20 @@ type AccountStatus = {
   chargesEnabled: boolean;
   payoutsEnabled: boolean;
   detailsSubmitted: boolean;
+  monthlyFee?: {
+    period: string;
+    amountCents: number;
+    collectedCents: number;
+    remainingCents: number;
+    status: string;
+  } | null;
 };
 
 export default function OwnerStripePage() {
   return (
-    <Suspense fallback={<div className="p-10 text-sm text-slate-400">Loading…</div>}>
+    <Suspense
+      fallback={<div className="p-10 text-sm text-slate-400">Loading…</div>}
+    >
       <StripePageInner />
     </Suspense>
   );
@@ -29,6 +38,12 @@ function StripePageInner() {
 
   const didReturn = searchParams.get("success") === "true";
   const didRefresh = searchParams.get("refresh") === "true";
+  const monthlyFee = status?.monthlyFee;
+  const feeAmount = ((monthlyFee?.amountCents ?? 1500) / 100).toFixed(2);
+  const feeCollected = ((monthlyFee?.collectedCents ?? 0) / 100).toFixed(2);
+  const feeRemaining = (
+    (monthlyFee?.remainingCents ?? monthlyFee?.amountCents ?? 1500) / 100
+  ).toFixed(2);
 
   useEffect(() => {
     fetch("/api/stripe/connect/status")
@@ -42,7 +57,9 @@ function StripePageInner() {
     setActionLoading(true);
     setMessage("");
     try {
-      const res = await fetch("/api/stripe/connect/onboard", { method: "POST" });
+      const res = await fetch("/api/stripe/connect/onboard", {
+        method: "POST",
+      });
       const data = await res.json();
       if (!res.ok) {
         setMessage(data.error || "Something went wrong. Please try again.");
@@ -62,7 +79,9 @@ function StripePageInner() {
     // Open blank tab immediately on click — browsers block window.open after async calls
     const newTab = window.open("", "_blank");
     try {
-      const res = await fetch("/api/stripe/connect/dashboard", { method: "POST" });
+      const res = await fetch("/api/stripe/connect/dashboard", {
+        method: "POST",
+      });
       const data = await res.json();
       if (!res.ok) {
         newTab?.close();
@@ -118,9 +137,12 @@ function StripePageInner() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 px-4 py-10">
       <div className="mx-auto max-w-xl">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">Stripe Payouts</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+          Stripe Payouts
+        </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
-          Connect your Stripe account so Amstani can send your 80% share of every sale directly to your bank.
+          Connect your Stripe account so Amstani can send your 80% share of
+          every sale directly to your bank.
         </p>
 
         {didReturn && (
@@ -141,9 +163,14 @@ function StripePageInner() {
           </div>
         )}
 
-        <div data-tutorial-id="owner-payouts-section" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 space-y-5">
+        <div
+          data-tutorial-id="owner-payouts-section"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 space-y-5"
+        >
           {loading ? (
-            <p className="text-sm text-slate-400">Checking your Stripe account…</p>
+            <p className="text-sm text-slate-400">
+              Checking your Stripe account…
+            </p>
           ) : (
             <>
               <div className="space-y-3">
@@ -175,6 +202,43 @@ function StripePageInner() {
 
               <div className="h-px bg-slate-100 dark:bg-slate-700" />
 
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900/50">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-slate-800 dark:text-slate-100">
+                      Monthly Maintainance fee
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      ${feeAmount} is deducted from your store payouts once per
+                      month.
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ${
+                      monthlyFee?.remainingCents === 0
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    }`}
+                  >
+                    {monthlyFee?.remainingCents === 0 ? "Paid" : "Pending"}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-3">
+                  <p>
+                    <span className="font-semibold">Month:</span>{" "}
+                    {monthlyFee?.period ?? "Current"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Collected:</span> $
+                    {feeCollected}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Remaining:</span> $
+                    {feeRemaining}
+                  </p>
+                </div>
+              </div>
+
               {!status?.connected || !status?.detailsSubmitted ? (
                 <div>
                   <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
@@ -187,7 +251,9 @@ function StripePageInner() {
                     disabled={actionLoading}
                     className="w-full rounded-xl bg-[#635BFF] py-3 text-sm font-semibold text-white transition hover:bg-[#5851e8] disabled:opacity-60"
                   >
-                    {actionLoading ? "Redirecting to Stripe…" : "Connect with Stripe"}
+                    {actionLoading
+                      ? "Redirecting to Stripe…"
+                      : "Connect with Stripe"}
                   </button>
 
                   <div className="mt-3">
@@ -201,7 +267,9 @@ function StripePageInner() {
                     {showLinkInput && (
                       <div className="mt-3 space-y-2">
                         <p className="text-xs text-slate-500">
-                          Paste your account ID from Stripe Dashboard → Connect → Accounts (starts with <span className="font-mono">acct_</span>)
+                          Paste your account ID from Stripe Dashboard → Connect
+                          → Accounts (starts with{" "}
+                          <span className="font-mono">acct_</span>)
                         </p>
                         <input
                           type="text"
@@ -212,7 +280,9 @@ function StripePageInner() {
                         />
                         <button
                           onClick={handleLinkAccount}
-                          disabled={actionLoading || !linkAccountId.startsWith("acct_")}
+                          disabled={
+                            actionLoading || !linkAccountId.startsWith("acct_")
+                          }
                           className="w-full rounded-xl bg-slate-800 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-600"
                         >
                           {actionLoading ? "Linking…" : "Link This Account"}
@@ -224,7 +294,8 @@ function StripePageInner() {
               ) : (
                 <div>
                   <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
-                    Your Stripe account is active. View your payouts, balance, and transaction history in the Stripe Express dashboard.
+                    Your Stripe account is active. View your payouts, balance,
+                    and transaction history in the Stripe Express dashboard.
                   </p>
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
@@ -246,9 +317,14 @@ function StripePageInner() {
               )}
 
               <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Important</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  Important
+                </p>
                 <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                  <li>Amstani & Co will only charge $15 per month maintainance charges from each store</li>
+                  <li>
+                    Amstani & Co deducts a $15 monthly maintenance fee from
+                    store payouts.
+                  </li>
                 </ul>
               </div>
             </>
@@ -259,10 +335,22 @@ function StripePageInner() {
   );
 }
 
-function StatusRow({ label, ok, okText, failText }: { label: string; ok: boolean; okText: string; failText: string }) {
+function StatusRow({
+  label,
+  ok,
+  okText,
+  failText,
+}: {
+  label: string;
+  ok: boolean;
+  okText: string;
+  failText: string;
+}) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-600 dark:text-slate-300">{label}</span>
+      <span className="text-sm text-slate-600 dark:text-slate-300">
+        {label}
+      </span>
       <span
         className={`rounded-full px-3 py-0.5 text-xs font-semibold ${
           ok
