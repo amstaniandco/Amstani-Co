@@ -6,9 +6,9 @@ export default function OwnerLayout({ children }: { children: ReactNode }) {
   return (
     <TutorialProvider>
       <div className="h-screen bg-[#efefef] overflow-hidden">
-        <div className="flex h-full">
+        <div className="flex h-full flex-col md:flex-row">
           <OwnerSidebar />
-          <main className="flex-1 h-full overflow-y-auto p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-6">
+          <main className="flex-1 overflow-y-auto p-3 md:p-6">
             {children}
           </main>
         </div>

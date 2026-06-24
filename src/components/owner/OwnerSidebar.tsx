@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -15,7 +16,6 @@ import {
   Music2,
   Package,
   TriangleAlert,
-  Store,
   Timer,
   UserRound,
   X,
@@ -127,14 +127,25 @@ export default function OwnerSidebar() {
 
   return (
     <>
-      <button
-        type="button"
-        data-tutorial-id="sidebar-hamburger"
-        onClick={() => setIsOpen(true)}
-        className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-900 shadow-md transition hover:bg-slate-50 md:hidden"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
+      {/* Mobile sticky topbar */}
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm md:hidden">
+        <Image
+          src="/assets/amstaniLogo.png"
+          alt="Amstani & Co."
+          width={110}
+          height={32}
+          className="h-8 w-auto object-contain"
+          priority
+        />
+        <button
+          type="button"
+          data-tutorial-id="sidebar-hamburger"
+          onClick={() => setIsOpen(true)}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </header>
 
       <div
         className={`fixed inset-0 z-40 bg-slate-950/50 transition-opacity md:hidden ${
@@ -150,7 +161,14 @@ export default function OwnerSidebar() {
       >
         <div className="mb-4 flex items-center justify-between gap-2 px-2 pt-1 md:mb-8 md:pt-2">
           <div className="flex items-center gap-2">
-            <Store className="h-6 w-6 shrink-0 text-[#61bbc5]" />
+            <Image
+              src="/assets/amstaniLogo.png"
+              alt="Amstani & Co."
+              width={28}
+              height={28}
+              className="h-7 w-7 shrink-0 object-contain"
+              priority
+            />
             <p className="whitespace-nowrap text-base font-bold tracking-tight text-slate-900">
               AMSTANI &amp; CO.
             </p>

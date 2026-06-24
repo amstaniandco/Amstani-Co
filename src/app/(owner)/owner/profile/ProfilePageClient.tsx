@@ -381,8 +381,9 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
         </div>
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+        {/* Logo + info: side-by-side on all sizes */}
+        <div className="flex items-start gap-3 sm:gap-4">
           <div data-tutorial-id="owner-logo" className="relative h-[66px] w-[66px] shrink-0 overflow-visible">
             <div className="h-full w-full overflow-hidden rounded-full bg-[#9a9a9a]">
               {store?.logoUrl ? <img src={store.logoUrl} alt="Logo" className="h-full w-full object-cover" /> : null}
@@ -392,7 +393,7 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
             </div>
           </div>
 
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-[1.75rem] font-bold leading-none text-slate-900 dark:text-slate-100 sm:text-[2rem]">{store?.name || "Setup Your Store"}</h2>
               {store?.shortId && (
@@ -401,10 +402,10 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
                 </span>
               )}
             </div>
-            <p className="mt-2 max-w-[300px] text-[13px] leading-5 text-slate-400 dark:text-slate-500">
+            <p className="mt-1.5 max-w-[300px] text-[13px] leading-5 text-slate-400 dark:text-slate-500">
               {store?.description || "Description of the store can be written here"}
             </p>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               {rank !== null && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
                   <Trophy className="h-3 w-3" />
@@ -436,8 +437,9 @@ function ProfileHero({ store, onRefresh, followerCount, productCount, rank }: { 
           </div>
         </div>
 
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:gap-8 lg:flex-col lg:items-end lg:gap-4">
-          <div className="flex gap-10 text-center sm:gap-8 lg:gap-10">
+        {/* Stats + button: inline row on mobile, vertical column on lg */}
+        <div className="flex items-center justify-between gap-4 lg:flex-col lg:items-end lg:gap-4">
+          <div className="flex gap-8 text-center sm:gap-10">
             <div>
               <p className="text-[2rem] font-bold leading-none text-slate-900 dark:text-slate-100">{productCount}</p>
               <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400">Products</p>
