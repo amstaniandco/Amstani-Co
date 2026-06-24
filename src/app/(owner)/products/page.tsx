@@ -633,6 +633,7 @@ function PricingModal({
           </div>
           <button
             onClick={onClose}
+            data-tutorial-id="owner-pricing-modal-close"
             className="ml-3 shrink-0 text-slate-400 transition hover:text-slate-700"
           >
             <X className="h-5 w-5" />
@@ -670,7 +671,7 @@ function PricingModal({
             </div>
 
             {/* Price increase (markup %) */}
-            <div>
+            <div data-tutorial-id="owner-pricing-markup-input">
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                 Increase Price{" "}
                 <span className="font-normal text-slate-400">
@@ -712,7 +713,7 @@ function PricingModal({
             </div>
 
             {/* Discount */}
-            <div>
+            <div data-tutorial-id="owner-pricing-discount-input">
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                 Sale Discount{" "}
                 <span className="font-normal text-slate-400">
@@ -987,7 +988,7 @@ function BulkPricingPanel({
   }
 
   return (
-    <section className="mt-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+    <section data-tutorial-id="owner-bulk-pricing-panel" className="mt-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
       <p className="text-sm font-bold text-slate-800">
         Bulk Pricing — apply to all products
       </p>
@@ -1354,7 +1355,7 @@ export default function OwnerProductsPage() {
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {filteredProducts.map((product) => {
+                  {filteredProducts.map((product, idx) => {
                     // The owner's "original" is the admin-set price (their base cost)
                     const origP =
                       product.adminAdjustedPrice ??
@@ -1420,6 +1421,11 @@ export default function OwnerProductsPage() {
                             <button
                               onClick={() =>
                                 setPricingProductId(product.productId)
+                              }
+                              data-tutorial-id={
+                                idx === 0
+                                  ? "owner-first-product-pricing-btn"
+                                  : undefined
                               }
                               className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                             >

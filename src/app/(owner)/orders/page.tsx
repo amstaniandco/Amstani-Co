@@ -83,7 +83,7 @@ function OrderList({
       </div>
 
       {/* Filter pills */}
-      <div className="flex gap-1.5 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div data-tutorial-id="owner-orders-filters" className="flex gap-1.5 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {STATUS_FILTERS.map((f) => (
           <button key={f} type="button" onClick={() => onFilter(f)}
             className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
@@ -103,7 +103,7 @@ function OrderList({
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+      <div data-tutorial-id="owner-orders-list" className="flex-1 overflow-y-auto divide-y divide-slate-50">
         {orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
             <p className="text-sm font-medium text-slate-400">No orders found</p>

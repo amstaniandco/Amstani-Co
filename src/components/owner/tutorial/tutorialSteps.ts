@@ -98,6 +98,73 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     page: "/products",
+    target: "owner-first-product-pricing-btn",
+    title: "Set Your Markup or Discount",
+    description:
+      "Click 'Pricing' on any product to set what you charge for it. Let's open the pricing panel for your first product.",
+    position: "top",
+    postAction: "owner-first-product-pricing-btn",
+  },
+  {
+    page: "/products",
+    target: "owner-pricing-markup-input",
+    title: "Increase Price (Markup)",
+    description:
+      "Enter a percentage to mark this product up above the catalog price — capped at your platform markup limit. Click Save to apply it.",
+    position: "bottom",
+  },
+  {
+    page: "/products",
+    target: "owner-pricing-discount-input",
+    title: "Put It On Sale (Discount)",
+    description:
+      "Toggle the sale ON and set a discount percentage, up to the platform's discount cap, to run a sale on this product. Customers see the discounted price immediately.",
+    position: "top",
+    postAction: "owner-pricing-modal-close",
+  },
+  {
+    page: "/products",
+    target: "owner-bulk-pricing-panel",
+    title: "Bulk Pricing — Every Product at Once",
+    description:
+      "Apply the same markup or discount to every listed product in one click instead of editing them individually. 'Reset All' reverts everyone back to catalog pricing.",
+    position: "bottom",
+  },
+  {
+    page: "/products",
+    target: "sidebar-global-catalog",
+    title: "Sidebar — Global Catalog",
+    description:
+      "Browse every product available on the platform — including ones you haven't requested yet — and pre-set your pricing. Let's take a look.",
+    position: "right",
+  },
+
+  // ── Global Catalog ───────────────────────────────────────────────────────
+  {
+    page: "/products/catalog",
+    target: null,
+    title: "Global Catalog",
+    description:
+      "This is the full platform catalog — every product available to list in your store, whether you've requested it yet or not.",
+  },
+  {
+    page: "/products/catalog",
+    target: "owner-catalog-bulk-pricing",
+    title: "Pre-Set Markup or Discount",
+    description:
+      "Apply a markup or discount across the entire catalog now, so the pricing is already in place the moment a product is approved and listed in your store.",
+    position: "bottom",
+  },
+  {
+    page: "/products/catalog",
+    target: "owner-catalog-grid",
+    title: "Browse & Search",
+    description:
+      "Search by name, SKU, or category, and click any product to see its full detail, variants, and pricing breakdown.",
+    position: "top",
+  },
+  {
+    page: "/products/catalog",
     target: "sidebar-orders",
     title: "Sidebar — Orders",
     description:
@@ -124,9 +191,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     page: "/orders",
     target: "owner-orders-list",
-    title: "Order Cards",
+    title: "Order List",
     description:
-      "Each card shows the customer, items ordered, total value, and current status. Click an order to open its detail and take action.",
+      "Each row shows the order ID, customer, date, total, and status badge. Click any order to open its full detail — items, shipping, and status controls — on the right.",
     position: "top",
   },
   {

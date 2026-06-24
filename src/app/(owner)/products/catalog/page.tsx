@@ -243,7 +243,7 @@ export default function OwnerCatalogPage() {
         </div>
 
         {/* ── Bulk pricing panel ── */}
-        <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div data-tutorial-id="owner-catalog-bulk-pricing" className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-bold text-slate-800 mb-1">Bulk Price Adjustment</p>
           <p className="text-xs text-slate-500 mb-4">
             Apply a markup or discount to <span className="font-semibold">all products</span> instantly. Markup max: <span className="font-semibold">{markupPercent}%</span> · Discount max: <span className="font-semibold">{discountCap}%</span>.
@@ -348,7 +348,7 @@ export default function OwnerCatalogPage() {
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center text-slate-400">No products found.</div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div data-tutorial-id="owner-catalog-grid" className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {filtered.map((product) => {
               const img = product.imageUrls?.[0] ?? product.mainImage;
               const catalogBase = product.adminAdjustedPrice ?? product.originalPrice;
