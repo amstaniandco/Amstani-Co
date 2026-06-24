@@ -5,7 +5,7 @@ export default function LiveStoresSection({ liveStores }: { liveStores: LiveStor
   return (
     <section className="home-section mb-5">
       <div className="mb-3">
-        <h2 className="home-heading text-[24px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[28px]">
+        <h2 className="home-heading text-[20px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[28px]">
           Live Stores <span className="font-normal text-gray-400 dark:text-slate-400">({liveStores.length})</span>
         </h2>
       </div>

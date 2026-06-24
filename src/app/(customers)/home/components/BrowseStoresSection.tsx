@@ -52,7 +52,7 @@ export default function BrowseStoresSection({ stores, searchQuery, onSearchQuery
   return (
     <section className="home-section">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h2 className="home-heading text-[28px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[32px]">Browse Stores</h2>
+        <h2 className="home-heading text-[20px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[32px]">Browse Stores</h2>
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-[320px] lg:w-[420px]">
             <input
