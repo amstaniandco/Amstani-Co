@@ -138,7 +138,8 @@ function StateLabel({
       dominantBaseline="middle"
       fontSize={10}
       fontWeight={700}
-      fill="#0f172a"
+      fill="#66E5FF"
+      style={{ filter: "drop-shadow(0 0 3px #00CFFF)" }}
       pointerEvents="none"
     >
       {name}
@@ -339,7 +340,11 @@ export default function AmericaMap() {
               >
                 <Geographies geography={geoData}>
                   {({ geographies }: { geographies: StateFeature[] }) =>
-                    geographies.map((geo) => {
+                    geographies
+                      .filter(
+                        (geo) => geo.properties?.NAME !== "District of Columbia"
+                      )
+                      .map((geo) => {
                       const stateName = geo.properties?.NAME ?? "Unknown state";
                       const isHovered = hoveredState === stateName;
                       const stateLabel = STATE_ABBREVIATIONS[stateName] ?? stateName;
@@ -355,23 +360,23 @@ export default function AmericaMap() {
                             onClick={() => setSelectedStateLocal(stateName)}
                             style={{
                               default: {
-                                fill: "#3fb5d0",
+                                fill: "rgba(0, 207, 255, 0.06)",
                                 outline: "none",
-                                stroke: "#2f7688",
-                                strokeWidth: 0.5,
+                                stroke: "#00CFFF",
+                                strokeWidth: 1,
                               },
                               hover: {
-                                fill: "#63c7de",
+                                fill: "rgba(51, 217, 255, 0.18)",
                                 outline: "none",
-                                stroke: "#316f82",
-                                strokeWidth: 0.6,
+                                stroke: "#33D9FF",
+                                strokeWidth: 1.4,
                                 cursor: "pointer",
                               },
                               pressed: {
-                                fill: "#2c9fbc",
+                                fill: "rgba(102, 229, 255, 0.25)",
                                 outline: "none",
-                                stroke: "#316f82",
-                                strokeWidth: 0.6,
+                                stroke: "#66E5FF",
+                                strokeWidth: 1.4,
                               },
                             }}
                           />

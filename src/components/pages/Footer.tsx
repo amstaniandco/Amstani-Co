@@ -165,22 +165,22 @@ export default function Footer() {
             <h3 className="text-white font-semibold text-lg mb-5">Our Policies</h3>
             <ul className="space-y-3 text-gray-400 text-sm">
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
+                <Link href="/policies/refund" className="hover:text-teal-400 transition">
                   Refund Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
+                <Link href="/policies/shipping" className="hover:text-teal-400 transition">
                   Shipping Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
+                <Link href="/policies/returns" className="hover:text-teal-400 transition">
                   Return & Exchange
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
+                <Link href="/policies/data-protection" className="hover:text-teal-400 transition">
                   Data Protection
                 </Link>
               </li>
