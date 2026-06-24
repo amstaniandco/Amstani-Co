@@ -116,7 +116,7 @@ export default function ShippingSection({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {addresses.length === 0 ? (
-          <p className="text-sm text-slate-500 col-span-2 py-4">No addresses saved yet. Add one to get started!</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 sm:col-span-2 py-4">No addresses saved yet. Add one to get started!</p>
         ) : (
           addresses.map((address, index) => (
             <div

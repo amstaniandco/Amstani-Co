@@ -212,7 +212,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 dark:bg-slate-950 sm:px-6 lg:px-8">
-      <section className="grid gap-6 md:grid-cols-12">
+      <section className="grid items-start gap-6 md:grid-cols-12">
         <ProfileSummary user={user} onSave={handleSaveProfile} onAvatarUpload={handleAvatarUpload} />
         <ShippingSection
           addresses={user?.addresses || []}
