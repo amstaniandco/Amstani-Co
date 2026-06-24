@@ -54,7 +54,7 @@ export default function StoreHero() {
 
   return (
     <div className="ui-panel flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
-      <div className="relative h-[200px] w-full overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-700 sm:h-[260px]">
+      <div className="relative h-[120px] w-full overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-700 sm:h-[260px]">
         <Image
           src={store?.bannerUrl || store?.logoUrl || "/default-banner.jpg"}
           alt={store?.name ?? "Store banner"}
@@ -66,19 +66,17 @@ export default function StoreHero() {
 
       <div className="mt-4 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 sm:min-w-0 sm:flex-1">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full overflow-hidden bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full overflow-hidden bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:h-16 sm:w-16">
             {store?.logoUrl ? (
               <Image
                 src={store.logoUrl}
                 alt={store.name || "logo"}
-                width={64}
-                height={64}
-                className="object-cover"
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
-                S
-              </div>
+              <span>S</span>
             )}
           </div>
 
