@@ -31,7 +31,7 @@ export async function GET(
       catalogProduct = await db.collection("products").findOne({ _id: new ObjectId(productId) });
     }
 
-    if (catalogProduct?.brandSuspended) {
+    if (catalogProduct?.brandSuspended || catalogProduct?.isSuspended) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 

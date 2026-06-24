@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   const catalogDocs = productIds.length
     ? await db.collection("products")
         .find({ _id: { $in: productIds } })
-        .project({ _id: 1, brand: 1, category: 1, description: 1, isPublished: 1, status: 1, brandSuspended: 1 })
+        .project({ _id: 1, brand: 1, category: 1, description: 1, isPublished: 1, status: 1, brandSuspended: 1, isSuspended: 1 })
         .toArray()
     : [];
 
@@ -41,7 +41,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       if (!cat) return false; // removed from global catalog
       if (cat.isPublished === false) return false;
       if (cat.status === "archived" || cat.status === "draft") return false;
-      if (cat.brandSuspended === true) return false;
+      if (cat.brandSuspended === true || cat.isSuspended === true) return false;
       return true;
     })
     .map((r) => {

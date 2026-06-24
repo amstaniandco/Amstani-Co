@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: Ctx) {
   const db = client.db(DB_NAME);
   const product = await db.collection("products").findOne({ _id: id });
 
-  if (!product || product.brandSuspended) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  if (!product || product.brandSuspended || product.isSuspended) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
   let stock: number | null = null;
   let variantPrices: Record<string, number> = {};

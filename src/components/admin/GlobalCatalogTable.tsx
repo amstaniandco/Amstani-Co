@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Edit3, Eye, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit3, Eye, Power, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "../global/ConfirmProvider";
 
@@ -18,6 +18,8 @@ export type CatalogProductRow = {
   isPublished?: boolean;
   imageUrls?: string[];
   allowCustomOrders?: boolean;
+  isSuspended?: boolean;
+  brandSuspended?: boolean;
 };
 
 type GlobalCatalogTableProps = {
@@ -105,6 +107,31 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
     }
   };
 
+  const toggleSuspend = async (product: CatalogProductRow) => {
+    if (product.brandSuspended) {
+      setError(`"${product.name}" is suspended because its brand is suspended. Manage it from the Brands tab.`);
+      return;
+    }
+    const current = product.isSuspended ?? false;
+    const confirmed = await confirm(
+      current
+        ? "Activate this product? It will become visible across stores, catalogs, and search again."
+        : "Suspend this product? It will be hidden everywhere on the site except this Global Catalog."
+    );
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/admin/global-catalog/products/${product._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isSuspended: !current }),
+      });
+      if (!res.ok) { const d = await res.json(); setError(d.error || "Failed to update"); return; }
+      setProducts((prev) => prev.map((p) => p._id === product._id ? { ...p, isSuspended: !current } : p));
+    } catch {
+      setError("Failed to update suspension");
+    }
+  };
+
   return (
     <div className="rounded-xl bg-white shadow-sm md:rounded-[26px]">
       {/* Search bar */}
@@ -155,15 +182,16 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
             {!loading && products.map((product) => {
               const isActive = product.status === "active" || product.isPublished;
               const stock = product.totalStock ?? product.stock ?? 0;
+              const isSuspended = (product.isSuspended ?? false) || (product.brandSuspended ?? false);
               return (
-                <tr key={product._id} className="border-b border-[#e7edf1] transition hover:bg-[#f8fafb]">
+                <tr key={product._id} className={`border-b border-[#e7edf1] transition hover:bg-[#f8fafb] ${isSuspended ? "bg-orange-50/40" : ""}`}>
                   <td className="px-3 py-3 font-medium text-slate-800 sm:px-4 md:px-5">{product.sku || "—"}</td>
                   <td className="px-3 py-3 text-slate-800 sm:px-4 md:px-5">
                     <div className="flex items-center gap-3">
                       {product.imageUrls?.[0] && (
                         <img src={product.imageUrls[0]} alt="" className="h-10 w-10 rounded-lg object-cover" />
                       )}
-                      <span className="font-medium">{product.name}</span>
+                      <span className={`font-medium ${isSuspended ? "text-slate-400 line-through" : ""}`}>{product.name}</span>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">{product.category || "—"}</td>
@@ -176,10 +204,17 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
                     )}
                   </td>
                   <td className="px-3 py-3 sm:px-4 md:px-5">
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                      <span className={`h-2 w-2 rounded-full ${isActive ? "bg-green-600" : "bg-red-600"}`} />
-                      {isActive ? "Active" : "Inactive"}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <span className={`h-2 w-2 rounded-full ${isActive ? "bg-green-600" : "bg-red-600"}`} />
+                        {isActive ? "Active" : "Inactive"}
+                      </span>
+                      {isSuspended && (
+                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-600">
+                          {product.brandSuspended ? "Suspended (Brand)" : "Suspended"}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-3 text-slate-700 sm:px-4 md:px-5">{stock}</td>
                   <td className="px-3 py-3 text-center sm:px-4 md:px-5">
@@ -205,6 +240,18 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: GlobalCat
                       <button type="button" onClick={() => onEdit(product._id)}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-[#f0f4f8]" title="Edit">
                         <Edit3 className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleSuspend(product)}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+                          isSuspended
+                            ? "border-orange-200 text-orange-500 hover:bg-orange-50"
+                            : "border-slate-200 text-slate-600 hover:bg-[#f0f4f8]"
+                        }`}
+                        title={product.brandSuspended ? "Suspended via brand — manage in Brands tab" : isSuspended ? "Activate" : "Suspend"}
+                      >
+                        <Power className="h-4 w-4" />
                       </button>
                       <button type="button" onClick={() => deleteProduct(product._id)}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 text-red-600 transition hover:bg-red-50" title="Delete">

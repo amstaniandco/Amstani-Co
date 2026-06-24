@@ -31,7 +31,7 @@ export async function GET() {
         .toArray(),
       db
         .collection("products")
-        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) }, brandSuspended: { $ne: true } })
+        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) }, brandSuspended: { $ne: true }, isSuspended: { $ne: true } })
         .toArray(),
     ]);
 

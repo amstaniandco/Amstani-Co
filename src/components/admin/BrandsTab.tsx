@@ -11,6 +11,7 @@ type BrandProduct = {
   status: string;
   mainImage?: string | null;
   brandSuspended?: boolean;
+  isSuspended?: boolean;
   allowCustomOrders?: boolean;
 };
 
@@ -441,6 +442,11 @@ export default function BrandsTab() {
                               {p.allowCustomOrders && (
                                 <span className="flex shrink-0 items-center justify-center rounded-full bg-purple-100 p-1 text-purple-600" title="Custom orders enabled">
                                   <Sparkles size={12} />
+                                </span>
+                              )}
+                              {p.isSuspended && (
+                                <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-600" title="Suspended individually from the Products tab">
+                                  Suspended
                                 </span>
                               )}
                               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${p.status === "active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>

@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     .map((id) => new ObjectId(id));
 
   const products = productIds.length
-    ? await db.collection("products").find({ _id: { $in: productIds }, brandSuspended: { $ne: true } }).toArray()
+    ? await db.collection("products").find({ _id: { $in: productIds }, brandSuspended: { $ne: true }, isSuspended: { $ne: true } }).toArray()
     : [];
   const productMap = new Map(products.map((p) => [p._id.toString(), p]));
 

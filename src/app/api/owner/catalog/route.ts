@@ -27,7 +27,7 @@ export async function GET() {
   // Check if owner catalog already seeded for this store
   const existing = await db.collection("owner_catalog").countDocuments({ storeId });
 
-  const ACTIVE_FILTER = { isPublished: { $ne: false }, status: { $nin: ["archived", "draft"] }, brandSuspended: { $ne: true } };
+  const ACTIVE_FILTER = { isPublished: { $ne: false }, status: { $nin: ["archived", "draft"] }, brandSuspended: { $ne: true }, isSuspended: { $ne: true } };
 
   if (existing === 0) {
     // Seed: copy only active/published products into owner_catalog for this store
@@ -114,7 +114,7 @@ export async function GET() {
   const globalDocs = globalIds.length
     ? await db.collection("products")
         .find({ _id: { $in: globalIds } })
-        .project({ _id: 1, adminAdjustedPrice: 1, isPublished: 1, status: 1, brandSuspended: 1, variants: 1, description: 1 })
+        .project({ _id: 1, adminAdjustedPrice: 1, isPublished: 1, status: 1, brandSuspended: 1, isSuspended: 1, variants: 1, description: 1 })
         .toArray()
     : [];
   const globalMap = new Map(globalDocs.map((d) => [d._id.toString(), d]));
@@ -125,7 +125,7 @@ export async function GET() {
       if (!gp) return false; // removed from global catalog
       if (gp.isPublished === false) return false;
       if (gp.status === "archived" || gp.status === "draft") return false;
-      if (gp.brandSuspended === true) return false;
+      if (gp.brandSuspended === true || gp.isSuspended === true) return false;
       return true;
     })
     .map((c) => {

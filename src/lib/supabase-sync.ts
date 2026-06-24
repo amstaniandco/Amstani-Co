@@ -172,6 +172,7 @@ function mapProduct(product: Record<string, unknown>) {
     seoTitle:         (product.seoTitle         as string | null) ?? null,
     seoDescription:   (product.seoDescription   as string | null) ?? null,
     brandSuspended:   false,
+    isSuspended:      false,
     createdAt:        product.createdAt ?? new Date(),
     updatedAt:        product.updatedAt ?? new Date(),
     copiedAt:         new Date(),
@@ -210,13 +211,30 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     const brandsCol     = db.collection("brands");
     const categoriesCol = db.collection("categories");
 
+    // Never (re)write a product that's already been suspended locally —
+    // suspension is a deliberate admin decision; Supabase has no concept of it.
+    const suspendedIds = new Set(
+      (
+        await productsCol
+          .find(
+            {
+              sourceProductId: { $in: docs.map((d) => d.sourceProductId) },
+              $or: [{ isSuspended: true }, { brandSuspended: true }],
+            },
+            { projection: { sourceProductId: 1 } }
+          )
+          .toArray()
+      ).map((d) => d.sourceProductId as string)
+    );
+    const syncableDocs = docs.filter((doc) => !suspendedIds.has(doc.sourceProductId));
+
     // ── Products ─────────────────────────────────────────────────────────────
     // Only inserts records that do not yet exist (upsert with $setOnInsert).
     // Existing records are never overwritten — they belong to this site now.
     let newProducts = 0;
-    if (docs.length > 0) {
+    if (syncableDocs.length > 0) {
       const result = await productsCol.bulkWrite(
-        docs.map((doc) => ({
+        syncableDocs.map((doc) => ({
           updateOne: {
             filter: { sourceProductId: doc.sourceProductId },
             update:  { $setOnInsert: doc },
@@ -317,7 +335,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       categoryCountsUpdated: categoryCount,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
-        `Products  : ${newProducts} new · ${skippedProducts} already here (skipped).`,
+        `Products  : ${newProducts} new · ${skippedProducts} already here or suspended (skipped)${suspendedIds.size ? ` — ${suspendedIds.size} suspended` : ""}.`,
         `Brands    : ${newBrands} new · ${skippedBrands} already here (skipped).`,
         `Categories: ${newCategories} new · ${skippedCategories} already here (skipped).`,
         `Product counts relinked: ${brandCount} brands · ${categoryCount} categories.`,

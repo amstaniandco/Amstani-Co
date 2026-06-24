@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
-    // Only adjust published/active products — skip drafts, archived, and suspended brands.
+    // Only adjust published/active products — skip drafts, archived, and suspended brands/products.
     const products = await db
       .collection("products")
       .find({
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
         isPublished: { $ne: false },
         status: { $nin: ["archived", "draft"] },
         brandSuspended: { $ne: true },
+        isSuspended: { $ne: true },
       })
       .project({ _id: 1, price: 1, variants: 1 })
       .toArray();

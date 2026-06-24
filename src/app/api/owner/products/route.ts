@@ -39,7 +39,7 @@ export async function GET() {
 
   const catalogDocs = productIds.length
     ? await db.collection("products")
-        .find({ _id: { $in: productIds }, brandSuspended: { $ne: true } })
+        .find({ _id: { $in: productIds }, brandSuspended: { $ne: true }, isSuspended: { $ne: true } })
         .project({ _id: 1, brand: 1, category: 1, description: 1, allowCustomOrders: 1, adminAdjustedPrice: 1 })
         .toArray()
     : [];

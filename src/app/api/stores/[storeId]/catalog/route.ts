@@ -19,6 +19,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ storeId
     const ownerId = store.ownerId?.toString() ?? "";
     const globalProducts = await db.collection("products").find({
       brandSuspended: { $ne: true },
+      isSuspended: { $ne: true },
       isPublished: { $ne: false },
       status: { $nin: ["archived", "draft"] },
     }).toArray();
@@ -66,7 +67,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ storeId
   const globalDocs = globalIds.length
     ? await db.collection("products")
         .find({ _id: { $in: globalIds } })
-        .project({ _id: 1, adminAdjustedPrice: 1, price: 1, isPublished: 1, status: 1, brandSuspended: 1 })
+        .project({ _id: 1, adminAdjustedPrice: 1, price: 1, isPublished: 1, status: 1, brandSuspended: 1, isSuspended: 1 })
         .toArray()
     : [];
 
@@ -78,7 +79,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ storeId
       if (!gp) return false;
       if (gp.isPublished === false) return false;
       if (gp.status === "archived" || gp.status === "draft") return false;
-      if (gp.brandSuspended === true) return false;
+      if (gp.brandSuspended === true || gp.isSuspended === true) return false;
       return true;
     })
     .map((c) => {

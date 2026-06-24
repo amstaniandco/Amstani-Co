@@ -208,6 +208,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     if (typeof body.allowCustomOrders === "boolean") {
       updates.allowCustomOrders = body.allowCustomOrders;
     }
+    if (typeof body.isSuspended === "boolean") {
+      updates.isSuspended = body.isSuspended;
+    }
 
     const client = await clientPromise;
     const result = await client.db(DB_NAME).collection("products").updateOne({ _id: objectId }, { $set: updates });
