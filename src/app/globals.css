@@ -265,26 +265,23 @@ a, li, dd, dt, table, td, th {
   }
 }
 
-/* AmericaMap state hover animation */
+/* AmericaMap neon outline + hover glow */
 .am-map-state {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 200ms ease;
+  filter: drop-shadow(0 0 3px #00cfff) drop-shadow(0 0 6px rgba(0, 207, 255, 0.5));
+  transition: filter 200ms ease;
 }
 
 .am-map-state:hover,
 .am-map-state--hovered {
-  transform: scale(1.4);
+  filter: drop-shadow(0 0 5px #33d9ff) drop-shadow(0 0 12px rgba(102, 229, 255, 0.8));
 }
 
 .am-map-label {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 200ms ease;
+  transition: filter 200ms ease;
 }
 
 .am-map-label--hovered {
-  transform: scale(1.4);
+  filter: drop-shadow(0 0 5px #66e5ff);
 }
 
 /* Hide scrollbar while keeping scroll functionality */
