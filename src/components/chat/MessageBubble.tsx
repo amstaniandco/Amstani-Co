@@ -165,13 +165,13 @@ export default function MessageBubble({
       {/* Other party avatar */}
       {!isOwn && (
         <div
-          className={`h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${avatarClassName}`}
+          className={`h-6 w-6 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${avatarClassName}`}
         >
           {avatarLabel}
         </div>
       )}
 
-      <div className={`flex max-w-[260px] flex-col gap-0.5 sm:max-w-[360px] ${isOwn ? "items-end" : "items-start"}`}>
+      <div className={`flex max-w-[200px] flex-col gap-0.5 sm:max-w-[280px] ${isOwn ? "items-end" : "items-start"}`}>
         {/* Reply quote */}
         {msg.replyTo && (
           <div className="w-full rounded-lg border-l-2 border-slate-400 bg-slate-100 px-2 py-1 text-xs text-slate-500">
@@ -208,11 +208,11 @@ export default function MessageBubble({
               This message was deleted
             </div>
           ) : (
-            <div className={`rounded-2xl px-4 py-2.5 text-sm ${isOwn ? ownBubbleCls : otherBubbleCls}`}>
+            <div className={`rounded-2xl px-3 py-1.5 text-xs ${isOwn ? ownBubbleCls : otherBubbleCls}`}>
               {!isOwn && (
                 <p className="mb-0.5 text-[10px] font-semibold opacity-60">{msg.senderName}</p>
               )}
-              <p className="leading-relaxed">{msg.text}</p>
+              <p className="leading-snug">{msg.text}</p>
               {msg.edited && <p className="mt-0.5 text-[10px] opacity-60">(edited)</p>}
             </div>
           )}

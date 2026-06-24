@@ -325,7 +325,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
         Store owner languages: {store?.settings?.languages?.join(", ") ?? "English, Spanish, Arabic"}
       </div>
 
-      <div ref={messagesRef} className="mt-4 min-h-[220px] flex-1 space-y-4 overflow-y-auto pr-1">
+      <div ref={messagesRef} className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {!storeId ? (
           <p className="py-8 text-center text-sm text-slate-400">Select a store to start chatting.</p>
         ) : activeMessages.length === 0 ? (

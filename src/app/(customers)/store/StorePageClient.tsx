@@ -110,7 +110,7 @@ export default function StorePageClient() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-stretch">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:self-start">
               <StoreHero />
             </div>
             <div className="hidden lg:flex lg:col-span-1">

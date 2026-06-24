@@ -250,7 +250,7 @@ export default function StoreCatalogClient() {
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase">
+            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase">
               Amstani &amp; Co&apos;s Catalog
             </h1>
             {storeName && <p className="text-sm text-slate-500 mt-0.5">{storeName}</p>}
