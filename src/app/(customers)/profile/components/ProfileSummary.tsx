@@ -113,8 +113,8 @@ export default function ProfileSummary({
     <aside className="ui-panel rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800 md:col-span-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4 flex-1">
-          <div className="relative h-24 w-24 flex-shrink-0">
-            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 shadow-md dark:bg-slate-700 flex items-center justify-center">
+          <div className="relative h-20 w-20 flex-shrink-0">
+            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 shadow-md dark:border-slate-800 dark:bg-slate-700 flex items-center justify-center">
               {displayedAvatarUrl ? (
                 <img
                   src={displayedAvatarUrl}
@@ -138,9 +138,9 @@ export default function ProfileSummary({
               disabled={!isEditing || isUploadingAvatar || isSaving}
               aria-label="Upload profile photo"
               title={isEditing ? "Choose profile photo" : "Click Edit to change photo"}
-              className="absolute left-14 top-14 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800"
             >
-              {isUploadingAvatar ? "..." : <Pencil className="h-4 w-4" aria-hidden="true" />}
+              {isUploadingAvatar ? "..." : <Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
             </button>
           </div>
           <div className="min-w-0">

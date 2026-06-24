@@ -44,12 +44,14 @@ function calcTooltipPos(rect: Rect, position: TutorialStep["position"]): { top: 
   const sCY = top  + height / 2;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  // Use the actual on-screen card width so the clamp is correct on narrow screens.
+  const cardW = Math.min(CARD_W_PLACED, vw - 24);
 
   let t = 0, l = 0;
   switch (position) {
     case "top":
       t = top - SPOT_PAD - TOOLTIP_GAP - CARD_H_EST;
-      l = sCX - CARD_W_PLACED / 2;
+      l = sCX - cardW / 2;
       break;
     case "right":
       t = sCY - CARD_H_EST / 2;
@@ -57,16 +59,16 @@ function calcTooltipPos(rect: Rect, position: TutorialStep["position"]): { top: 
       break;
     case "left":
       t = sCY - CARD_H_EST / 2;
-      l = left - SPOT_PAD - TOOLTIP_GAP - CARD_W_PLACED;
+      l = left - SPOT_PAD - TOOLTIP_GAP - cardW;
       break;
     case "bottom":
     default:
       t = sBottom + TOOLTIP_GAP;
-      l = sCX - CARD_W_PLACED / 2;
+      l = sCX - cardW / 2;
   }
   return {
     top:  Math.max(12, Math.min(vh - CARD_H_EST - 12, t)),
-    left: Math.max(12, Math.min(vw - CARD_W_PLACED - 12, l)),
+    left: Math.max(12, Math.min(vw - cardW - 12, l)),
   };
 }
 
@@ -110,15 +112,17 @@ function TutorialOverlay({
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
 
   // ── Card geometry ──────────────────────────────────────────────────────────
-  let cardTop  = vh / 2 - CARD_H_EST;
-  let cardLeft = vw / 2 - CARD_W_INTRO / 2;
-  let cardW    = CARD_W_INTRO;
+  // Intro card: cap width to the viewport so it never overflows on small screens,
+  // and clamp top/left to keep it fully on-screen.
+  let cardW    = Math.min(CARD_W_INTRO, vw - 24);
+  let cardTop  = Math.max(12, vh / 2 - CARD_H_EST);
+  let cardLeft = Math.max(12, (vw - cardW) / 2);
 
   if (isPlaced && targetRect) {
     const pos = calcTooltipPos(targetRect, step.position ?? "bottom");
     cardTop  = pos.top;
     cardLeft = pos.left;
-    cardW    = CARD_W_PLACED;
+    cardW    = Math.min(CARD_W_PLACED, vw - 24);
   }
 
   // ── Spotlight geometry ─────────────────────────────────────────────────────

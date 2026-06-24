@@ -374,7 +374,7 @@ export default function OwnerCommunicationsPage() {
 
       {/* Automated Email Templates */}
       <section data-tutorial-id="owner-communications-templates" className="mt-6">
-        <h2 className="text-xl font-bold text-slate-900 sm:text-[25px]">
+        <h2 className="whitespace-nowrap text-[clamp(0.9rem,4.4vw,25px)] font-bold text-slate-900">
           Automated Email Templates &amp; Triggers
         </h2>
         <p className="mt-1 text-sm text-slate-500">System-wide notifications based on transaction events.</p>

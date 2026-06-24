@@ -92,15 +92,15 @@ export default function DigitalMallSection() {
     <section className="bg-[#f5f6f8] pb-8 pt-4 dark:bg-slate-900 sm:pb-10">
       <div className="w-full px-6">
         <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">
+          <div className="w-full text-center sm:w-auto sm:text-left">
+            <h2 className="flex items-center justify-center gap-2 text-2xl font-bold text-slate-900 dark:text-slate-100 sm:justify-start sm:text-3xl">
               <Store className="h-6 w-6" />
               The Digital Mall
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Real stores from across the platform.
             </p>
-            <p className="mt-1 text-xs text-center font-semibold uppercase tracking-[0.18em] text-[#56aebb] dark:text-[#7fd3df]">
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#56aebb] dark:text-[#7fd3df]">
               {selectedState
                 ? `${selectedState} • ${storeCountLabel}`
                 : storeCountLabel}

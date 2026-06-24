@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Download, ChevronDown, TrendingUp, ShoppingBag, CreditCard, Clock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, ChevronDown, Check, TrendingUp, ShoppingBag, CreditCard, Clock } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import AdminNavbar from "../../../../components/admin/AdminNavbar";
 import AdminSidebar from "../../../../components/admin/AdminSidebar";
+
+const RANGE_OPTIONS = [
+  { key: "all",   label: "All Time" },
+  { key: "today", label: "Today" },
+  { key: "7d",    label: "Last 7 Days" },
+  { key: "30d",   label: "Last 30 Days" },
+  { key: "90d",   label: "Last 90 Days" },
+  { key: "year",  label: "This Year" },
+] as const;
+
+type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
 
 type RevenuePoint  = { state: string; value: string; barHeight: number };
 type StoreRevenue  = { name: string; sales: string; amount: string };
@@ -48,6 +59,22 @@ export default function AdminFinanceStockPage() {
   const [storeRevenues, setByStore]     = useState<StoreRevenue[]>([]);
   const [financeLoading, setFinanceLoading] = useState(true);
 
+  // Time-range filter
+  const [range, setRange]       = useState<RangeKey>("all");
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const rangeRef = useRef<HTMLDivElement>(null);
+  const rangeLabel = RANGE_OPTIONS.find((o) => o.key === range)?.label ?? "All Time";
+
+  // Close the range dropdown on outside click
+  useEffect(() => {
+    if (!rangeOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (rangeRef.current && !rangeRef.current.contains(e.target as Node)) setRangeOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [rangeOpen]);
+
   // Inventory
   const [rows, setRows]     = useState<InventoryRow[]>([]);
   const [total, setTotal]   = useState(0);
@@ -57,10 +84,10 @@ export default function AdminFinanceStockPage() {
   const [invLoading, setInvLoading] = useState(true);
   const [lastSync, setLastSync]     = useState("");
 
-  // Load finance summary
+  // Load finance summary (re-fetches whenever the time range changes)
   useEffect(() => {
     setFinanceLoading(true);
-    fetch("/api/admin/finance-stock")
+    fetch(`/api/admin/finance-stock?range=${range}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) { toast.error(data.error); return; }
@@ -70,7 +97,7 @@ export default function AdminFinanceStockPage() {
       })
       .catch(() => toast.error("Failed to load finance data"))
       .finally(() => setFinanceLoading(false));
-  }, [toast]);
+  }, [range, toast]);
 
   // Load inventory
   useEffect(() => {
@@ -113,9 +140,39 @@ export default function AdminFinanceStockPage() {
                 <p className="mt-1 text-xs text-slate-600 sm:text-sm">Real-time financial performance and stock logistics oversight.</p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                <button type="button" className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#dbe5ea] bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:w-auto sm:text-sm">
-                  All Time <ChevronDown className="h-4 w-4" />
-                </button>
+                <div ref={rangeRef} className="relative w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setRangeOpen((o) => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={rangeOpen}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#dbe5ea] bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:w-auto sm:text-sm"
+                  >
+                    {rangeLabel} <ChevronDown className={`h-4 w-4 transition-transform ${rangeOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {rangeOpen && (
+                    <div
+                      role="listbox"
+                      className="absolute right-0 z-20 mt-1 w-full min-w-[180px] overflow-hidden rounded-lg border border-[#dbe5ea] bg-white py-1 shadow-lg sm:w-48"
+                    >
+                      {RANGE_OPTIONS.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          role="option"
+                          aria-selected={range === option.key}
+                          onClick={() => { setRange(option.key); setRangeOpen(false); }}
+                          className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition hover:bg-slate-50 ${
+                            range === option.key ? "font-semibold text-[#338ca0]" : "text-slate-700"
+                          }`}
+                        >
+                          {option.label}
+                          {range === option.key && <Check className="h-4 w-4 text-[#338ca0]" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button type="button" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#6bbdc7] px-3 py-2 text-xs font-semibold text-white hover:bg-[#5baeb8] sm:w-auto sm:text-sm">
                   <Download className="h-4 w-4" /> Export Report
                 </button>

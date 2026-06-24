@@ -2,15 +2,39 @@ import { NextResponse } from "next/server";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { requireAdminResponse } from "../../../../lib/admin-catalog-taxonomy";
 
-// GET /api/admin/finance-stock
+// Supported time ranges for the dashboard filter. Maps a range key to the
+// number of days to look back; "all" applies no date filter.
+const RANGE_DAYS: Record<string, number> = {
+  today: 1,
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  year: 365,
+};
+
+// Builds a createdAt date filter for the given range key. Returns {} for "all"
+// or any unknown key, so the aggregation covers every order.
+function dateMatch(range: string | null): Record<string, unknown> {
+  if (!range || range === "all") return {};
+  const days = RANGE_DAYS[range];
+  if (!days) return {};
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  return { createdAt: { $gte: since } };
+}
+
+// GET /api/admin/finance-stock?range=all|today|7d|30d|90d|year
 // Returns finance summary for the admin dashboard:
 //   - summary stats (total revenue, orders, paid, pending)
 //   - revenue by US state (from paid orders' shipping addresses)
 //   - top stores by revenue
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const authError = await requireAdminResponse();
     if (authError) return authError;
+
+    const range = new URL(req.url).searchParams.get("range");
+    const dateFilter = dateMatch(range);
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
@@ -20,6 +44,7 @@ export async function GET() {
 
       // ── Summary stats ──────────────────────────────────────────────────────
       orders.aggregate([
+        { $match: { ...dateFilter } },
         {
           $group: {
             _id: null,
@@ -33,7 +58,7 @@ export async function GET() {
 
       // ── Revenue by state ───────────────────────────────────────────────────
       orders.aggregate([
-        { $match: { paymentStatus: "Paid", "shippingAddress.state": { $exists: true, $ne: "" } } },
+        { $match: { ...dateFilter, paymentStatus: "Paid", "shippingAddress.state": { $exists: true, $ne: "" } } },
         {
           $group: {
             _id: "$shippingAddress.state",
@@ -47,7 +72,7 @@ export async function GET() {
 
       // ── Top stores by revenue ──────────────────────────────────────────────
       orders.aggregate([
-        { $match: { paymentStatus: "Paid" } },
+        { $match: { ...dateFilter, paymentStatus: "Paid" } },
         {
           $group: {
             _id: "$storeId",

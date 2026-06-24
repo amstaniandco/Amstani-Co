@@ -5,7 +5,6 @@ import Image from "next/image";
 import {
   Clock3,
   Loader2,
-  Mic,
   Plus,
   Search,
   SendHorizontal,
@@ -539,13 +538,6 @@ export default function OwnerChatsPage() {
               Go Live
             </button>
           )}
-
-          <button
-            type="button"
-            className="grid h-11 w-11 place-items-center rounded-full bg-[#7f8ca0] text-white transition hover:bg-[#6d7a8d]"
-          >
-            <Mic className="h-5 w-5" />
-          </button>
         </div>
       </section>
 

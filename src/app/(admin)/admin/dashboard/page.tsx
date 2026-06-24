@@ -269,13 +269,13 @@ export default function AdminDashboardPage() {
 
             {/* Leaderboard */}
             <section className="mt-6 rounded-xl border border-[#dbe6ea] bg-white p-4 shadow-[0_2px_6px_rgba(15,23,42,0.04)] sm:p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-slate-800">Top Performing Stores</h2>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="whitespace-nowrap text-[clamp(1rem,4.6vw,1.5rem)] font-bold text-slate-800">Top Performing Stores</h2>
                 <button
                   type="button"
                   onClick={() => setShowLeaderboard(true)}
                   disabled={leaderboard.length === 0}
-                  className="text-sm font-semibold text-[#338ca0] transition hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  className="shrink-0 text-sm font-semibold text-[#338ca0] transition hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   View Leaderboard
                 </button>
