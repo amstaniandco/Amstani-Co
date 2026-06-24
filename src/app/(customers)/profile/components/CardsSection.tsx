@@ -114,25 +114,27 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
         {cards.map((card) => (
           <div
             key={card.id}
-            className="ui-subpanel flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-600 dark:bg-slate-900 transition"
+            className="ui-subpanel flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-600 dark:bg-slate-900 transition"
           >
-            <div className="flex items-center gap-3 flex-1">
-              <div className="w-10 h-6 bg-gradient-to-r from-slate-300 to-slate-400 rounded flex items-center justify-center text-xs font-bold text-white">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="w-10 h-6 flex-shrink-0 bg-gradient-to-r from-slate-300 to-slate-400 rounded flex items-center justify-center text-xs font-bold text-white">
                 {getProviderLabel(card.provider)}
               </div>
-              <div className="flex-1">
-                <span className="text-sm font-semibold dark:text-slate-100">**** **** **** {card.last4}</span>
+              <div className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold dark:text-slate-100">**** **** **** {card.last4}</span>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{card.provider}</p>
               </div>
             </div>
-            <span className="text-sm text-slate-600 dark:text-slate-300 mx-4">{card.expiry}</span>
-            <button
-              onClick={() => handleDelete(card.id)}
-              disabled={deletingId === card.id}
-              className="text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-300 transition disabled:opacity-50"
-            >
-              {deletingId === card.id ? "..." : "Delete"}
-            </button>
+            <div className="flex flex-shrink-0 items-center gap-3">
+              <span className="text-sm text-slate-600 dark:text-slate-300">{card.expiry}</span>
+              <button
+                onClick={() => handleDelete(card.id)}
+                disabled={deletingId === card.id}
+                className="text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-300 transition disabled:opacity-50"
+              >
+                {deletingId === card.id ? "..." : "Delete"}
+              </button>
+            </div>
           </div>
         ))}
       </div>

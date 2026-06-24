@@ -111,51 +111,41 @@ export default function ProfileSummary({
 
   return (
     <aside className="ui-panel rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800 md:col-span-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="relative h-20 w-20 flex-shrink-0">
-            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 shadow-md dark:border-slate-800 dark:bg-slate-700 flex items-center justify-center">
-              {displayedAvatarUrl ? (
-                <img
-                  src={displayedAvatarUrl}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-2xl font-bold text-slate-500 dark:text-slate-400">{avatarFallback}</span>
-              )}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handleAvatarChange}
-              className="sr-only"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={!isEditing || isUploadingAvatar || isSaving}
-              aria-label="Upload profile photo"
-              title={isEditing ? "Choose profile photo" : "Click Edit to change photo"}
-              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800"
-            >
-              {isUploadingAvatar ? "..." : <Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
-            </button>
+      <div className="flex items-center gap-4 mb-4">
+        <div className="relative h-20 w-20 flex-shrink-0">
+          <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 shadow-md dark:border-slate-800 dark:bg-slate-700 flex items-center justify-center">
+            {displayedAvatarUrl ? (
+              <img
+                src={displayedAvatarUrl}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-2xl font-bold text-slate-500 dark:text-slate-400">{avatarFallback}</span>
+            )}
           </div>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">{formData.name || "User"}</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{formData.email}</p>
-          </div>
-        </div>
-        {!isEditing && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleAvatarChange}
+            className="sr-only"
+          />
           <button
-            onClick={() => setIsEditing(true)}
-            className="ml-2 px-4 py-2 rounded-lg bg-cyan-400 text-white text-sm font-semibold hover:bg-cyan-500 transition flex-shrink-0"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!isEditing || isUploadingAvatar || isSaving}
+            aria-label="Upload profile photo"
+            title={isEditing ? "Choose profile photo" : "Click Edit to change photo"}
+            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800"
           >
-            Edit
+            {isUploadingAvatar ? "..." : <Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
           </button>
-        )}
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">{formData.name || "User"}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{formData.email}</p>
+        </div>
       </div>
 
       <div className="mt-6 space-y-4">
@@ -254,7 +244,16 @@ export default function ProfileSummary({
         )}
       </div>
 
-      {isEditing && (
+      {!isEditing ? (
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-4 py-2 rounded-lg bg-cyan-400 text-white text-sm font-semibold hover:bg-cyan-500 transition"
+          >
+            Edit
+          </button>
+        </div>
+      ) : (
         <div className="mt-6 flex gap-3 justify-end">
           <button
             onClick={handleCancel}
