@@ -1,6 +1,7 @@
-// app/components/Footer/page.tsx
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
+import FooterTopStores from "./FooterTopStores";
 
 const Logo = () => (
   <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -49,18 +50,15 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         {/* Top Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Left */}
+          {/* Brand */}
           <div>
             <div className="mb-4">
               <Logo />
             </div>
-
             <p className="text-sm text-gray-400 mt-4 leading-6 max-w-sm">
               Here, every brand tells its own story, coming together to create a
               vibrant world of textiles waiting to be explored.
             </p>
-
-            {/* Social Icons */}
             <div className="flex gap-4 mt-6">
               <Link
                 href="#"
@@ -68,14 +66,12 @@ export default function Footer() {
               >
                 <FacebookIcon size={18} />
               </Link>
-
               <Link
                 href="#"
                 className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600 hover:border-teal-400 hover:text-teal-400 transition"
               >
                 <InstagramIcon size={18} />
               </Link>
-
               <Link
                 href="#"
                 className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600 hover:border-teal-400 hover:text-teal-400 transition"
@@ -85,63 +81,39 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Middle */}
-          <div>
-            <h3 className="text-white font-semibold text-lg mb-5">
-              Shop States
-            </h3>
-            <ul className="space-y-3 text-gray-400 text-sm">
-              <li>
-                <Link href="#" className="hover:text-teal-400 transition">
-                  California Boutique
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-teal-400 transition">
-                  New York Atelier
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-teal-400 transition">
-                  Texas Heritage
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-teal-400 transition">
-                  Florida Tropics
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Shop States — top ranked stores with their state */}
+          <Suspense fallback={null}>
+            <FooterTopStores />
+          </Suspense>
 
-          {/* Right */}
+          {/* Company */}
           <div>
             <h3 className="text-white font-semibold text-lg mb-5">Company</h3>
             <ul className="space-y-3 text-gray-400 text-sm">
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
+                <Link href="/about" className="hover:text-teal-400 transition">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
-                  Terms & Conditions
+                <Link href="/terms" className="hover:text-teal-400 transition">
+                  Terms &amp; Conditions
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
+                <Link href="/privacy" className="hover:text-teal-400 transition">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-teal-400 transition">
+                <Link href="/contact" className="hover:text-teal-400 transition">
                   Contact Support
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Our Policies */}
+          {/* Policies */}
           <div>
             <h3 className="text-white font-semibold text-lg mb-5">Our Policies</h3>
             <ul className="space-y-3 text-gray-400 text-sm">
@@ -157,7 +129,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/policies/returns" className="hover:text-teal-400 transition">
-                  Return & Exchange
+                  Return &amp; Exchange
                 </Link>
               </li>
               <li>
@@ -171,7 +143,7 @@ export default function Footer() {
 
         {/* Divider */}
         <div className="border-t border-gray-700 mt-14 pt-6 text-center text-sm text-gray-500">
-          © 2024 Amstani & Co. All rights reserved.
+          © {new Date().getFullYear()} Amstani &amp; Co. All rights reserved.
         </div>
       </div>
     </footer>
