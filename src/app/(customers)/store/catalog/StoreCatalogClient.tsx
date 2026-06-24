@@ -329,7 +329,11 @@ export default function StoreCatalogClient() {
                   </div>
                   <div className="p-3">
                     <p className="text-sm font-semibold text-slate-800 truncate">{product.name}</p>
-                    {product.category && <p className="text-[11px] text-slate-400 truncate">{product.category}</p>}
+                    {(product.brand?.name || product.category) && (
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {[product.brand?.name, product.category].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
                     <p className="mt-2 text-base font-extrabold text-slate-900">${product.price.toFixed(2)}</p>
                   </div>
                 </button>
