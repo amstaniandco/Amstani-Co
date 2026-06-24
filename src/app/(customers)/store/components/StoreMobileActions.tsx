@@ -40,7 +40,10 @@ export default function StoreMobileActions() {
           </div>
         </Link>
 
-        <div className="rounded-3xl border border-gray-200 bg-white p-4">
+        <div
+          data-tutorial-id="customer-live-streams"
+          className="rounded-3xl border border-gray-200 bg-white p-4"
+        >
           <div className="flex items-center gap-3 text-slate-900">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -50,7 +53,7 @@ export default function StoreMobileActions() {
             <div>
               <p className="text-sm font-semibold">Join Our Live Streams</p>
               <p className="mt-1 text-xs text-slate-500">
-                Don't miss out exclusive opportunities
+                Don&apos;t miss out exclusive opportunities
               </p>
             </div>
           </div>
@@ -112,6 +115,7 @@ export default function StoreMobileActions() {
 
       <Link
         href="/store/chat"
+        data-tutorial-id="customer-live-chat"
         className="flex items-center justify-between rounded-3xl border border-gray-200 bg-white px-4 py-5 text-sm font-semibold text-slate-900 transition hover:shadow-md"
       >
         <div className="flex items-center gap-3">

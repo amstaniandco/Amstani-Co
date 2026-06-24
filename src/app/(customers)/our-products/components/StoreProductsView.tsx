@@ -387,7 +387,7 @@ export default function StoreProductsView() {
       : "No products available yet.";
 
   return (
-    <div className="flex min-h-screen items-start justify-center p-4 pt-10 dark:bg-slate-950">
+    <div data-tutorial-id="customer-our-products" className="flex min-h-screen items-start justify-center p-4 pt-10 dark:bg-slate-950">
       <div className="ui-panel w-full rounded-3xl bg-gray-50 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] dark:border dark:border-slate-700 dark:bg-slate-900">
 
         {/* Header */}

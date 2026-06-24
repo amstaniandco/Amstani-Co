@@ -53,7 +53,7 @@ export default function StoreHero() {
   };
 
   return (
-    <div className="ui-panel flex flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+    <div data-tutorial-id="customer-store-hero" className="ui-panel flex flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="relative h-[120px] w-full overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-700 sm:h-[260px]">
         <Image
           src={store?.bannerUrl || store?.logoUrl || "/default-banner.jpg"}
@@ -136,6 +136,7 @@ export default function StoreHero() {
             </div>
             <button
               type="button"
+              data-tutorial-id="customer-follow-btn"
               onClick={handleFollow}
               disabled={followLoading || !store?._id}
               className={`ml-2 inline-flex items-center gap-2 rounded-full px-7 py-2 text-sm font-semibold transition disabled:opacity-60 ${
@@ -198,6 +199,7 @@ export default function StoreHero() {
           </div>
           <button
             type="button"
+            data-tutorial-id="customer-follow-btn"
             onClick={handleFollow}
             disabled={followLoading || !store?._id}
             className={`inline-flex items-center gap-2 rounded-full px-7 py-2 text-sm font-semibold transition disabled:opacity-60 ${

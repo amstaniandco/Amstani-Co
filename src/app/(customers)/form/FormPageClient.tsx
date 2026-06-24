@@ -106,7 +106,7 @@ export default function FormPageClient() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-4">
+    <div data-tutorial-id="customer-store-form" className="min-h-screen flex items-center justify-center py-4">
       {notice && (
         <div
           className={`fixed top-4 left-1/2 z-[9999] -translate-x-1/2 rounded-xl px-4 py-3 shadow-lg ${

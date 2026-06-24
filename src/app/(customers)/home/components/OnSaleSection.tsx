@@ -7,7 +7,7 @@ interface OnSaleSectionProps {
 
 export default function OnSaleSection({ onSaleStores }: OnSaleSectionProps) {
   return (
-    <section className="home-side-card mb-6 rounded-2xl bg-white p-4 shadow-sm dark:bg-[#0f1b2f] sm:p-5">
+    <section data-tutorial-id="customer-on-sale" className="home-side-card mb-6 rounded-2xl bg-white p-4 shadow-sm dark:bg-[#0f1b2f] sm:p-5">
       <div className="flex items-center justify-center gap-1.5 mb-3 sm:justify-start">
         <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
           <span className="text-white text-[8px] font-bold">!</span>

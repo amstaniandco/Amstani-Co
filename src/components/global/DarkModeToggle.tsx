@@ -14,6 +14,7 @@ export default function DarkModeToggle({ isDark, onToggle }: DarkModeToggleProps
       onClick={onToggle}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       title={isDark ? "Light mode" : "Dark mode"}
+      data-tutorial-id="customer-dark-mode-toggle"
       style={{
         position: "fixed",
         bottom: "20px",

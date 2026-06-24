@@ -17,7 +17,7 @@ export default function Sidebar({ onSaleStores, activeOrders }: SidebarProps) {
         <DesktopOnSaleSidebar onSaleStores={onSaleStores} />
       </div>
 
-      <div className="home-side-card rounded-2xl border border-[#d6dde5] bg-[#f6fafb] p-5 dark:border-slate-700 dark:bg-[#0f1b2f]">
+      <div data-tutorial-id="customer-active-orders" className="home-side-card rounded-2xl border border-[#d6dde5] bg-[#f6fafb] p-5 dark:border-slate-700 dark:bg-[#0f1b2f]">
         <div className="mb-3 flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse" />
           <span className="text-sm font-semibold tracking-wide uppercase text-gray-800 dark:text-slate-100">

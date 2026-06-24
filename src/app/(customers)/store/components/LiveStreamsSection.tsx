@@ -74,7 +74,7 @@ export default function LiveStreamsSection() {
   const href = liveLink ? normalizeUrl(liveLink) : "#";
 
   return (
-    <div className="ui-panel mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+    <div data-tutorial-id="customer-live-streams" className="ui-panel mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-start gap-3">
           <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isLive ? "bg-red-500 text-white" : "bg-red-50 text-red-600 dark:bg-slate-700 dark:text-rose-300"}`}>

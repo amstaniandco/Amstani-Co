@@ -89,7 +89,7 @@ export default function DigitalMallSection() {
   }, [loading, stores.length]);
 
   return (
-    <section className="bg-[#f5f6f8] pb-8 pt-4 dark:bg-slate-900 sm:pb-10">
+    <section data-tutorial-id="customer-digital-mall" className="bg-[#f5f6f8] pb-8 pt-4 dark:bg-slate-900 sm:pb-10">
       <div className="w-full px-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="w-full text-center sm:w-auto sm:text-left">

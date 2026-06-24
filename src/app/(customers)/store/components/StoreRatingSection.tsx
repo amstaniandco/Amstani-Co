@@ -83,7 +83,7 @@ export default function StoreRatingSection() {
   const pct = (n: number) => total ? Math.round((n / total) * 100) : 0;
 
   return (
-    <div className="mt-8 rounded-2xl bg-white p-6 shadow-lg dark:border dark:border-slate-700 dark:bg-slate-800">
+    <div data-tutorial-id="customer-store-rating" className="mt-8 rounded-2xl bg-white p-6 shadow-lg dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="flex items-center gap-2 mb-4">
         <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-100 dark:bg-slate-700">
           <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="h-4 w-4 text-blue-500 dark:text-sky-300">

@@ -296,6 +296,17 @@ export default function Header() {
   }, [pathname]);
 
   useEffect(() => {
+    const openHandler = () => setMobileMenuOpen(true);
+    const closeHandler = () => setMobileMenuOpen(false);
+    window.addEventListener("tutorial-open-mobile-menu", openHandler);
+    window.addEventListener("tutorial-close-mobile-menu", closeHandler);
+    return () => {
+      window.removeEventListener("tutorial-open-mobile-menu", openHandler);
+      window.removeEventListener("tutorial-close-mobile-menu", closeHandler);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isLoggedIn) {
       setCartCount(0);
       setWishlistCount(0);
@@ -562,7 +573,7 @@ export default function Header() {
                       <CartIcon />
                       <Badge count={cartCount} />
                     </Link>
-                    <Link href="/notifications" aria-label="Notifications" className="relative hover:text-white transition-colors duration-200">
+                    <Link href="/notifications" aria-label="Notifications" data-tutorial-id="customer-notifications-bell" className="relative hover:text-white transition-colors duration-200">
                       <BellIcon />
                       <Badge count={notificationCount} />
                     </Link>
@@ -734,7 +745,7 @@ export default function Header() {
                       <Badge count={cartCount} />
                       <span className="text-xs">Cart</span>
                     </Link>
-                    <Link href="/notifications" onClick={handleMobileNavClick} aria-label="Notifications" className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
+                    <Link href="/notifications" onClick={handleMobileNavClick} aria-label="Notifications" data-tutorial-id="customer-notifications-bell-mobile" className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
                       <BellIcon />
                       <Badge count={notificationCount} />
                       <span className="text-xs">Notify</span>

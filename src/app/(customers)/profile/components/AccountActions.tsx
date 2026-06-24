@@ -3,29 +3,45 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useConfirm } from "../../../../components/global/ConfirmProvider";
+import { useCustomerTutorial } from "../../../../components/customer/tutorial/CustomerTutorialProvider";
 
-export default function AccountActions({ onDeleteAccount }: { onDeleteAccount: () => Promise<void> }) {
+export default function AccountActions({
+  onDeleteAccount,
+}: {
+  onDeleteAccount: () => Promise<void>;
+}) {
   const router = useRouter();
   const confirm = useConfirm();
+  const { startTutorial } = useCustomerTutorial();
   const [deleting, setDeleting] = useState(false);
 
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       router.push("/login");
       router.refresh();
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!(await confirm({ title: "Delete account", message: "Delete your account? This will remove your saved profile details, cards, addresses, cart, and wishlist.", confirmLabel: "Delete account" }))) return;
+    if (
+      !(await confirm({
+        title: "Delete account",
+        message:
+          "Delete your account? This will remove your saved profile details, cards, addresses, cart, and wishlist.",
+        confirmLabel: "Delete account",
+      }))
+    )
+      return;
 
     setDeleting(true);
     try {
       await onDeleteAccount();
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       router.push("/signup");
       router.refresh();
     } catch (error) {
@@ -37,6 +53,13 @@ export default function AccountActions({ onDeleteAccount }: { onDeleteAccount: (
   return (
     <section className="ui-panel mt-4 rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="space-y-2">
+        <button
+          type="button"
+          onClick={startTutorial}
+          className="w-full rounded-lg border bg-cyan-400 px-4 py-2 text-sm font-semibold text-white hover:from-amber-500 hover:to-orange-600 transition"
+        >
+          Website Tour
+        </button>
         <button
           type="button"
           onClick={handleLogout}

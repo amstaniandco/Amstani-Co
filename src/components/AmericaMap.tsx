@@ -176,7 +176,7 @@ export default function AmericaMap() {
   };
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] rounded-3xl bg-[#1d1b14] px-6 py-8 text-slate-100 sm:px-8 sm:py-10">
+    <section data-tutorial-id="customer-america-map" className="mx-auto w-full max-w-[1500px] rounded-3xl bg-[#1d1b14] px-6 py-8 text-slate-100 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <div className="flex items-center justify-center gap-3">
           <Image

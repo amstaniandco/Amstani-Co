@@ -99,6 +99,7 @@ export default function StorePageClient() {
           <div className="mb-4 flex justify-end">
             <button
               type="button"
+              data-tutorial-id="customer-music-toggle"
               onClick={() => setIsMusicMuted((prev) => !prev)}
               disabled={!hasMusicUrl}
               title={!hasMusicUrl ? "This store has no music" : undefined}

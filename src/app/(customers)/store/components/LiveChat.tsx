@@ -308,7 +308,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
   const activeReplyingTo = isGroup ? groupReplyingTo : replyingTo;
 
   return (
-    <div className={`${hideWrapper ? "flex h-full flex-col" : "ui-panel flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800"} ${className}`}>
+    <div data-tutorial-id="customer-live-chat" className={`${hideWrapper ? "flex h-full flex-col" : "ui-panel flex h-full flex-col rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800"} ${className}`}>
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-slate-100">
           <span className="h-2 w-2 rounded-full bg-green-500" />

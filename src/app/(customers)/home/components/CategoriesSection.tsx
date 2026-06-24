@@ -47,7 +47,7 @@ export default function CategoriesSection({ categories }: { categories: Category
   }, [categories]);
 
   return (
-    <section className="home-section mb-5">
+    <section data-tutorial-id="customer-categories" className="home-section mb-5">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="home-heading text-[20px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[28px]">
           Browse by categories

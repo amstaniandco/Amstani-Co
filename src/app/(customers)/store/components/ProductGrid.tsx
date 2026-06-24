@@ -504,6 +504,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
   // ── Catalog banner — always shown; it links to the global catalog, not the store's own products ──
   const catalogBanner = (
     <Link href={storeId ? `/store/catalog?storeId=${storeId}` : "/store/catalog"}
+      data-tutorial-id="customer-store-catalog"
       className="mt-5 rounded-2xl bg-white shadow-lg dark:border dark:border-slate-700 dark:bg-slate-800 flex items-center justify-center py-5 hover:bg-slate-50 dark:hover:bg-slate-700 transition group">
       <p className="text-lg font-black tracking-tight text-[#56aebb] sm:text-slate-900 dark:sm:text-slate-100 uppercase group-hover:text-[#68B8C1] transition-colors" style={{ WebkitTextStroke: "1px currentColor" }}>
         Amstani &amp; Co&apos;s Catalog

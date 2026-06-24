@@ -3,12 +3,15 @@
 import { ThemeProvider } from "./ThemeProvider";
 import { ToastProvider } from "./ToastProvider";
 import { ConfirmProvider } from "./ConfirmProvider";
+import { CustomerTutorialProvider } from "../customer/tutorial/CustomerTutorialProvider";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <ConfirmProvider>{children}</ConfirmProvider>
+        <ConfirmProvider>
+          <CustomerTutorialProvider>{children}</CustomerTutorialProvider>
+        </ConfirmProvider>
       </ToastProvider>
     </ThemeProvider>
   );

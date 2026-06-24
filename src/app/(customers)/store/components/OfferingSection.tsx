@@ -34,6 +34,7 @@ export default function OfferingSection() {
 
         <Link
           href={store?._id ? `/form?storeId=${store._id}` : "/form"}
+          data-tutorial-id="customer-store-form"
           className="inline-flex h-11 items-center justify-center rounded-xl border border-[#68B8C1] bg-white px-6 py-2 text-sm font-semibold text-[#68B8C1] transition hover:bg-[#eef9fa] dark:border-[#4f9ea7] dark:bg-slate-700 dark:text-[#7dc8d1] dark:hover:bg-slate-600"
         >
           Fill form

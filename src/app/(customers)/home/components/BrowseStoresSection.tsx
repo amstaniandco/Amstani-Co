@@ -50,7 +50,7 @@ export default function BrowseStoresSection({ stores, searchQuery, onSearchQuery
   const SORT_LABELS: Record<SortOption, string> = { default: "Default", az: "A–Z", za: "Z–A" };
 
   return (
-    <section className="home-section">
+    <section data-tutorial-id="customer-browse-stores" className="home-section">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h2 className="home-heading text-[20px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[32px]">Browse Stores</h2>
         <div className="flex items-center gap-2">
@@ -116,6 +116,7 @@ export default function BrowseStoresSection({ stores, searchQuery, onSearchQuery
           )}
         </div>
       )}
+
     </section>
   );
 }

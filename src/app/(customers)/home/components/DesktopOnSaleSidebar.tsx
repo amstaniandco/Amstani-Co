@@ -7,7 +7,7 @@ interface DesktopOnSaleSidebarProps {
 
 export default function DesktopOnSaleSidebar({ onSaleStores }: DesktopOnSaleSidebarProps) {
   return (
-    <div className="home-side-card rounded-2xl border border-[#d6dde5] bg-[#f6fafb] p-5 dark:border-slate-700 dark:bg-[#0f1b2f]">
+    <div data-tutorial-id="customer-on-sale" className="home-side-card rounded-2xl border border-[#d6dde5] bg-[#f6fafb] p-5 dark:border-slate-700 dark:bg-[#0f1b2f]">
       <div className="mb-3 flex items-center gap-1.5">
         <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
           <span className="text-white text-[8px] font-bold">!</span>
