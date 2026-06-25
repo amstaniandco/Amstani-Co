@@ -10,193 +10,186 @@ export type CustomerTutorialStep = {
 export const customerTutorialSteps: CustomerTutorialStep[] = [
   {
     id: "welcome",
-    title: "Welcome to Amstani & Co.",
+    title: "",
     description:
-      "The first digital mall where real local stores meet real online shoppers. Get ready — your smart shopping journey starts now.",
+      "Welcome to Amstani & Co, where scrolling turns into shopping, shopping turns into obsession, and your cart somehow fills itself!",
     page: "/",
     target: null,
   },
   {
     id: "digital-mall",
-    title: "Featured stores stealing the spotlight.",
-    description:
-      "The digital mall showcases top stores ready to wow you. Browse, explore, and find your next favorite spot — all in one place.",
+    title: "",
+    description: "Featured stores stealing the spotlight. ✨",
     page: "/",
     target: "customer-digital-mall",
   },
   {
     id: "broadcasting-room",
-    title: "Someone's live, someone's selling...",
+    title: "",
     description:
-      "The Broadcasting Room is where stores go live. Catch real-time drops, exclusive deals, and live interactions — straight from the source.",
+      "Someone's live, someone's selling, and you're missing the fun. Sign up/in to join the party.",
     page: "/",
     target: "customer-broadcasting-room",
   },
   {
     id: "claim-store",
-    title: "Skip the factory. Shop the maker.",
+    title: "",
     description:
-      "Every store here is run by a real person, not a warehouse. Real products. Real stories. Real people behind every order.",
+      "Skip the factory. Skip the designing drama. Just get a store and start selling. (To reserve a store in our digital mall, get in-touch with one of the stores in your state).",
     page: "/",
     target: "customer-claim-store",
   },
   {
     id: "dark-mode",
-    title: "Switch to dark mode, anytime.",
+    title: "",
     description:
-      "Easier on the eyes, harder to put down. Hit this button to flip between light and dark mode — your vibe, your rules.",
+      "Now buckle up, switch to dark mode, hop in your cart and start collecting the treasure.",
     page: null,
     target: "customer-dark-mode-toggle",
   },
   {
     id: "america-map",
-    title: "Choose your state. Own your mall.",
+    title: "",
     description:
-      "See stores near you by selecting your state on the map. Every region has its own hidden gems — yours is waiting.",
+      "Choose your state and let the shopping adventure begin after the sign up/in.",
     page: "/",
     target: "customer-america-map",
   },
   {
     id: "live-stores",
-    title: "Live stores. Exclusive deals. Zero FOMO.",
-    description:
-      "These stores are live right now. Jump in, ask questions, snag deals before they're gone. The early shopper gets the good stuff.",
+    title: "",
+    description: "Live stores. Exclusive deals. Zero FOMO.",
     page: "/home",
     target: "customer-live-stores",
   },
   {
     id: "categories",
-    title: "The good stuff from every store, sorted.",
+    title: "",
     description:
-      "Browse by category and zero in on exactly what you're after. Fashion, home, food, beauty — all organized and ready.",
+      "The good stuff from every store, all hanging out in one place.",
     page: "/home",
     target: "customer-categories",
   },
   {
     id: "browse-stores",
-    title: "The best finds from all stores, one scroll.",
+    title: "",
     description:
-      "Discover stores from across the country, filtered to your state. Every card is a doorway to something worth checking out.",
+      "The best finds from all stores across your state, no road trip required!",
     page: "/home",
     target: "customer-browse-stores",
   },
   {
     id: "disclaimer",
-    title: "Quick heads-up before you shop.",
+    title: "",
     description:
-      "Every store puts its own spin on things — descriptions, quality, and prices may vary. Always check the store's policies. Prices also vary by state taxes and store markup.",
+      "**DISCLAIMER:** Every store puts its own spin on the shopping experience. Same product. Different stores. Different deals. That's the fun of the mall. Take a stroll, compare offers, and see who wins your cart.",
     page: "/home",
     target: null,
   },
   {
     id: "on-sale",
-    title: "Stores feeling generous today.",
-    description:
-      "These stores are running deals right now. The discounts are real, the stock is limited, and the window is short — go.",
+    title: "",
+    description: "Stores that are feeling generous today 😉",
     page: "/home",
     target: "customer-on-sale",
   },
   {
     id: "active-orders",
-    title: "Wondering where your order is?",
+    title: "",
     description:
-      "Your active orders live right here. Track status, check details, and stay in the loop without hunting through your inbox.",
+      "Wondering where your order is? Here's where you can follow yours.",
     page: "/home",
     target: "customer-active-orders",
   },
   {
     id: "notifications",
-    title: "Your favorite stores have news for you.",
+    title: "",
     description:
-      "Every new drop, sale, and update from stores you follow lands right here. Turn on notifications and never miss a moment.",
+      "Your favorite stores have news. Good thing you're following them.",
     page: null,
     target: "customer-notifications-bell",
   },
   {
     id: "store-entry",
-    title: "Well, well, well... look who just came in.",
-    description:
-      "You just walked into a store. From here, every click is an adventure — products, live chat, music, ratings. Take it all in.",
+    title: "",
+    description: "Well, well, well... look who just came in.",
     page: "_store",
     target: null,
   },
   {
     id: "store-hero",
-    title: "Glad you stopped by. Now let's explore.",
+    title: "",
     description:
-      "The store banner, profile, follower count, rankings — everything that tells you who this store is at a glance.",
+      "Glad you stopped by. Now grab a virtual shopping basket and make yourself comfortable.",
     page: null,
     target: "customer-store-hero",
   },
   {
     id: "music-toggle",
-    title: "Love the shopping, not the soundtrack?",
+    title: "",
     description:
-      "Some stores play music while you browse. If it's not your vibe, mute it here. Your ears, your call.",
+      "Love the shopping, not the soundtrack? Turn it off anytime.",
     page: null,
     target: "customer-music-toggle",
   },
   {
     id: "follow-btn",
-    title: "Following this store? You probably should.",
-    description:
-      "Hit Follow and you'll get updates every time this store goes live, drops something new, or runs a sale.",
+    title: "",
+    description: "Following this store? That's a pretty good idea.",
     page: null,
     target: "customer-follow-btn",
   },
   {
     id: "live-chat",
-    title: "Why guess when you can just ask?",
+    title: "",
     description:
-      "Talk directly to the store owner. Ask about sizes, availability, custom orders — real answers, not a chatbot.",
+      "Why guess when you can ask? Chat or call the store and get the inside scoop.",
     page: null,
     target: "customer-live-chat",
   },
   {
     id: "live-streams",
-    title: "Less scrolling. More discovering.",
-    description:
-      "Join the store's live streams on Instagram, Facebook, TikTok or WhatsApp. Watch products in action before you buy.",
+    title: "",
+    description: "Less scrolling. More discovering. Join the live.",
     page: null,
     target: "customer-live-streams",
   },
   {
     id: "store-form",
-    title: "Ready to join the mall?",
-    description:
-      "Got a store or a dream of one? Fill out this form to apply for your spot in the Amstani & Co digital mall. We'd love to have you.",
+    title: "",
+    description: "Ready to join the mall? Start with the form.",
     page: null,
     target: "customer-store-form",
   },
   {
     id: "catalog",
-    title: "Spotted something you love in the catalog?",
+    title: "",
     description:
-      "The Amstani & Co catalog is the master list of products available across all stores. Find it here, then buy it from a store near you.",
+      "Spotted something you love in the Amstani & Co Catalog? Don't just stare at it. Screenshot it, send it to your favorite store, and ask them to bring it in for you. And hey, check a few stores while you're at it as prices can vary, and the best deal might be hanging out next door.",
     page: null,
     target: "customer-store-catalog",
   },
   {
     id: "our-products",
-    title: "Browse the full catalog — right in this store.",
+    title: "",
     description:
-      "Every product in the Amstani & Co catalog is here. Search, filter, and find exactly what you want — then add it straight to your cart.",
+      "**Good news:** These products aren't stuck on a boat somewhere. They're already in stock, right here in the USA, and ready to head your way.",
     page: "_store-catalog",
     target: "customer-store-catalog",
   },
   {
     id: "store-rating",
-    title: "Your feedback is kind of a big deal.",
+    title: "",
     description:
-      "Ratings help real shoppers find great stores — and push stores to keep their game up. Leave a review. It takes 10 seconds and means everything.",
+      "Your feedback is kind of a big deal. Use it to launch your favorite store to the top!",
     page: "_store",
     target: "customer-store-rating",
   },
   {
     id: "finish",
-    title: "Alright, champ. The mall's all yours.",
+    title: "",
     description:
-      "You've seen what Amstani & Co is all about. Now go explore, shop local, and support real stores doing real things. Happy shopping!",
+      "Alright, champ. The mall's all yours. Go poke around, wander freely. We hid the good stuff everywhere!",
     page: null,
     target: null,
   },

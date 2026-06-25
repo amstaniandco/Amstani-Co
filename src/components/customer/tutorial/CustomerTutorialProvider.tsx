@@ -40,6 +40,32 @@ import {
 import { customerTutorialSteps, type CustomerTutorialStep } from "./customerTutorialSteps";
 
 const STORAGE_KEY = "customer_tutorial_seen";
+// Persist in-progress state so the tutorial survives navigation away from the
+// app (e.g. the login page or the OAuth full-page redirect) and resumes where
+// it left off — notably step 7 (live-stores) which only appears after sign-in.
+const PROGRESS_KEY = "customer_tutorial_progress";
+
+type TutorialProgress = { active: boolean; step: number };
+
+function readProgress(): TutorialProgress | null {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<TutorialProgress>;
+    if (typeof parsed.step !== "number" || typeof parsed.active !== "boolean") return null;
+    return { active: parsed.active, step: parsed.step };
+  } catch {
+    return null;
+  }
+}
+
+function writeProgress(progress: TutorialProgress) {
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch { /* ignore */ }
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(PROGRESS_KEY); } catch { /* ignore */ }
+}
 
 // ── Icon map ─────────────────────────────────────────────────────────────────
 
@@ -87,11 +113,6 @@ export function useCustomerTutorial() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function isLoggedIn(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie.split(";").some((c) => c.trim().startsWith("token="));
-}
 
 async function fetchFirstStoreId(): Promise<string | null> {
   try {
@@ -161,6 +182,35 @@ function computeCardPos(rect: DOMRect, cardW: number, cardH: number) {
   return { top, left };
 }
 
+/** Renders a description string, turning `**bold**` segments into <strong>. */
+function renderDescription(text: string): React.ReactNode {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={i} style={{ fontWeight: 800, color: "#9be9ff" }}>
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      part
+    )
+  );
+}
+
+/**
+ * Whether the current path is part of the tutorial flow. The tutorial only ever
+ * lives on the landing page, /home, and store pages. If the user navigates
+ * anywhere else (e.g. /signup or /login) the overlay — and its full-screen click
+ * blocker — must NOT render, otherwise the destination page becomes unclickable.
+ */
+function isTutorialPage(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    pathname === "/home" ||
+    pathname === "/store" ||
+    pathname.startsWith("/store/") ||
+    pathname.startsWith("/store?")
+  );
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function CustomerTutorialProvider({ children }: { children: React.ReactNode }) {
@@ -178,35 +228,72 @@ export function CustomerTutorialProvider({ children }: { children: React.ReactNo
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Lock body scroll while active
+  // Lock body scroll while active — but only on tutorial pages, so we never
+  // leave the page frozen if the user navigates off-flow.
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || !isTutorialPage(pathname)) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [isActive]);
+  }, [isActive, pathname]);
 
-  // Auto-start on first visit to landing page (logged-in users only)
+  // Resume an in-progress tutorial after the user navigates away and back
+  // (login page, OAuth full-page redirect, etc.). Runs once on mount.
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (!mounted || resumedRef.current) return;
+    resumedRef.current = true;
+    const progress = readProgress();
+    if (!progress?.active) return;
+
+    let resumeStep = progress.step;
+    const savedStep = customerTutorialSteps[progress.step];
+
+    // The user just authenticated and was sent to /home, but the saved step is
+    // a pre-login landing-page step (page: "/"). Re-running it would push them
+    // back to "/" and make login look broken. Jump forward to the first /home
+    // step instead so the tutorial continues naturally after sign-in.
+    if (pathname === "/home" && savedStep?.page === "/") {
+      const firstHome = customerTutorialSteps.findIndex((s) => s.page === "/home");
+      if (firstHome > progress.step) resumeStep = firstHome;
+    }
+
+    setStepIndex(resumeStep);
+    setIsActive(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted]);
+
+  // Auto-start on first visit to landing page (all visitors, logged in or not)
   useEffect(() => {
     if (!mounted) return;
     try {
-      if (!localStorage.getItem(STORAGE_KEY) && pathname === "/" && isLoggedIn()) {
+      // Don't auto-start if a tutorial is already being resumed.
+      if (readProgress()?.active) return;
+      if (!localStorage.getItem(STORAGE_KEY) && pathname === "/") {
         const t = setTimeout(() => { setStepIndex(0); setIsActive(true); }, 1400);
         return () => clearTimeout(t);
       }
     } catch { /* ignore */ }
   }, [mounted, pathname]);
 
+  // Persist progress whenever the active state or current step changes.
+  useEffect(() => {
+    if (!mounted) return;
+    if (isActive) writeProgress({ active: true, step: stepIndex });
+  }, [mounted, isActive, stepIndex]);
+
   const startTutorial = useCallback(() => {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     storeIdRef.current = null;
     setStepIndex(0);
     setIsActive(true);
+    writeProgress({ active: true, step: 0 });
     router.push("/");
   }, [router]);
 
   const finishTutorial = useCallback(() => {
     setVisible(false);
+    clearProgress();
     setTimeout(() => {
       setIsActive(false);
       try { localStorage.setItem(STORAGE_KEY, new Date().toISOString()); } catch { /* ignore */ }
@@ -237,6 +324,17 @@ export function CustomerTutorialProvider({ children }: { children: React.ReactNo
 
   useEffect(() => {
     if (!isActive || !step) return;
+    // If the user has navigated off the tutorial flow (e.g. to /signup or
+    // /login), pause: don't force them back and don't draw the overlay. The
+    // tutorial stays active so it can resume if they return to a flow page.
+    if (!isTutorialPage(pathname)) { setVisible(false); return; }
+    // User just authenticated and arrived on /home while the current step is a
+    // pre-login landing step (page: "/"). Don't push them back to "/" — advance
+    // to the first /home step so the tutorial continues after sign-in.
+    if (pathname === "/home" && step.page === "/") {
+      const firstHome = customerTutorialSteps.findIndex((s) => s.page === "/home");
+      if (firstHome > stepIndex) { setStepIndex(firstHome); return; }
+    }
     const s = step;
     setVisible(false);
 
@@ -348,7 +446,7 @@ export function CustomerTutorialProvider({ children }: { children: React.ReactNo
   return (
     <TutorialContext.Provider value={ctx}>
       {children}
-      {mounted && isActive && step &&
+      {mounted && isActive && step && isTutorialPage(pathname) &&
         createPortal(
           <TutorialOverlay
             step={step}
@@ -400,37 +498,39 @@ function TutorialOverlay({
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const cardW = typeof window !== "undefined" ? Math.min(isMobile ? 340 : 390, window.innerWidth - 24) : 390;
 
-  // Site teal palette
-  const TEAL = "#68B8C1";
-  const TEAL_DARK = "#3d9aa5";
-  const TEAL_BG = "rgba(104,184,193,0.1)";
-  const TEAL_BORDER = "rgba(104,184,193,0.25)";
-  const TEAL_GLOW = "rgba(104,184,193,0.35)";
-
   const p = isMobile ? { h: 12, v: 14 } : { h: 16, v: 18 };
 
   const Icon = STEP_ICONS[step.id] ?? Sparkles;
 
+  // Electric-blue palette — matches the landing-page US map glow lines
+  const ELECTRIC = "linear-gradient(120deg, #00CFFF 0%, #33D9FF 45%, #66E5FF 100%)";
+
   return (
     <>
+      <style>{TUTORIAL_CSS}</style>
+
       {/* Backdrop for centered steps */}
       {isCentered && (
         <div
           style={{
             position: "fixed", inset: 0, zIndex: 99990,
-            background: "rgba(15,23,42,0.55)",
-            backdropFilter: "blur(5px)",
-            WebkitBackdropFilter: "blur(5px)",
+            background:
+              "radial-gradient(circle at 28% 18%, rgba(0,207,255,0.20), transparent 45%)," +
+              "radial-gradient(circle at 78% 82%, rgba(51,217,255,0.16), transparent 45%)," +
+              "rgba(5,10,24,0.74)",
+            backdropFilter: "blur(7px)",
+            WebkitBackdropFilter: "blur(7px)",
             opacity: visible ? 1 : 0,
-            transition: "opacity 0.28s ease",
+            transition: "opacity 0.32s ease",
             pointerEvents: "none",
           }}
         />
       )}
 
-      {/* Spotlight ring for targeted steps */}
+      {/* Animated glowing spotlight ring for targeted steps */}
       {!isCentered && targetRect && (
         <div
+          className="amst-spotlight"
           style={{
             position: "fixed",
             top: targetRect.top - 6,
@@ -439,7 +539,6 @@ function TutorialOverlay({
             height: targetRect.height + 12,
             zIndex: 99991,
             borderRadius: 12,
-            boxShadow: `0 0 0 9999px rgba(15,23,42,0.55), 0 0 0 2px ${TEAL}, 0 0 20px ${TEAL_GLOW}`,
             pointerEvents: "none",
             opacity: visible ? 1 : 0,
             transition: "opacity 0.25s ease, top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease",
@@ -458,202 +557,241 @@ function TutorialOverlay({
           ...(isCentered
             ? {
                 top: "50%", left: "50%",
-                transform: `translate(-50%, -50%) scale(${visible ? 1 : 0.92})`,
+                transform: `translate(-50%, -50%) scale(${visible ? 1 : 0.9}) translateY(${visible ? 0 : 14}px)`,
                 width: `min(${isMobile ? 340 : 420}px, calc(100vw - 24px))`,
               }
             : {
                 top: cardPos?.top ?? 0,
                 left: cardPos?.left ?? 0,
                 width: cardW,
-                transform: `scale(${visible ? 1 : 0.94})`,
+                transform: `scale(${visible ? 1 : 0.92}) translateY(${visible ? 0 : 10}px)`,
               }),
           opacity: visible ? 1 : 0,
-          transition: "opacity 0.25s ease, transform 0.25s ease",
+          transition: "opacity 0.3s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1)",
           pointerEvents: "all",
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Glowing electric border wrapper */}
         <div
-          style={{
-            background: "#ffffff",
-            borderRadius: 16,
-            border: "1.5px solid rgba(104,184,193,0.2)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(104,184,193,0.12)",
-            overflow: "hidden",
-          }}
+          className="amst-card-border"
+          style={{ borderRadius: 20, padding: 1.5 }}
         >
-          {/* Teal top accent bar */}
-          <div style={{ height: 3, background: `linear-gradient(90deg, ${TEAL}, ${TEAL_DARK})` }} />
-
-          {/* Header */}
           <div
+            className="amst-card"
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: `${p.h}px ${p.v}px ${p.h - 2}px`,
-              borderBottom: "1px solid #f1f5f9",
+              position: "relative",
+              borderRadius: 18,
+              overflow: "hidden",
+              isolation: "isolate",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div
-                style={{
-                  width: isMobile ? 30 : 34, height: isMobile ? 30 : 34,
-                  borderRadius: 9,
-                  background: TEAL_BG,
-                  border: `1px solid ${TEAL_BORDER}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                  color: TEAL_DARK,
-                }}
-              >
-                <Icon size={isMobile ? 14 : 16} strokeWidth={1.8} />
-              </div>
-              <span
-                style={{
-                  fontSize: isMobile ? 10 : 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: TEAL,
-                  fontFamily: "inherit",
-                }}
-              >
-                Step {stepIndex + 1} of {totalSteps}
-              </span>
+            {/* Map-style grid + drifting electric glow inside the card */}
+            <div className="amst-grid" aria-hidden />
+            <div className="amst-card-glow" aria-hidden />
+
+            {/* Floating electric sparks */}
+            <span className="amst-spark amst-spark-1" aria-hidden>✦</span>
+            <span className="amst-spark amst-spark-2" aria-hidden>✦</span>
+            <span className="amst-spark amst-spark-3" aria-hidden>✧</span>
+
+            {/* Electric top accent bar with a running pulse */}
+            <div style={{ position: "relative", height: 3, background: ELECTRIC, backgroundSize: "200% 100%" }} className="amst-flow">
+              <div className="amst-shimmer" />
             </div>
 
-            <button
-              type="button"
-              onClick={onSkip}
-              aria-label="Close tutorial"
-              style={{
-                width: 26, height: 26,
-                borderRadius: "50%",
-                border: "1px solid #e2e8f0",
-                background: "#f8fafc",
-                color: "#94a3b8",
-                cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 16, lineHeight: 1, flexShrink: 0,
-                fontFamily: "inherit",
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Body */}
-          <div style={{ padding: `${p.v - 2}px ${p.v}px 0` }}>
-            <h3
-              style={{
-                fontSize: isMobile ? 14 : 15,
-                fontWeight: 700,
-                color: "#0f172a",
-                lineHeight: 1.35,
-                margin: `0 0 ${isMobile ? 7 : 9}px`,
-                letterSpacing: "-0.01em",
-                fontFamily: "inherit",
-              }}
-            >
-              {step.title}
-            </h3>
-            <p
-              style={{
-                fontSize: isMobile ? 12 : 13,
-                color: "#475569",
-                lineHeight: 1.65,
-                margin: 0,
-                fontFamily: "inherit",
-              }}
-            >
-              {step.description}
-            </p>
-          </div>
-
-          {/* Progress */}
-          <div style={{ padding: `${isMobile ? 12 : 15}px ${p.v}px 0` }}>
+            {/* Header */}
             <div
               style={{
-                height: 3,
-                borderRadius: 99,
-                background: "#e2e8f0",
-                overflow: "hidden",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: `${p.h}px ${p.v}px ${p.h - 2}px`,
+                borderBottom: "1px solid rgba(0,207,255,0.18)",
               }}
             >
-              <div
-                style={{
-                  height: "100%",
-                  width: `${progress}%`,
-                  background: `linear-gradient(90deg, ${TEAL}, ${TEAL_DARK})`,
-                  borderRadius: 99,
-                  transition: "width 0.35s ease",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: `${isMobile ? 9 : 11}px ${p.v}px ${isMobile ? 12 : 14}px`,
-              gap: 6,
-            }}
-          >
-            <button
-              type="button"
-              onClick={onSkip}
-              style={{
-                fontSize: 11, color: "#94a3b8",
-                background: "none", border: "none", cursor: "pointer",
-                padding: "4px 0", fontFamily: "inherit",
-              }}
-            >
-              {isLast ? "" : "Skip"}
-            </button>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {stepIndex > 0 && (
-                <button
-                  type="button"
-                  onClick={onBack}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  className="amst-icon"
                   style={{
-                    height: isMobile ? 30 : 33, paddingLeft: 12, paddingRight: 12,
-                    borderRadius: 8,
-                    border: "1px solid #e2e8f0",
-                    background: "#f8fafc",
-                    color: "#64748b",
-                    cursor: "pointer", fontSize: 11, fontWeight: 600,
-                    fontFamily: "inherit", display: "flex",
-                    alignItems: "center", justifyContent: "center",
+                    width: isMobile ? 32 : 38, height: isMobile ? 32 : 38,
+                    borderRadius: 11,
+                    background: ELECTRIC,
+                    backgroundSize: "200% 200%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0,
+                    color: "#04121f",
+                    boxShadow: "0 0 18px rgba(0,207,255,0.7), 0 0 4px rgba(102,229,255,0.9) inset",
                   }}
                 >
-                  ← Back
-                </button>
-              )}
+                  <Icon size={isMobile ? 16 : 19} strokeWidth={2.2} />
+                </div>
+                <span
+                  className="amst-electric-text"
+                  style={{
+                    fontSize: isMobile ? 10 : 11,
+                    fontWeight: 800,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "#66E5FF",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Step {stepIndex + 1} of {totalSteps}
+                </span>
+              </div>
+
               <button
                 type="button"
-                onClick={onNext}
+                onClick={onSkip}
+                aria-label="Close tutorial"
+                className="amst-close"
                 style={{
-                  height: isMobile ? 30 : 33, paddingLeft: isMobile ? 14 : 18, paddingRight: isMobile ? 14 : 18,
-                  borderRadius: 8,
-                  border: "none",
-                  background: TEAL,
-                  color: "#ffffff",
-                  fontWeight: 700, fontSize: isMobile ? 11 : 12,
+                  width: 27, height: 27,
+                  borderRadius: "50%",
+                  border: "1px solid rgba(0,207,255,0.35)",
+                  background: "rgba(0,207,255,0.06)",
+                  color: "#7fd8ee",
                   cursor: "pointer",
-                  letterSpacing: "0.01em",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 16, lineHeight: 1, flexShrink: 0,
                   fontFamily: "inherit",
-                  display: "flex", alignItems: "center",
-                  whiteSpace: "nowrap",
-                  boxShadow: `0 3px 12px ${TEAL_GLOW}`,
                 }}
               >
-                {isLast ? "Start exploring!" : "Next →"}
+                ×
               </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ position: "relative", padding: `${p.v - 2}px ${p.v}px 0` }}>
+              {step.title && (
+                <h3
+                  style={{
+                    fontSize: isMobile ? 14 : 15,
+                    fontWeight: 800,
+                    color: "#eaf9ff",
+                    lineHeight: 1.35,
+                    margin: `0 0 ${isMobile ? 7 : 9}px`,
+                    letterSpacing: "-0.01em",
+                    fontFamily: "inherit",
+                    textShadow: "0 0 12px rgba(0,207,255,0.35)",
+                  }}
+                >
+                  {step.title}
+                </h3>
+              )}
+              <p
+                style={{
+                  fontSize: isMobile ? 12.5 : 13.5,
+                  color: "#c7e9f5",
+                  lineHeight: 1.68,
+                  margin: 0,
+                  fontFamily: "inherit",
+                }}
+              >
+                {renderDescription(step.description)}
+              </p>
+            </div>
+
+            {/* Progress */}
+            <div style={{ position: "relative", padding: `${isMobile ? 12 : 15}px ${p.v}px 0` }}>
+              <div
+                style={{
+                  height: 5,
+                  borderRadius: 99,
+                  background: "rgba(0,207,255,0.12)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  className="amst-flow"
+                  style={{
+                    height: "100%",
+                    width: `${progress}%`,
+                    background: ELECTRIC,
+                    backgroundSize: "200% 100%",
+                    borderRadius: 99,
+                    boxShadow: "0 0 12px rgba(0,207,255,0.9)",
+                    transition: "width 0.45s cubic-bezier(0.34,1.56,0.64,1)",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: `${isMobile ? 9 : 11}px ${p.v}px ${isMobile ? 12 : 14}px`,
+                gap: 6,
+              }}
+            >
+              <button
+                type="button"
+                onClick={onSkip}
+                className="amst-skip"
+                style={{
+                  fontSize: 11, color: "#6b94a6",
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "4px 2px", fontFamily: "inherit",
+                  visibility: isLast ? "hidden" : "visible",
+                }}
+              >
+                Skip
+              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                {stepIndex > 0 && (
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="amst-back"
+                    style={{
+                      height: isMobile ? 31 : 34, paddingLeft: 13, paddingRight: 13,
+                      borderRadius: 9,
+                      border: "1px solid rgba(0,207,255,0.3)",
+                      background: "rgba(0,207,255,0.07)",
+                      color: "#9fd9ea",
+                      cursor: "pointer", fontSize: 11, fontWeight: 700,
+                      fontFamily: "inherit", display: "flex",
+                      alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    ← Back
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onNext}
+                  className="amst-next amst-flow"
+                  style={{
+                    position: "relative",
+                    overflow: "hidden",
+                    height: isMobile ? 31 : 34, paddingLeft: isMobile ? 16 : 20, paddingRight: isMobile ? 16 : 20,
+                    borderRadius: 9,
+                    border: "none",
+                    background: ELECTRIC,
+                    backgroundSize: "200% 100%",
+                    color: "#04121f",
+                    fontWeight: 800, fontSize: isMobile ? 11 : 12,
+                    cursor: "pointer",
+                    letterSpacing: "0.01em",
+                    fontFamily: "inherit",
+                    display: "flex", alignItems: "center",
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 0 20px rgba(0,207,255,0.65)",
+                  }}
+                >
+                  <span style={{ position: "relative", zIndex: 1 }}>
+                    {isLast ? "Start exploring! ⚡" : "Next →"}
+                  </span>
+                  <span className="amst-next-shine" aria-hidden />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -661,3 +799,142 @@ function TutorialOverlay({
     </>
   );
 }
+
+// ── Animations / electric styling ───────────────────────────────────────────
+
+const TUTORIAL_CSS = `
+@keyframes amstFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes amstBorderSpin {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes amstShimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+@keyframes amstGlow {
+  0%, 100% { transform: translate(-12%, -8%) scale(1); opacity: 0.5; }
+  50% { transform: translate(12%, 8%) scale(1.25); opacity: 0.85; }
+}
+@keyframes amstIconFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(-4deg); }
+}
+@keyframes amstSpark {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateY(-6px) scale(1.5); opacity: 1; }
+}
+@keyframes amstGridDrift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 26px 26px, 26px 26px; }
+}
+@keyframes amstSpotPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 9999px rgba(5,10,24,0.74),
+      0 0 0 2px rgba(0,207,255,0.95),
+      0 0 16px 2px rgba(0,207,255,0.7),
+      0 0 38px 8px rgba(51,217,255,0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 9999px rgba(5,10,24,0.74),
+      0 0 0 2px rgba(102,229,255,1),
+      0 0 28px 6px rgba(0,207,255,0.85),
+      0 0 60px 16px rgba(51,217,255,0.5);
+  }
+}
+@keyframes amstNextShine {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  60%, 100% { transform: translateX(260%) skewX(-20deg); }
+}
+@keyframes amstElectricText {
+  0%, 100% { text-shadow: 0 0 6px rgba(0,207,255,0.6), 0 0 12px rgba(0,207,255,0.35); }
+  50% { text-shadow: 0 0 10px rgba(102,229,255,0.95), 0 0 22px rgba(0,207,255,0.6); }
+}
+
+.amst-flow { animation: amstFlow 5s ease infinite; }
+
+.amst-card-border {
+  background: linear-gradient(90deg, #00CFFF, #33D9FF, #66E5FF, #0090c4, #33D9FF, #00CFFF);
+  background-size: 200% 100%;
+  animation: amstBorderSpin 5s linear infinite;
+  box-shadow: 0 24px 70px rgba(0,40,70,0.55), 0 0 30px rgba(0,207,255,0.45);
+}
+.amst-card {
+  background:
+    radial-gradient(circle at 25% 0%, rgba(0,207,255,0.12), transparent 55%),
+    linear-gradient(165deg, #0a1730 0%, #081226 55%, #050d1f 100%);
+}
+.amst-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,207,255,0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,207,255,0.10) 1px, transparent 1px);
+  background-size: 26px 26px, 26px 26px;
+  mask-image: radial-gradient(circle at 50% 40%, black, transparent 85%);
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, black, transparent 85%);
+  animation: amstGridDrift 14s linear infinite;
+  pointer-events: none;
+}
+.amst-card-glow {
+  position: absolute;
+  inset: -40%;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(0,207,255,0.22), transparent 42%),
+    radial-gradient(circle at 70% 75%, rgba(51,217,255,0.18), transparent 42%);
+  filter: blur(10px);
+  animation: amstGlow 7s ease-in-out infinite;
+  pointer-events: none;
+}
+.amst-shimmer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 28%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(220,250,255,0.95), transparent);
+  animation: amstShimmer 3s ease-in-out infinite;
+}
+.amst-icon { animation: amstIconFloat 3.6s ease-in-out infinite, amstFlow 5s ease infinite; }
+.amst-electric-text { animation: amstElectricText 2.4s ease-in-out infinite; }
+.amst-spotlight { animation: amstSpotPulse 2.4s ease-in-out infinite; }
+.amst-spark {
+  position: absolute;
+  z-index: 1;
+  font-size: 13px;
+  color: #66E5FF;
+  pointer-events: none;
+  text-shadow: 0 0 10px rgba(0,207,255,0.95);
+}
+.amst-spark-1 { top: 14px; right: 16%; color: #33D9FF; animation: amstSpark 2.8s ease-in-out infinite; }
+.amst-spark-2 { top: 40px; right: 9%; color: #66E5FF; animation: amstSpark 3.5s ease-in-out 0.6s infinite; }
+.amst-spark-3 { top: 22px; left: 12%; color: #00CFFF; animation: amstSpark 3.1s ease-in-out 1.1s infinite; }
+.amst-next { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.amst-next:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 0 30px rgba(0,207,255,0.9); }
+.amst-next:active { transform: translateY(0) scale(0.98); }
+.amst-next-shine {
+  position: absolute;
+  top: 0; left: 0;
+  width: 35%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
+  animation: amstNextShine 3s ease-in-out infinite;
+  z-index: 0;
+}
+.amst-back { transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; }
+.amst-back:hover { background: rgba(0,207,255,0.16); transform: translateY(-1px); box-shadow: 0 0 14px rgba(0,207,255,0.4); }
+.amst-close { transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; }
+.amst-close:hover { color: #66E5FF; background: rgba(0,207,255,0.18); transform: rotate(90deg); box-shadow: 0 0 14px rgba(0,207,255,0.5); }
+.amst-skip { transition: color 0.15s ease; }
+.amst-skip:hover { color: #66E5FF; }
+
+@media (prefers-reduced-motion: reduce) {
+  .amst-flow, .amst-card-border, .amst-card-glow, .amst-grid, .amst-shimmer, .amst-icon,
+  .amst-electric-text, .amst-spotlight, .amst-spark, .amst-next-shine { animation: none !important; }
+}
+`;
