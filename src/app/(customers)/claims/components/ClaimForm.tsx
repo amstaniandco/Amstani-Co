@@ -49,17 +49,17 @@ export default function ClaimForm({
 
   return (
     <>
-      <div className="bg-white rounded-2xl p-6 w-full shadow-sm">
-        <h2 className="text-base font-bold text-gray-800 tracking-widest uppercase mb-1">CLAIM</h2>
-        <p className="text-sm text-gray-500 mb-5">Please let us know the issue you are facing</p>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full shadow-sm">
+        <h2 className="text-base font-bold text-gray-800 dark:text-slate-200 tracking-widest uppercase mb-1">CLAIM</h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">Please let us know the issue you are facing</p>
 
         <div className="mb-4">
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Issue Type</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5">Issue Type</label>
           <div className="relative">
             <select
               value={issueType}
               onChange={(e) => setIssueType(e.target.value)}
-              className="w-full appearance-none border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-teal-400 cursor-pointer"
+              className="w-full appearance-none border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-xs text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-400 cursor-pointer"
             >
               <option value="" disabled>Select Issue Type</option>
               <option value="damaged">Damaged Item</option>
@@ -76,7 +76,7 @@ export default function ClaimForm({
         </div>
 
         <div className="mb-4">
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5">
             Photo Evidence <span className="text-red-500">*</span>
           </label>
 
@@ -93,12 +93,12 @@ export default function ClaimForm({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-200 rounded-lg hover:border-teal-400 hover:bg-teal-50/30 transition-colors"
+              className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-lg hover:border-teal-400 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 transition-colors"
             >
-              <svg className="w-6 h-6 text-gray-300 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-gray-300 dark:text-slate-600 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span className="text-xs text-gray-400">Click to upload photos (JPEG, PNG, WebP)</span>
+              <span className="text-xs text-gray-400 dark:text-slate-500">Click to upload photos (JPEG, PNG, WebP)</span>
             </button>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -108,7 +108,7 @@ export default function ClaimForm({
                     src={src}
                     alt={`Evidence ${i + 1}`}
                     onClick={() => setLightbox(src)}
-                    className="h-full w-full rounded-xl object-cover cursor-pointer border border-gray-200"
+                    className="h-full w-full rounded-xl object-cover cursor-pointer border border-gray-200 dark:border-slate-600"
                   />
                   <button
                     type="button"
@@ -125,7 +125,7 @@ export default function ClaimForm({
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                className="h-20 w-20 shrink-0 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal-400 hover:text-teal-500 transition-colors"
+                className="h-20 w-20 shrink-0 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-teal-400 hover:text-teal-500 transition-colors"
                 aria-label="Add more photos"
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -138,13 +138,13 @@ export default function ClaimForm({
         </div>
 
         <div className="mb-5">
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Message</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1.5">Message</label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Please type your message here"
             rows={4}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-700 placeholder-gray-300 resize-none focus:outline-none focus:ring-1 focus:ring-teal-400"
+            className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-xs text-gray-700 dark:text-slate-200 dark:bg-slate-700 placeholder-gray-300 dark:placeholder-slate-500 resize-none focus:outline-none focus:ring-1 focus:ring-teal-400"
           />
         </div>
 

@@ -67,10 +67,10 @@ function getTotal(order: Order) {
 
 function statusBadge(status?: string) {
   const s = status?.toLowerCase() ?? "";
-  if (s === "delivered") return "bg-emerald-100 text-emerald-700";
-  if (s === "dispatched" || s === "shipped") return "bg-blue-100 text-blue-700";
-  if (s === "cancelled" || s === "rejected") return "bg-red-100 text-red-700";
-  return "bg-amber-100 text-amber-700";
+  if (s === "delivered") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+  if (s === "dispatched" || s === "shipped") return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+  if (s === "cancelled" || s === "rejected") return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+  return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
 }
 
 function OrdersPageContent() {
@@ -106,15 +106,15 @@ function OrdersPageContent() {
     <div className="min-h-screen px-4 py-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Package className="h-5 w-5 text-teal-500" />
-        <h1 className="text-xl font-bold text-slate-900">My Orders</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">My Orders</h1>
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-2xl p-6 shadow-sm text-sm text-slate-400 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm text-sm text-slate-400 dark:text-slate-500 text-center">
           Loading orders…
         </div>
       ) : sortedOrders.length === 0 ? (
-        <div className="bg-white rounded-2xl p-6 shadow-sm text-sm text-slate-400 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm text-sm text-slate-400 dark:text-slate-500 text-center">
           No orders yet.
         </div>
       ) : (
@@ -128,8 +128,8 @@ function OrdersPageContent() {
               <div
                 key={order._id}
                 ref={isHighlighted ? highlightRef : undefined}
-                className={`bg-white rounded-2xl shadow-sm border transition-all ${
-                  isHighlighted ? "border-teal-400 ring-2 ring-teal-200" : "border-slate-100"
+                className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm border transition-all ${
+                  isHighlighted ? "border-teal-400 ring-2 ring-teal-200 dark:ring-teal-800" : "border-slate-100 dark:border-slate-700"
                 }`}
               >
                 <button
@@ -138,15 +138,15 @@ function OrdersPageContent() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
                         {order.orderNumber || order._id}
                         {order.isReplacement && (
-                          <span className="ml-2 text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">
+                          <span className="ml-2 text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded-full">
                             REPLACEMENT
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         {order.storeName} · {formatDate(order.createdAt)}
                       </p>
                     </div>
@@ -155,13 +155,13 @@ function OrdersPageContent() {
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusBadge(order.status)}`}>
                       {order.status ?? "Incoming"}
                     </span>
-                    <span className="text-sm font-bold text-slate-800">{formatCurrency(total)}</span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{formatCurrency(total)}</span>
                     {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
                   </div>
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-slate-100 px-5 pb-5 pt-4 space-y-4">
+                  <div className="border-t border-slate-100 dark:border-slate-700 px-5 pb-5 pt-4 space-y-4">
                     {/* Items */}
                     <div className="space-y-4">
                       {(order.items ?? []).map((item, i) => {
@@ -180,8 +180,8 @@ function OrdersPageContent() {
                                 />
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-slate-800 truncate">{item.name ?? "Product"}</p>
-                                {variantStr && <p className="text-xs text-slate-400">{variantStr}</p>}
+                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{item.name ?? "Product"}</p>
+                                {variantStr && <p className="text-xs text-slate-400 dark:text-slate-500">{variantStr}</p>}
                                 {cod && (
                                   <span className="inline-block mt-0.5 text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
                                     Custom Order
@@ -189,15 +189,15 @@ function OrdersPageContent() {
                                 )}
                               </div>
                               <div className="text-right flex-shrink-0">
-                                <p className="text-sm font-bold text-slate-800">{formatCurrency(Number(item.price ?? 0))}</p>
-                                <p className="text-xs text-slate-400">× {item.quantity ?? 1}</p>
+                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{formatCurrency(Number(item.price ?? 0))}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500">× {item.quantity ?? 1}</p>
                               </div>
                             </div>
                             {/* Custom order details inline */}
                             {cod && (
-                              <div className="mt-2 ml-15 rounded-xl bg-purple-50 border border-purple-100 px-3 py-2.5 space-y-2">
-                                <p className="text-[10px] font-bold uppercase tracking-wide text-purple-400">Your Custom Request</p>
-                                <p className="text-xs text-slate-700 whitespace-pre-wrap">{cod.description}</p>
+                              <div className="mt-2 ml-15 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 px-3 py-2.5 space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-purple-400 dark:text-purple-300">Your Custom Request</p>
+                                <p className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{cod.description}</p>
                                 {cod.mediaUrls?.length > 0 && (
                                   <div className="flex flex-wrap gap-1.5 pt-1">
                                     {cod.mediaUrls.map((url, mi) => (
@@ -217,34 +217,34 @@ function OrdersPageContent() {
 
                     {/* Tracking info */}
                     {order.trackingNumber && (
-                      <div className="rounded-xl bg-teal-50 border border-teal-100 px-3 py-2.5 text-xs space-y-1">
+                      <div className="rounded-xl bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 px-3 py-2.5 text-xs space-y-1">
                         <p className="text-[10px] font-bold uppercase tracking-wide text-teal-500">Shipment Tracking</p>
-                        <p className="text-slate-700">
-                          Tracking: <span className="font-mono font-semibold text-slate-900">{order.trackingNumber}</span>
-                          {order.carrier && <span className="text-slate-500"> via {order.carrier}</span>}
+                        <p className="text-slate-700 dark:text-slate-300">
+                          Tracking: <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">{order.trackingNumber}</span>
+                          {order.carrier && <span className="text-slate-500 dark:text-slate-400"> via {order.carrier}</span>}
                         </p>
                         {order.estimatedDelivery && (
-                          <p className="text-slate-500">Est. delivery: <span className="font-medium text-slate-700">{formatDeliveryDate(order.estimatedDelivery)}</span></p>
+                          <p className="text-slate-500 dark:text-slate-400">Est. delivery: <span className="font-medium text-slate-700 dark:text-slate-300">{formatDeliveryDate(order.estimatedDelivery)}</span></p>
                         )}
                       </div>
                     )}
 
                     {/* Shipping */}
                     {order.shippingAddress?.line1 && (
-                      <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-                        <p className="font-semibold text-slate-700 mb-0.5">Shipping to</p>
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-700 px-3 py-2.5 text-xs text-slate-600 dark:text-slate-300">
+                        <p className="font-semibold text-slate-700 dark:text-slate-200 mb-0.5">Shipping to</p>
                         <p>{order.shippingAddress.fullName}</p>
                         <p>{order.shippingAddress.line1}, {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
                       </div>
                     )}
 
                     {/* Notes */}
-                    {order.notes && <p className="text-xs text-slate-500 italic">{order.notes}</p>}
+                    {order.notes && <p className="text-xs text-slate-500 dark:text-slate-400 italic">{order.notes}</p>}
 
                     {/* Totals */}
-                    <div className="flex justify-between items-center border-t border-slate-100 pt-3">
-                      <span className="text-xs text-slate-500">{order.paymentMethod ?? "Cash on Delivery"}</span>
-                      <span className="text-sm font-bold text-slate-900">Total: {formatCurrency(total)}</span>
+                    <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-700 pt-3">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{order.paymentMethod ?? "Cash on Delivery"}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Total: {formatCurrency(total)}</span>
                     </div>
 
                     {/* Actions */}
@@ -280,7 +280,7 @@ export default function OrdersPage() {
     <Suspense
       fallback={
         <div className="min-h-screen px-4 py-6 max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl p-6 shadow-sm text-sm text-slate-400 text-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm text-sm text-slate-400 dark:text-slate-500 text-center">
             Loading orders...
           </div>
         </div>

@@ -161,16 +161,16 @@ export default function ClaimsHistorySection() {
 
       {/* Full-screen panel overlay */}
       {open && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-slate-50">
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-900">
           <Header />
           <div className="flex flex-1 overflow-hidden">
           {/* Claims list sidebar */}
           <div
-            className={`flex flex-col bg-white w-full max-w-sm border-r border-slate-200 ${activeClaim ? "hidden sm:flex" : "flex"}`}
+            className={`flex flex-col bg-white dark:bg-slate-800 w-full max-w-sm border-r border-slate-200 dark:border-slate-700 ${activeClaim ? "hidden sm:flex" : "flex"}`}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-              <h2 className="font-bold text-slate-900 text-lg">My Claims</h2>
-              <button onClick={() => { setOpen(false); setActiveClaim(null); }} className="text-slate-400 hover:text-slate-700">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="font-bold text-slate-900 dark:text-slate-100 text-lg">My Claims</h2>
+              <button onClick={() => { setOpen(false); setActiveClaim(null); }} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -192,12 +192,12 @@ export default function ClaimsHistorySection() {
                     onClick={() => setActiveClaim(claim)}
                     className={`w-full text-left rounded-xl p-3 border transition ${
                       activeClaim?._id === claim._id
-                        ? "border-teal-400 bg-teal-50"
-                        : "border-slate-200 hover:bg-slate-50"
+                        ? "border-teal-400 bg-teal-50 dark:bg-teal-900/30"
+                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-slate-700">#{claim.claimNumber}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">#{claim.claimNumber}</span>
                       <span className="flex items-center gap-1">
                         <span className={`inline-block w-1.5 h-1.5 rounded-full ${STATUS_DOT[claim.status] ?? "bg-gray-300"}`} />
                         <span className={`text-[10px] font-semibold ${STATUS_TEXT[claim.status] ?? "text-gray-500"}`}>
@@ -205,8 +205,8 @@ export default function ClaimsHistorySection() {
                         </span>
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 font-medium truncate">{claim.storeName}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate">{claim.storeName}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                       {ISSUE_LABEL[claim.reason] ?? claim.reason} · {formatDate(claim.createdAt)}
                     </p>
                     {claim.messages.length > 0 && (
@@ -222,36 +222,36 @@ export default function ClaimsHistorySection() {
           </div>
 
           {/* Chat / detail panel */}
-          <div className={`flex-1 flex flex-col bg-white ${!activeClaim ? "hidden sm:flex items-center justify-center" : "flex"}`}>
+          <div className={`flex-1 flex flex-col bg-white dark:bg-slate-800 ${!activeClaim ? "hidden sm:flex items-center justify-center" : "flex"}`}>
             {!activeClaim ? (
               <div className="text-center space-y-2">
-                <MessageCircle className="h-10 w-10 text-slate-300 mx-auto" />
-                <p className="text-sm text-slate-400">Select a claim to view details and chat</p>
+                <MessageCircle className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto" />
+                <p className="text-sm text-slate-400 dark:text-slate-500">Select a claim to view details and chat</p>
               </div>
             ) : (
               <>
                 {/* Chat header */}
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700">
                   <button
                     onClick={() => setActiveClaim(null)}
-                    className="sm:hidden text-slate-400 hover:text-slate-700 mr-1"
+                    className="sm:hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mr-1"
                   >
                     ←
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-900 text-sm">#{activeClaim.claimNumber}</h3>
+                      <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">#{activeClaim.claimNumber}</h3>
                       <span className={`text-[10px] font-semibold ${STATUS_TEXT[activeClaim.status]}`}>
                         · {STATUS_LABEL[activeClaim.status]}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 truncate">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                       {activeClaim.storeName} · {ISSUE_LABEL[activeClaim.reason] ?? activeClaim.reason}
                     </p>
                   </div>
                   <button
                     onClick={() => { setOpen(false); setActiveClaim(null); }}
-                    className="hidden sm:block text-slate-400 hover:text-slate-700"
+                    className="hidden sm:block text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -259,15 +259,15 @@ export default function ClaimsHistorySection() {
 
                 {/* Disputed items strip */}
                 {activeClaim.items?.length > 0 && (
-                  <div className="px-5 py-2.5 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto">
+                  <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-700 border-b border-slate-100 dark:border-slate-600 flex gap-2 overflow-x-auto">
                     {activeClaim.items.map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 flex-shrink-0 bg-white rounded-lg border border-slate-200 px-2.5 py-1.5">
+                      <div key={i} className="flex items-center gap-2 flex-shrink-0 bg-white dark:bg-slate-600 rounded-lg border border-slate-200 dark:border-slate-500 px-2.5 py-1.5">
                         {item.image && (
                           <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
                         )}
                         <div>
-                          <p className="text-[11px] font-semibold text-slate-800 max-w-[120px] truncate">{item.name}</p>
-                          <p className="text-[10px] text-slate-400">×{item.quantity} · ${item.price}</p>
+                          <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 max-w-[120px] truncate">{item.name}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-400">×{item.quantity} · ${item.price}</p>
                         </div>
                       </div>
                     ))}
@@ -276,8 +276,8 @@ export default function ClaimsHistorySection() {
 
                 {/* Photo evidence */}
                 {activeClaim.mediaUrls && activeClaim.mediaUrls.length > 0 && (
-                  <div className="px-5 py-2.5 bg-slate-50 border-b border-slate-100">
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Photo Evidence</p>
+                  <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-700 border-b border-slate-100 dark:border-slate-600">
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Photo Evidence</p>
                     <div className="flex gap-2 overflow-x-auto pb-1">
                       {activeClaim.mediaUrls.map((url, i) => (
                         <img
@@ -285,7 +285,7 @@ export default function ClaimsHistorySection() {
                           src={url}
                           alt={`Evidence ${i + 1}`}
                           onClick={() => setLightboxUrl(url)}
-                          className="h-16 w-16 shrink-0 rounded-lg object-cover border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity"
+                          className="h-16 w-16 shrink-0 rounded-lg object-cover border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity"
                         />
                       ))}
                     </div>
@@ -294,8 +294,8 @@ export default function ClaimsHistorySection() {
 
                 {/* awaiting_reorder action */}
                 {activeClaim.status === "awaiting_reorder" && (
-                  <div className="mx-5 mt-3 rounded-xl bg-purple-50 border border-purple-200 px-4 py-3 flex items-center justify-between gap-3">
-                    <p className="text-xs text-purple-700 font-medium">
+                  <div className="mx-5 mt-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 px-4 py-3 flex items-center justify-between gap-3">
+                    <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">
                       The store acknowledged the wrong item. Please reorder the correct product.
                     </p>
                     <Link
@@ -319,10 +319,10 @@ export default function ClaimsHistorySection() {
                           <div
                             className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                               msg.senderRole === "admin"
-                                ? "bg-red-50 border border-red-200 text-red-800"
+                                ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300"
                                 : isMe
                                 ? "bg-teal-500 text-white"
-                                : "bg-slate-100 text-slate-800"
+                                : "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                             }`}
                           >
                             {!isMe && (
@@ -340,20 +340,20 @@ export default function ClaimsHistorySection() {
 
                 {/* Input or closed notice */}
                 {isChatClosed ? (
-                  <div className="px-5 py-3 border-t border-slate-200 text-center text-xs font-semibold text-slate-400">
+                  <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-700 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
                     {activeClaim.status === "resolved"
                       ? "This claim is resolved. Chat is closed."
                       : "This claim was escalated to admin. Chat is closed."}
                   </div>
                 ) : (
-                  <div className="px-5 py-3 border-t border-slate-200 flex gap-2">
+                  <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-700 flex gap-2">
                     <input
                       type="text"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
                       placeholder="Send a message to the store…"
-                      className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
+                      className="flex-1 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder-slate-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
                     />
                     <button
                       onClick={sendMessage}

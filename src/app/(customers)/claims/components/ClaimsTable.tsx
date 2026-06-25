@@ -45,8 +45,8 @@ interface ClaimsTableProps {
 
 export default function ClaimsTable({ claims }: ClaimsTableProps) {
   return (
-    <div className="bg-white rounded-2xl p-6 w-full shadow-sm">
-      <h2 className="text-sm font-bold text-gray-800 tracking-widest uppercase mb-4">YOUR CLAIMS</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full shadow-sm">
+      <h2 className="text-sm font-bold text-gray-800 dark:text-slate-200 tracking-widest uppercase mb-4">YOUR CLAIMS</h2>
 
       <div className="flex items-center gap-2 mb-4">
         <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
@@ -57,20 +57,20 @@ export default function ClaimsTable({ claims }: ClaimsTableProps) {
             <rect x="6" y="6" width="4" height="4" rx="0.6" fill="white" />
           </svg>
         </div>
-        <span className="text-xs font-semibold text-gray-700">Your Claims History</span>
+        <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">Your Claims History</span>
       </div>
 
       {claims.length === 0 ? (
-        <p className="text-sm text-gray-400 py-4 text-center">No claims filed yet.</p>
+        <p className="text-sm text-gray-400 dark:text-slate-500 py-4 text-center">No claims filed yet.</p>
       ) : (
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-slate-700">
                 {["Claim ID", "Issue Type", "Filed", "Status", "Action"].map((h) => (
                   <th
                     key={h}
-                    className="pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide pr-3"
+                    className="pb-2 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide pr-3"
                   >
                     {h}
                   </th>
@@ -83,14 +83,14 @@ export default function ClaimsTable({ claims }: ClaimsTableProps) {
                 const needsReorder = claim.status === "awaiting_reorder";
 
                 return (
-                  <tr key={claim._id || claim.claimNumber} className={`border-b border-gray-50 last:border-0 ${needsReorder ? "bg-purple-50/50" : ""}`}>
-                    <td className={`py-3 text-sm font-semibold pr-3 ${isEscalated ? "text-red-500" : needsReorder ? "text-purple-600" : "text-gray-700"}`}>
+                  <tr key={claim._id || claim.claimNumber} className={`border-b border-gray-50 dark:border-slate-700 last:border-0 ${needsReorder ? "bg-purple-50/50 dark:bg-purple-900/10" : ""}`}>
+                    <td className={`py-3 text-sm font-semibold pr-3 ${isEscalated ? "text-red-500" : needsReorder ? "text-purple-600" : "text-gray-700 dark:text-slate-300"}`}>
                       #{claim.claimNumber}
                     </td>
-                    <td className="py-3 text-sm text-gray-600 pr-3 whitespace-nowrap">
+                    <td className="py-3 text-sm text-gray-600 dark:text-slate-300 pr-3 whitespace-nowrap">
                       {ISSUE_LABEL[claim.reason] || claim.reason}
                     </td>
-                    <td className="py-3 text-xs text-gray-500 pr-3 whitespace-nowrap">
+                    <td className="py-3 text-xs text-gray-500 dark:text-slate-400 pr-3 whitespace-nowrap">
                       {formatClaimDate(claim.createdAt)}
                     </td>
                     <td className={`py-3 text-[10px] font-bold tracking-wide pr-3 whitespace-nowrap ${STATUS_CLASS[claim.status] || "text-gray-400"}`}>
@@ -105,11 +105,11 @@ export default function ClaimsTable({ claims }: ClaimsTableProps) {
                           Reorder from Store
                         </Link>
                       ) : isEscalated ? (
-                        <span className="px-3 py-1 bg-red-100 text-red-500 text-[11px] font-semibold rounded-md">
+                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400 text-[11px] font-semibold rounded-md">
                           Escalated
                         </span>
                       ) : (
-                        <span className="text-gray-300 text-sm">—</span>
+                        <span className="text-gray-300 dark:text-slate-600 text-sm">—</span>
                       )}
                     </td>
                   </tr>

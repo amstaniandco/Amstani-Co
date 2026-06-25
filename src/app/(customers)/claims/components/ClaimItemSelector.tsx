@@ -28,17 +28,17 @@ export default function ClaimItemSelector({
 }: ClaimItemSelectorProps) {
   if (!products.length) {
     return (
-      <div className="bg-white rounded-2xl p-6 w-full shadow-sm">
-        <h2 className="text-base font-semibold text-gray-800 mb-3">Select Disputed Item</h2>
-        <p className="text-sm text-gray-400">No orders found to file a claim against.</p>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full shadow-sm">
+        <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200 mb-3">Select Disputed Item</h2>
+        <p className="text-sm text-gray-400 dark:text-slate-500">No orders found to file a claim against.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 w-full shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full shadow-sm">
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-base font-semibold text-gray-800">Select Disputed Item</h2>
+        <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200">Select Disputed Item</h2>
         <span
           onClick={onSelectAll}
           className="text-xs font-medium text-red-500 cursor-pointer"
@@ -56,7 +56,7 @@ export default function ClaimItemSelector({
           return (
             <div
               key={product.id}
-              className="flex flex-col gap-2 p-3 border border-gray-200 rounded-xl"
+              className="flex flex-col gap-2 p-3 border border-gray-200 dark:border-slate-700 dark:bg-slate-700/30 rounded-xl"
             >
               {/* Main row */}
               <div className="flex items-center gap-3">
@@ -71,8 +71,8 @@ export default function ClaimItemSelector({
                     <p className="text-xs font-semibold text-teal-500 tracking-widest uppercase">
                       {product.store}
                     </p>
-                    <p className="text-sm font-semibold text-gray-800 truncate mt-0.5">{product.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{product.variant}</p>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate mt-0.5">{product.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{product.variant}</p>
                   </div>
 
                   {/* Qty stepper */}
@@ -81,23 +81,23 @@ export default function ClaimItemSelector({
                       <button
                         onClick={() => handleQty(product.id, -1)}
                         disabled={atMin}
-                        className="w-5 h-5 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-500 text-sm leading-none hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-5 h-5 rounded-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 flex items-center justify-center text-gray-500 dark:text-slate-300 text-sm leading-none hover:bg-gray-100 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         −
                       </button>
-                      <span className="text-xs font-medium text-gray-700 w-5 text-center">{qty}</span>
+                      <span className="text-xs font-medium text-gray-700 dark:text-slate-200 w-5 text-center">{qty}</span>
                       <button
                         onClick={() => handleQty(product.id, 1)}
                         disabled={atMax}
-                        className="w-5 h-5 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-500 text-sm leading-none hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-5 h-5 rounded-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 flex items-center justify-center text-gray-500 dark:text-slate-300 text-sm leading-none hover:bg-gray-100 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         +
                       </button>
                     </div>
-                    <span className="text-[10px] text-gray-400">max {product.maxQty}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-slate-500">max {product.maxQty}</span>
                   </div>
 
-                  <span className="text-sm font-bold text-gray-800 flex-shrink-0 w-14 text-right">
+                  <span className="text-sm font-bold text-gray-800 dark:text-slate-100 flex-shrink-0 w-14 text-right">
                     ${product.price}
                   </span>
                 </div>
@@ -108,7 +108,7 @@ export default function ClaimItemSelector({
                   className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center cursor-pointer transition-colors ${
                     selected[product.id]
                       ? "bg-teal-500 border-teal-500"
-                      : "bg-white border-gray-300"
+                      : "bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-500"
                   }`}
                 >
                   {selected[product.id] && (

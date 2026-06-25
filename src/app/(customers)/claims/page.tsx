@@ -235,13 +235,13 @@ function ClaimPageContent() {
   return (
     <div className="min-h-screen px-4 py-6 flex flex-col items-center gap-5 text-base">
       {targetOrderId && (
-        <div className="w-full bg-teal-50 border border-teal-200 rounded-xl px-4 py-2.5 text-sm text-teal-700 font-medium">
+        <div className="w-full bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl px-4 py-2.5 text-sm text-teal-700 dark:text-teal-300 font-medium">
           Showing items from your selected order. Only these items can be included in this claim.
         </div>
       )}
 
       {loadingOrders ? (
-        <div className="bg-white rounded-2xl p-6 w-full shadow-sm text-center text-sm text-gray-400">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full shadow-sm text-center text-sm text-gray-400 dark:text-slate-500">
           Loading your orders…
         </div>
       ) : (
@@ -278,7 +278,7 @@ export default function ClaimPage() {
     <Suspense
       fallback={
         <div className="min-h-screen px-4 py-6 flex flex-col items-center gap-5 text-base">
-          <div className="bg-white rounded-2xl p-6 w-full shadow-sm text-center text-sm text-gray-400">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full shadow-sm text-center text-sm text-gray-400 dark:text-slate-500">
             Loading your claims...
           </div>
         </div>
