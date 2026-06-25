@@ -45,7 +45,10 @@ export default function RootLayout({
     >
       <head>
       </head>
-      <body className={`${montserrat.className} min-h-full bg-[var(--background)] text-[var(--foreground)]`}>
+      <body
+        className={`${montserrat.className} min-h-full bg-[var(--background)] text-[var(--foreground)]`}
+        suppressHydrationWarning
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
