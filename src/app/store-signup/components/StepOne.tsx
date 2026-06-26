@@ -63,7 +63,7 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
             name="fullName"
             value={formData.fullName}
             onChange={handleChange}
-            placeholder="Placeholder"
+            placeholder="Enter your full name"
             className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
@@ -76,7 +76,7 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="Placeholder"
+            placeholder="Enter your email"
             className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
@@ -89,7 +89,7 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
             name="phoneNumber"
             value={formData.phoneNumber}
             onChange={handleChange}
-            placeholder="Placeholder"
+            placeholder="Enter your phone number"
             className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
@@ -102,7 +102,7 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
             name="address"
             value={formData.address}
             onChange={handleChange}
-            placeholder="Placeholder"
+            placeholder="Enter your address"
             className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
@@ -115,7 +115,7 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
             name="state"
             value={formData.state}
             onChange={handleChange}
-            placeholder="Placeholder"
+            placeholder="Enter your state"
             className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
