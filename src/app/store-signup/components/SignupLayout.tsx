@@ -18,13 +18,6 @@ export default function SignupLayout({ children, step }: SignupLayoutProps) {
           sizes="50vw"
           className="object-cover"
         />
-
-        {/* Overlay Logo */}
-        <div className="absolute top-10 left-10 text-white">
-          <div className="text-2xl font-semibold tracking-wide">
-            AMSTANI & CO
-          </div>
-        </div>
       </div>
 
       {/* RIGHT SIDE */}
