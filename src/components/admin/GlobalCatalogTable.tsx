@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   ChevronLeft, ChevronRight, Edit3, Eye, Power, Search,
   Trash2, SlidersHorizontal, X, CheckSquare,
@@ -33,6 +33,34 @@ type Props = { refreshKey?: number; onEdit: (productId: string) => void };
 
 const PAGE_SIZE = 10;
 
+// Persisted search/filter/page state — kept in sessionStorage so it survives
+// editing or opening a product (which unmounts this table) and is only cleared
+// when the admin clears it themselves.
+const STORAGE_KEY = "globalCatalogTableState";
+
+type SavedState = {
+  search?: string;
+  page?: number;
+  showFilters?: boolean;
+  statusFilter?: string;
+  suspendedFilter?: string;
+  sourceFilter?: string;
+  stockFilter?: string;
+  customOrdersFilter?: string;
+  featuredFilter?: string;
+  categoryFilter?: string;
+  brandFilter?: string;
+};
+
+function loadSavedState(): SavedState {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}") as SavedState;
+  } catch {
+    return {};
+  }
+}
+
 const FilterSelect = ({
   value, onChange, children,
 }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) => (
@@ -50,24 +78,26 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
   const confirm = useConfirm();
   const toast   = useToast();
 
+  const [saved] = useState(loadSavedState);
+
   const [products,   setProducts]   = useState<CatalogProductRow[]>([]);
-  const [search,     setSearch]     = useState("");
-  const [page,       setPage]       = useState(1);
+  const [search,     setSearch]     = useState(saved.search ?? "");
+  const [page,       setPage]       = useState(saved.page ?? 1);
   const [total,      setTotal]      = useState(0);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(saved.showFilters ?? false);
   const [bulkLoading, setBulkLoading] = useState(false);
 
   // Filters
-  const [statusFilter,       setStatusFilter]       = useState("");
-  const [suspendedFilter,    setSuspendedFilter]    = useState("");
-  const [sourceFilter,       setSourceFilter]       = useState("");
-  const [stockFilter,        setStockFilter]        = useState("");
-  const [customOrdersFilter, setCustomOrdersFilter] = useState("");
-  const [featuredFilter,     setFeaturedFilter]     = useState("");
-  const [categoryFilter,     setCategoryFilter]     = useState("");
-  const [brandFilter,        setBrandFilter]        = useState("");
+  const [statusFilter,       setStatusFilter]       = useState(saved.statusFilter ?? "");
+  const [suspendedFilter,    setSuspendedFilter]    = useState(saved.suspendedFilter ?? "");
+  const [sourceFilter,       setSourceFilter]       = useState(saved.sourceFilter ?? "");
+  const [stockFilter,        setStockFilter]        = useState(saved.stockFilter ?? "");
+  const [customOrdersFilter, setCustomOrdersFilter] = useState(saved.customOrdersFilter ?? "");
+  const [featuredFilter,     setFeaturedFilter]     = useState(saved.featuredFilter ?? "");
+  const [categoryFilter,     setCategoryFilter]     = useState(saved.categoryFilter ?? "");
+  const [brandFilter,        setBrandFilter]        = useState(saved.brandFilter ?? "");
 
   // Filter dropdown options
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
@@ -97,8 +127,30 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
     setCategoryFilter(""); setBrandFilter("");
   };
 
-  // Reset page when filters/search change
-  useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [search, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
+  const clearAll = () => { setSearch(""); clearFilters(); };
+
+  // Persist search/filters/page so they survive editing or opening a product
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const toSave: SavedState = {
+      search, page, showFilters,
+      statusFilter, suspendedFilter, sourceFilter, stockFilter,
+      customOrdersFilter, featuredFilter, categoryFilter, brandFilter,
+    };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  }, [search, page, showFilters, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
+
+  // Reset page when filters/search actually change. We compare against a
+  // signature seeded with the *restored* values, so the saved page survives
+  // remounts (after editing/opening a product) and dev StrictMode re-runs —
+  // it only resets to page 1 on a genuine user-initiated filter/search change.
+  const filterSig = [search, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter].join("|");
+  const prevFilterSig = useRef(filterSig);
+  useEffect(() => {
+    if (prevFilterSig.current === filterSig) return;
+    prevFilterSig.current = filterSig;
+    setPage(1); setSelectedIds(new Set());
+  }, [filterSig]);
 
   // Fetch products
   useEffect(() => {
@@ -258,8 +310,16 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by SKU, name, category, brand…"
-            className="w-full rounded-lg border border-[#e7edf1] bg-white py-2 pl-9 pr-3 text-xs text-slate-700 placeholder-slate-400 transition focus:border-[#58b8c3] focus:outline-none sm:text-sm"
+            className="w-full rounded-lg border border-[#e7edf1] bg-white py-2 pl-9 pr-9 text-xs text-slate-700 placeholder-slate-400 transition focus:border-[#58b8c3] focus:outline-none sm:text-sm"
           />
+          {search && (
+            <button
+              type="button" onClick={() => setSearch("")} title="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-xs text-slate-500">{total} product{total !== 1 ? "s" : ""}</span>
@@ -274,6 +334,14 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filters{activeFilters > 0 ? ` (${activeFilters})` : ""}
           </button>
+          {(activeFilters > 0 || search.trim()) && (
+            <button
+              type="button" onClick={clearAll}
+              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+            >
+              <X className="h-3.5 w-3.5" /> Clear all
+            </button>
+          )}
         </div>
       </div>
 

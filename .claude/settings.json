@@ -23,7 +23,8 @@
       "PowerShell(git push origin main)",
       "PowerShell(npm run build)",
       "PowerShell(git commit -m \"feat\\(auth\\): add Continue with X button to signup\")",
-      "Bash(cat > *)"
+      "Bash(cat > *)",
+      "PowerShell(npx tsc --noEmit 2>&1)"
     ],
     "additionalDirectories": [
       "c:\\Development\\Amstani-Co\\src\\app\\api\\owner\\products\\[productId]",
