@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PenLine, Store, Loader2, CheckCircle2, XCircle, BookOpen, ExternalLink, Trophy, X } from "lucide-react";
 import { useToast } from "../../../../components/global/ToastProvider";
 import { useTutorial } from "../../../../components/owner/tutorial/TutorialProvider";
+import { US_STATES } from "../../../../lib/us-states";
 
 function isProfileComplete(store: any): boolean {
   return !!(
@@ -570,6 +571,7 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
   const [ownerName, setOwnerName] = useState(user?.name || "");
   const [ownerEmail, setOwnerEmail] = useState(user?.email || "");
   const [ownerPhone, setOwnerPhone] = useState(user?.phone || "");
+  const [ownerState, setOwnerState] = useState(user?.state || "");
   const [languages, setLanguages] = useState<string[]>(store?.settings?.languages || []);
   const [logoUrl, setLogoUrl] = useState(store?.logoUrl || "");
   const [bannerUrl, setBannerUrl] = useState(store?.bannerUrl || "");
@@ -587,6 +589,7 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
     setOwnerName(user?.name || "");
     setOwnerEmail(user?.email || "");
     setOwnerPhone(user?.phone || "");
+    setOwnerState(user?.state || "");
   }, [user]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -638,6 +641,7 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
           ownerName,
           ownerEmail,
           ownerPhone,
+          ownerState,
           languages,
           logoUrl,
           bannerUrl,
@@ -706,6 +710,20 @@ function StoreCustomizationCard({ user, store, onSave }: { user: any; store: any
             placeholder="+1 (555) 123-4567"
             className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400"
           />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">State</label>
+          <select
+            value={ownerState}
+            onChange={(e) => setOwnerState(e.target.value)}
+            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400"
+          >
+            <option value="">Select state...</option>
+            {US_STATES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
 
         <div className="sm:col-span-2">

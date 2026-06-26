@@ -22,10 +22,12 @@
       "PowerShell(git commit -m \"feat\\(admin\\): delete store and revert owner role to user\")",
       "PowerShell(git push origin main)",
       "PowerShell(npm run build)",
-      "PowerShell(git commit -m \"feat\\(auth\\): add Continue with X button to signup\")"
+      "PowerShell(git commit -m \"feat\\(auth\\): add Continue with X button to signup\")",
+      "Bash(cat > *)"
     ],
     "additionalDirectories": [
-      "c:\\Development\\Amstani-Co\\src\\app\\api\\owner\\products\\[productId]"
+      "c:\\Development\\Amstani-Co\\src\\app\\api\\owner\\products\\[productId]",
+      "C:\\Users\\ISRARA~1\\AppData\\Local\\Temp\\claude\\c--Development-Amstani-Co\\360238f9-dd37-473c-97c4-e1557501daaf\\scratchpad"
     ]
   }
 }

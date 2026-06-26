@@ -77,7 +77,7 @@ export async function PUT(req: Request) {
     if (tokenUser.role !== "owner") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
-    const { storeName, storeDescription, ownerName, ownerEmail, ownerPhone, languages, logoUrl, bannerUrl } = body;
+    const { storeName, storeDescription, ownerName, ownerEmail, ownerPhone, ownerState, languages, logoUrl, bannerUrl } = body;
 
     if (!storeName?.trim()) {
       return NextResponse.json({ error: "Store name is required" }, { status: 400 });
@@ -103,6 +103,7 @@ export async function PUT(req: Request) {
     if (ownerName) userUpdate.name = ownerName;
     if (ownerEmail) userUpdate.email = ownerEmail;
     if (ownerPhone !== undefined) userUpdate.phone = ownerPhone;
+    if (ownerState !== undefined) userUpdate.state = ownerState;
 
     await db.collection("users").updateOne(
       { _id: new ObjectId(tokenUser.id) },
