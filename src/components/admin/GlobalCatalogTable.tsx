@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
-  ChevronLeft, ChevronRight, Edit3, Eye, Power, Search,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit3, Eye, Power, Search,
   Trash2, SlidersHorizontal, X, CheckSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -496,21 +496,19 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4">BRAND</th>
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4">PRICE</th>
               <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4">STATUS</th>
-              <th className="px-3 py-3 text-left font-semibold text-slate-600 sm:px-4">STOCK</th>
               <th className="px-3 py-3 text-center font-semibold text-slate-600 sm:px-4">CUSTOM</th>
               <th className="px-3 py-3 text-center font-semibold text-slate-600 sm:px-4">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="px-5 py-8 text-center text-slate-400" colSpan={10}>Loading…</td></tr>
+              <tr><td className="px-5 py-8 text-center text-slate-400" colSpan={9}>Loading…</td></tr>
             )}
             {!loading && products.length === 0 && (
-              <tr><td className="px-5 py-8 text-center text-slate-400" colSpan={10}>No products found.</td></tr>
+              <tr><td className="px-5 py-8 text-center text-slate-400" colSpan={9}>No products found.</td></tr>
             )}
             {!loading && products.map((product) => {
               const isActive   = product.status === "active" || product.isPublished;
-              const stock      = product.totalStock ?? product.stock ?? 0;
               const isSuspended = (product.isSuspended ?? false) || (product.brandSuspended ?? false);
               const isSelected  = selectedIds.has(product._id);
 
@@ -594,13 +592,6 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
                     </div>
                   </td>
 
-                  {/* Stock */}
-                  <td className="px-3 py-3 sm:px-4">
-                    <span className={`font-medium ${stock === 0 ? "text-red-500" : stock < 10 ? "text-amber-600" : "text-slate-700"}`}>
-                      {stock}
-                    </span>
-                  </td>
-
                   {/* Custom order toggle */}
                   <td className="px-3 py-3 text-center sm:px-4">
                     <button type="button"
@@ -656,7 +647,11 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
           Page {page} of {totalPages} · {total} total
         </span>
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+          <button onClick={() => setPage(1)} disabled={page <= 1} title="First page"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40">
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} title="Previous page"
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40">
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -672,9 +667,13 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
               </button>
             );
           })}
-          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} title="Next page"
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40">
             <ChevronRight className="h-4 w-4" />
+          </button>
+          <button onClick={() => setPage(totalPages)} disabled={page >= totalPages} title="Last page"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40">
+            <ChevronsRight className="h-4 w-4" />
           </button>
         </div>
       </div>
