@@ -18,35 +18,33 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.amstaniandco.co
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Amstani & Co — Multi-Brand Textile Marketplace",
-    template: "%s | Amstani & Co",
+    default: "Amstani & Co",
+    template: "Amstani & Co",
   },
-  description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   alternates: {
     canonical: "/",
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/assets/amstaniLogo.png", type: "image/png" },
     ],
-    shortcut: "/favicon.ico",
-    apple: "/apple-icon.png",
+    shortcut: "/assets/amstaniLogo.png",
+    apple: "/assets/amstaniLogo.png",
   },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
     url: SITE_URL,
-    title: "Amstani & Co — Multi-Brand Textile Marketplace",
+    title: "Amstani & Co",
     description: SITE_DESCRIPTION,
-    images: ["/icon.png"],
+    images: ["/assets/amstaniLogo.png"],
   },
   twitter: {
     card: "summary",
-    title: "Amstani & Co — Multi-Brand Textile Marketplace",
+    title: "Amstani & Co",
     description: SITE_DESCRIPTION,
-    images: ["/icon.png"],
+    images: ["/assets/amstaniLogo.png"],
   },
 };
 
