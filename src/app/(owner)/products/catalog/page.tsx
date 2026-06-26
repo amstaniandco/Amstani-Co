@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Eye, Search, TrendingDown, TrendingUp, RotateCcw, X } from "lucide-react";
+import { ChevronLeft, Eye, Search, TrendingDown, TrendingUp, RotateCcw, RefreshCw, X } from "lucide-react";
 
 type CatalogVariant = { id?: string; size?: string; color?: string; stock?: number; stockQuantity?: number; skuVariant?: string; priceOverride?: number | null };
 
@@ -159,6 +159,7 @@ export default function OwnerCatalogPage() {
   const [markupPercent, setMarkupPercent] = useState(20);
   const [discountCap,   setDiscountCap]   = useState(20);
   const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
   const [search,        setSearch]        = useState("");
   const [detailProduct, setDetailProduct] = useState<CatalogProduct | null>(null);
 
@@ -179,6 +180,30 @@ export default function OwnerCatalogPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // Re-fetch the catalog. The GET endpoint syncs any new admin products
+  // into this store's catalog, so this pulls in the latest additions.
+  async function refreshCatalog() {
+    setRefreshing(true);
+    setMsg(null);
+    try {
+      const before = products.length;
+      const data = await fetch("/api/owner/catalog").then((r) => r.json());
+      const next = data.products ?? [];
+      setProducts(next);
+      setMarkupPercent(data.markupPercent ?? 20);
+      setDiscountCap(data.discountCap ?? 20);
+      const added = next.length - before;
+      setMsg({
+        ok: true,
+        text: added > 0
+          ? `Fetched ${added} new product${added === 1 ? "" : "s"} from the catalog.`
+          : "Catalog is up to date.",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const capForMode = mode === "markup" ? markupPercent : discountCap;
 
@@ -240,6 +265,15 @@ export default function OwnerCatalogPage() {
             </h1>
             {!loading && <p className="text-sm text-slate-500 mt-0.5">{products.length} products</p>}
           </div>
+          <button
+            onClick={refreshCatalog}
+            disabled={loading || refreshing}
+            title="Fetch the latest products added to the catalog"
+            className="ml-auto flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Fetching…" : "Fetch Latest"}
+          </button>
         </div>
 
         {/* ── Bulk pricing panel ── */}
