@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
 import { recomputeCatalogCounts } from "../../../../../lib/catalog-counts";
@@ -161,38 +162,69 @@ async function requireAdmin() {
   return { tokenUser };
 }
 
+function buildProductQuery(searchParams: URLSearchParams): Record<string, unknown> {
+  const and: Record<string, unknown>[] = [];
+
+  const q            = searchParams.get("q")?.trim();
+  const brandExact   = searchParams.get("brand")?.trim();
+  const brandSourceId = searchParams.get("brandSourceId")?.trim();
+  const statusFilter  = searchParams.get("status")?.trim();
+  const suspended     = searchParams.get("suspended")?.trim();
+  const source        = searchParams.get("source")?.trim();
+  const category      = searchParams.get("category")?.trim();
+  const stockFilter   = searchParams.get("stockFilter")?.trim();
+  const customOrders  = searchParams.get("customOrders")?.trim();
+  const featured      = searchParams.get("featured")?.trim();
+
+  // Text search
+  if (brandSourceId) {
+    const conds: Record<string, unknown>[] = [{ "brand.id": brandSourceId }];
+    if (brandExact) conds.push({ "brand.name": brandExact });
+    and.push({ $or: conds });
+  } else if (brandExact) {
+    and.push({ "brand.name": brandExact });
+  } else if (q) {
+    and.push({ $or: [
+      { name:        { $regex: q, $options: "i" } },
+      { sku:         { $regex: q, $options: "i" } },
+      { category:    { $regex: q, $options: "i" } },
+      { "brand.name": { $regex: q, $options: "i" } },
+    ]});
+  }
+
+  if (category) and.push({ category: { $regex: category, $options: "i" } });
+
+  if (statusFilter === "active")   and.push({ $or: [{ status: "active" }, { isPublished: true }] });
+  else if (statusFilter === "draft") and.push({ isPublished: { $ne: true }, status: { $nin: ["active", "archived"] } });
+  else if (statusFilter === "archived") and.push({ status: "archived" });
+
+  if (suspended === "true")  and.push({ $or: [{ isSuspended: true }, { brandSuspended: true }] });
+  else if (suspended === "false") and.push({ isSuspended: { $ne: true }, brandSuspended: { $ne: true } });
+
+  if (source) and.push({ source });
+
+  if (stockFilter === "in_stock")    and.push({ $or: [{ totalStock: { $gt: 0 } }, { stock: { $gt: 0 } }] });
+  else if (stockFilter === "out_of_stock") and.push({ $nor: [{ totalStock: { $gt: 0 } }, { stock: { $gt: 0 } }] });
+
+  if (customOrders === "true")  and.push({ allowCustomOrders: true });
+  else if (customOrders === "false") and.push({ allowCustomOrders: { $ne: true } });
+
+  if (featured === "true") and.push({ isFeatured: true });
+
+  return and.length > 0 ? { $and: and } : {};
+}
+
 export async function GET(req: Request) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(req.url);
-    const q = searchParams.get("q")?.trim();
-    const brandExact = searchParams.get("brand")?.trim();
     const limit = Math.min(toNumber(searchParams.get("limit"), 100), 500);
-    const page = Math.max(toNumber(searchParams.get("page"), 1), 1);
-    const skip = (page - 1) * limit;
+    const page  = Math.max(toNumber(searchParams.get("page"), 1), 1);
+    const skip  = (page - 1) * limit;
 
-    const brandSourceId = searchParams.get("brandSourceId")?.trim();
-
-    let query: Record<string, unknown> = {};
-    if (brandSourceId) {
-      // Supabase brand: match by UUID or name so both product types are covered
-      const conditions: Record<string, unknown>[] = [{ "brand.id": brandSourceId }];
-      if (brandExact) conditions.push({ "brand.name": brandExact });
-      query = { $or: conditions };
-    } else if (brandExact) {
-      query = { "brand.name": brandExact };
-    } else if (q) {
-      query = {
-        $or: [
-          { name: { $regex: q, $options: "i" } },
-          { sku: { $regex: q, $options: "i" } },
-          { category: { $regex: q, $options: "i" } },
-          { "brand.name": { $regex: q, $options: "i" } },
-        ],
-      };
-    }
+    const query = buildProductQuery(searchParams);
 
     const client = await clientPromise;
     const collection = client.db(DB_NAME).collection("products");
@@ -204,6 +236,59 @@ export async function GET(req: Request) {
     return NextResponse.json({ products, total, page, limit }, { status: 200 });
   } catch (error) {
     console.error("GET /api/admin/global-catalog/products error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
+    const body = await req.json().catch(() => ({}));
+    const ids: string[] = Array.isArray(body.ids) ? body.ids : [];
+    if (!ids.length) return NextResponse.json({ deleted: 0 }, { status: 200 });
+
+    const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const result = await db.collection("products").deleteMany({ _id: { $in: objectIds } });
+    await recomputeCatalogCounts(db);
+    return NextResponse.json({ deleted: result.deletedCount }, { status: 200 });
+  } catch (error) {
+    console.error("DELETE /api/admin/global-catalog/products error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
+
+    const body = await req.json().catch(() => ({}));
+    const ids: string[] = Array.isArray(body.ids) ? body.ids : [];
+    if (!ids.length) return NextResponse.json({ updated: 0 }, { status: 200 });
+
+    const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+    const update: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.isSuspended !== undefined)    update.isSuspended    = Boolean(body.isSuspended);
+    if (body.allowCustomOrders !== undefined) update.allowCustomOrders = Boolean(body.allowCustomOrders);
+    if (body.isFeatured !== undefined)     update.isFeatured     = Boolean(body.isFeatured);
+    if (body.isPublished !== undefined) {
+      update.isPublished = Boolean(body.isPublished);
+      update.status = body.isPublished ? "active" : "draft";
+    }
+    if (body.status !== undefined) update.status = body.status;
+
+    const client = await clientPromise;
+    const result = await client.db(DB_NAME).collection("products").updateMany(
+      { _id: { $in: objectIds } },
+      { $set: update }
+    );
+    return NextResponse.json({ updated: result.modifiedCount }, { status: 200 });
+  } catch (error) {
+    console.error("PATCH /api/admin/global-catalog/products error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
