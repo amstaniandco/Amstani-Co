@@ -153,7 +153,7 @@ export default function ShippingSection({
                     type="button"
                     onClick={() => handleSetDefaultAddress(address.id)}
                     disabled={pendingAddressId === address.id}
-                    className="rounded-lg border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-50 disabled:opacity-50 dark:border-cyan-500/40 dark:text-cyan-200 dark:hover:bg-cyan-900/20"
+                    className="rounded-lg border border-[#4DB8B8]/40 px-3 py-1 text-xs font-semibold text-[#3aa3a3] transition hover:bg-[#4DB8B8]/10 disabled:opacity-50 dark:border-[#4DB8B8]/40 dark:text-[#4DB8B8] dark:hover:bg-[#4DB8B8]/15"
                   >
                     Make Default
                   </button>
@@ -181,7 +181,7 @@ export default function ShippingSection({
             <div className="flex justify-center">
               <button
                 onClick={() => setShowAddForm(true)}
-                className="rounded-full bg-cyan-400 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-cyan-500 transition"
+                className="rounded-full bg-[#4DB8B8] px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-[#3aa3a3] transition"
               >
                 + Add New Location
               </button>
@@ -280,7 +280,7 @@ export default function ShippingSection({
                   !newAddress.state ||
                   !newAddress.zip
                 }
-                className="px-4 py-2 rounded-lg bg-cyan-400 text-white text-sm font-semibold hover:bg-cyan-500 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-[#4DB8B8] text-white text-sm font-semibold hover:bg-[#3aa3a3] transition disabled:opacity-50"
               >
                 {isSaving ? "Saving..." : "Save Address"}
               </button>

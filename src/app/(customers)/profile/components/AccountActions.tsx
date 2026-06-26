@@ -56,7 +56,7 @@ export default function AccountActions({
         <button
           type="button"
           onClick={startTutorial}
-          className="w-full rounded-lg border bg-cyan-400 px-4 py-2 text-sm font-semibold text-white hover:from-amber-500 hover:to-orange-600 transition"
+          className="w-full rounded-lg bg-[#4DB8B8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3aa3a3] transition"
         >
           Website Tour
         </button>

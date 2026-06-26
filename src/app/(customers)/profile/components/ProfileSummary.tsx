@@ -137,7 +137,7 @@ export default function ProfileSummary({
             disabled={!isEditing || isUploadingAvatar || isSaving}
             aria-label="Upload profile photo"
             title={isEditing ? "Choose profile photo" : "Click Edit to change photo"}
-            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-cyan-400 text-white shadow-md transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800"
+            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#4DB8B8] text-white shadow-md transition hover:bg-[#3aa3a3] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800"
           >
             {isUploadingAvatar ? "..." : <Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
           </button>
@@ -248,7 +248,7 @@ export default function ProfileSummary({
         <div className="mt-6 flex justify-end">
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 rounded-lg bg-cyan-400 text-white text-sm font-semibold hover:bg-cyan-500 transition"
+            className="px-4 py-2 rounded-lg bg-[#4DB8B8] text-white text-sm font-semibold hover:bg-[#3aa3a3] transition"
           >
             Edit
           </button>
@@ -265,7 +265,7 @@ export default function ProfileSummary({
           <button
             onClick={handleSave}
             disabled={isSaving || isUploadingAvatar || !formData.name || !formData.email}
-            className="px-4 py-2 rounded-lg bg-cyan-400 text-white font-semibold hover:bg-cyan-500 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-[#4DB8B8] text-white font-semibold hover:bg-[#3aa3a3] transition disabled:opacity-50"
           >
             {isUploadingAvatar ? "Uploading..." : isSaving ? "Saving..." : "Save Changes"}
           </button>
