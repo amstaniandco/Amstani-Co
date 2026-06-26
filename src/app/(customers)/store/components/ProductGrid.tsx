@@ -650,10 +650,10 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
                   {/* Image */}
                   <Link
                     href={`/product?productId=${product.productId}&storeId=${storeId}`}
-                    className="relative block h-[300px] w-full overflow-hidden bg-white dark:bg-slate-900"
+                    className="relative block aspect-[3/4] w-full overflow-hidden bg-slate-50 dark:bg-slate-900"
                   >
                     {imgs[0] ? (
-                      <img src={imgs[0]} alt={product.name} className={`h-full w-full object-cover ${outOfStock ? "opacity-50 grayscale" : ""}`} />
+                      <img src={imgs[0]} alt={product.name} className={`absolute inset-0 h-full w-full object-contain p-1.5 ${outOfStock ? "opacity-50 grayscale" : ""}`} />
                     ) : (
                       <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />
                     )}

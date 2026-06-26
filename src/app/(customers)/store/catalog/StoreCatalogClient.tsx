@@ -295,7 +295,7 @@ export default function StoreCatalogClient() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse rounded-2xl bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
-                <div className="h-48 bg-slate-200 dark:bg-slate-700" />
+                <div className="aspect-[3/4] bg-slate-200 dark:bg-slate-700" />
                 <div className="p-3 space-y-2">
                   <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
                   <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
@@ -314,12 +314,12 @@ export default function StoreCatalogClient() {
                   key={product.productId}
                   type="button"
                   onClick={() => setSelected(product)}
-                  className="group text-left overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition hover:-translate-y-0.5"
+                  className="group text-left overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#68B8C1]/40 hover:shadow-lg hover:shadow-[#68B8C1]/10"
                 >
-                  <div className="relative h-48 bg-white dark:bg-slate-700 overflow-hidden">
+                  <div className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-700 overflow-hidden">
                     {img ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={img} alt={product.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain p-1.5" />
                     ) : (
                       <div className="h-full bg-slate-200 dark:bg-slate-600" />
                     )}

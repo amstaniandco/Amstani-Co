@@ -71,6 +71,14 @@ export const customerTutorialSteps: CustomerTutorialStep[] = [
     target: "customer-categories",
   },
   {
+    id: "categories-best-finds",
+    title: "",
+    description:
+      "The best finds from all stores across your state, no road trip required!",
+    page: "/home",
+    target: "customer-categories",
+  },
+  {
     id: "browse-stores",
     title: "",
     description:

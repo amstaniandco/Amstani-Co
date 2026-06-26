@@ -78,6 +78,7 @@ const STEP_ICONS: Record<string, LucideIcon> = {
   "america-map": Map,
   "live-stores": Wifi,
   "categories": LayoutGrid,
+  "categories-best-finds": LayoutGrid,
   "browse-stores": Search,
   "disclaimer": AlertTriangle,
   "on-sale": Tag,
