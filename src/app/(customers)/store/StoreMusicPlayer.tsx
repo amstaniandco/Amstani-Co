@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Music2, VolumeX } from "lucide-react";
+import { fetchStore } from "../../../lib/store-cache";
 
 const MUTE_KEY = "storeMusicMuted";
 const STORE_ID_KEY = "currentStoreId";
@@ -48,13 +49,10 @@ export default function StoreMusicPlayer() {
     if (!effectiveStoreId || effectiveStoreId === fetchedForRef.current) return;
     fetchedForRef.current = effectiveStoreId;
 
-    fetch(`/api/stores?storeId=${effectiveStoreId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        const store = (data?.stores ?? [])[0];
-        setMusicUrl(store?.settings?.musicUrl ?? null);
-      })
-      .catch(() => {});
+    // Shares the same request/cache as the store page — no duplicate fetch
+    fetchStore({ storeId: effectiveStoreId }).then((store) => {
+      setMusicUrl(store?.settings?.musicUrl ?? null);
+    });
   }, [onMusicPage, urlStoreId]);
 
   // Create / swap the audio element only when the track itself changes.

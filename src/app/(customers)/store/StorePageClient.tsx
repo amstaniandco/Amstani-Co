@@ -11,6 +11,7 @@ import ProductGrid from "./components/ProductGrid";
 import StoreRatingSection from "./components/StoreRatingSection";
 import { StoreProvider, type StoreInfo } from "../../../context/StoreContext";
 import { getSelectedState, subscribeSelectedState } from "../../../lib/state-preference";
+import { fetchStore } from "../../../lib/store-cache";
 
 export default function StorePageClient() {
   const searchParams = useSearchParams();
@@ -27,26 +28,12 @@ export default function StorePageClient() {
     });
   }, []);
 
-  // Load store data
+  // Load store data (shared cache dedupes with the music player & repeat visits)
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      try {
-        const endpoint = storeId
-          ? `/api/stores?storeId=${storeId}`
-          : selectedState
-            ? `/api/stores?state=${encodeURIComponent(selectedState)}`
-            : "/api/stores";
-        const res = await fetch(endpoint);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!mounted) return;
-        const s: StoreInfo = (data.stores || [])[0] || null;
-        setStore(s);
-      } catch (e) {
-        console.error("Failed to fetch store for store page", e);
-      }
-    })();
+    fetchStore({ storeId, state: selectedState }).then((s) => {
+      if (mounted) setStore(s);
+    });
     return () => { mounted = false; };
   }, [storeId, selectedState]);
 

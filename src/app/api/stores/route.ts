@@ -16,13 +16,31 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Invalid storeId" }, { status: 400 });
       }
 
-      const store = await db
+      // Single round-trip: fetch the store and its owner's phone together
+      const results = await db
         .collection("stores")
-        .findOne(
-          { _id: new ObjectId(storeId), status: "active" },
-          { projection: { _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1, isLive: 1, liveLink: 1, rating: 1, settings: 1, ownerId: 1 } }
-        );
+        .aggregate([
+          { $match: { _id: new ObjectId(storeId), status: "active" } },
+          {
+            $lookup: {
+              from: "users",
+              localField: "ownerId",
+              foreignField: "_id",
+              as: "owner",
+            },
+          },
+          { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+          {
+            $project: {
+              _id: 1, name: 1, logoUrl: 1, bannerUrl: 1, description: 1,
+              isLive: 1, liveLink: 1, rating: 1, settings: 1,
+              ownerPhone: { $ifNull: ["$owner.phone", ""] },
+            },
+          },
+        ])
+        .toArray();
 
+      const store = results[0];
       if (!store) return NextResponse.json({ stores: [] }, { status: 200 });
 
       // Only expose stores with a complete profile
@@ -35,15 +53,6 @@ export async function GET(req: Request) {
       );
 
       if (!profileComplete) return NextResponse.json({ stores: [] }, { status: 200 });
-
-      // Attach owner phone for WhatsApp contact
-      if (store.ownerId) {
-        const owner = await db
-          .collection("users")
-          .findOne({ _id: store.ownerId }, { projection: { phone: 1 } });
-        store.ownerPhone = owner?.phone ?? "";
-      }
-      delete store.ownerId;
 
       return NextResponse.json({ stores: [store] }, { status: 200 });
     }
