@@ -180,13 +180,14 @@ function mapProduct(product: Record<string, unknown>) {
 }
 
 export type SyncResult = {
-  newProducts:         number;
-  skippedProducts:     number;
-  newBrands:           number;
-  skippedBrands:       number;
-  newCategories:       number;
-  skippedCategories:   number;
-  brandCountsUpdated:  number;
+  newProducts:          number;
+  updatedPrices:        number;
+  skippedProducts:      number;
+  newBrands:            number;
+  skippedBrands:        number;
+  newCategories:        number;
+  skippedCategories:    number;
+  brandCountsUpdated:   number;
   categoryCountsUpdated: number;
   log: string[];
 };
@@ -229,21 +230,30 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     const syncableDocs = docs.filter((doc) => !suspendedIds.has(doc.sourceProductId));
 
     // ── Products ─────────────────────────────────────────────────────────────
-    // Only inserts records that do not yet exist (upsert with $setOnInsert).
-    // Existing records are never overwritten — they belong to this site now.
+    // New products are inserted in full via $setOnInsert.
+    // Existing products are not overwritten — they belong to this site now —
+    // except for prices, which are always kept in sync with Supabase.
     let newProducts = 0;
+    let updatedPrices = 0;
     if (syncableDocs.length > 0) {
       const result = await productsCol.bulkWrite(
-        syncableDocs.map((doc) => ({
-          updateOne: {
-            filter: { sourceProductId: doc.sourceProductId },
-            update:  { $setOnInsert: doc },
-            upsert:  true,
-          },
-        })),
+        syncableDocs.map((doc) => {
+          const { price, compareAtPrice, costPrice, ...rest } = doc;
+          return {
+            updateOne: {
+              filter: { sourceProductId: doc.sourceProductId },
+              update: {
+                $setOnInsert: rest,
+                $set: { price, compareAtPrice, costPrice },
+              },
+              upsert: true,
+            },
+          };
+        }),
         { ordered: false }
       );
-      newProducts = result.upsertedCount;
+      newProducts   = result.upsertedCount;
+      updatedPrices = result.modifiedCount;
     }
 
     await productsCol.createIndex({ sourceProductId: 1 }, { unique: true });
@@ -320,12 +330,13 @@ export async function runSupabaseSync(): Promise<SyncResult> {
 
     const { brandCount, categoryCount } = await recomputeCatalogCounts(db);
 
-    const skippedProducts   = docs.length        - newProducts;
+    const skippedProducts   = docs.length        - newProducts   - updatedPrices;
     const skippedBrands     = brands.length      - newBrands;
     const skippedCategories = categories.length  - newCategories;
 
     return {
       newProducts,
+      updatedPrices,
       skippedProducts,
       newBrands,
       skippedBrands,
@@ -335,7 +346,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       categoryCountsUpdated: categoryCount,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
-        `Products  : ${newProducts} new · ${skippedProducts} already here or suspended (skipped)${suspendedIds.size ? ` — ${suspendedIds.size} suspended` : ""}.`,
+        `Products  : ${newProducts} new · ${updatedPrices} prices updated · ${skippedProducts} unchanged or suspended (skipped)${suspendedIds.size ? ` — ${suspendedIds.size} suspended` : ""}.`,
         `Brands    : ${newBrands} new · ${skippedBrands} already here (skipped).`,
         `Categories: ${newCategories} new · ${skippedCategories} already here (skipped).`,
         `Product counts relinked: ${brandCount} brands · ${categoryCount} categories.`,
