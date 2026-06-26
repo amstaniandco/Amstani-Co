@@ -181,11 +181,13 @@ function mapProduct(product: Record<string, unknown>) {
 
 export type SyncResult = {
   newProducts:          number;
-  updatedPrices:        number;
+  updatedProducts:      number;
   skippedProducts:      number;
   newBrands:            number;
+  updatedBrands:        number;
   skippedBrands:        number;
   newCategories:        number;
+  updatedCategories:    number;
   skippedCategories:    number;
   brandCountsUpdated:   number;
   categoryCountsUpdated: number;
@@ -230,21 +232,21 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     const syncableDocs = docs.filter((doc) => !suspendedIds.has(doc.sourceProductId));
 
     // ── Products ─────────────────────────────────────────────────────────────
-    // New products are inserted in full via $setOnInsert.
-    // Existing products are not overwritten — they belong to this site now —
-    // except for prices, which are always kept in sync with Supabase.
+    // New products are fully inserted.
+    // Existing products: everything is updated from Supabase EXCEPT stock
+    // fields (stock, totalStock, stockStatus) which are managed locally.
     let newProducts = 0;
-    let updatedPrices = 0;
+    let updatedProducts = 0;
     if (syncableDocs.length > 0) {
       const result = await productsCol.bulkWrite(
         syncableDocs.map((doc) => {
-          const { price, compareAtPrice, costPrice, ...rest } = doc;
+          const { stock, totalStock, stockStatus, createdAt, ...updateFields } = doc;
           return {
             updateOne: {
               filter: { sourceProductId: doc.sourceProductId },
               update: {
-                $setOnInsert: rest,
-                $set: { price, compareAtPrice, costPrice },
+                $setOnInsert: { stock, totalStock, stockStatus, createdAt },
+                $set: { ...updateFields },
               },
               upsert: true,
             },
@@ -252,8 +254,8 @@ export async function runSupabaseSync(): Promise<SyncResult> {
         }),
         { ordered: false }
       );
-      newProducts   = result.upsertedCount;
-      updatedPrices = result.modifiedCount;
+      newProducts     = result.upsertedCount;
+      updatedProducts = result.modifiedCount;
     }
 
     await productsCol.createIndex({ sourceProductId: 1 }, { unique: true });
@@ -262,6 +264,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
 
     // ── Brands ───────────────────────────────────────────────────────────────
     let newBrands = 0;
+    let updatedBrands = 0;
     if (brands.length > 0) {
       const result = await brandsCol.bulkWrite(
         brands.map((brand) => ({
@@ -271,13 +274,15 @@ export async function runSupabaseSync(): Promise<SyncResult> {
               $setOnInsert: {
                 sourceBrandId: brand.id,
                 source:        "supabase-postgres",
-                name:          brand.name,
-                slug:          brand.slug,
                 status:        "active",
                 productCount:  0,
                 createdAt:     brand.createdAt ?? new Date(),
-                updatedAt:     brand.updatedAt ?? new Date(),
-                copiedAt:      new Date(),
+              },
+              $set: {
+                name:      brand.name,
+                slug:      brand.slug,
+                updatedAt: brand.updatedAt ?? new Date(),
+                copiedAt:  new Date(),
               },
             },
             upsert: true,
@@ -285,11 +290,13 @@ export async function runSupabaseSync(): Promise<SyncResult> {
         })),
         { ordered: false }
       );
-      newBrands = result.upsertedCount;
+      newBrands     = result.upsertedCount;
+      updatedBrands = result.modifiedCount;
     }
 
     // ── Categories ───────────────────────────────────────────────────────────
     let newCategories = 0;
+    let updatedCategories = 0;
     if (categories.length > 0) {
       const result = await categoriesCol.bulkWrite(
         categories.map((category) => ({
@@ -299,10 +306,13 @@ export async function runSupabaseSync(): Promise<SyncResult> {
               $setOnInsert: {
                 sourceCategoryId: category.id,
                 source:           "supabase-postgres",
-                name:             category.name,
-                slug:             category.slug,
                 status:           "active",
                 productCount:     0,
+                createdAt:        category.createdAt ?? new Date(),
+              },
+              $set: {
+                name:      category.name,
+                slug:      category.slug,
                 sizeVariables: (category.sizeVariables || []).map((sv: Record<string, unknown>) => ({
                   sourceSizeVariableId: sv.id,
                   name:      sv.name,
@@ -310,7 +320,6 @@ export async function runSupabaseSync(): Promise<SyncResult> {
                   sortOrder: sv.sortOrder,
                   isDefault: sv.isDefault ?? false,
                 })),
-                createdAt: category.createdAt ?? new Date(),
                 updatedAt: category.updatedAt ?? new Date(),
                 copiedAt:  new Date(),
               },
@@ -320,7 +329,8 @@ export async function runSupabaseSync(): Promise<SyncResult> {
         })),
         { ordered: false }
       );
-      newCategories = result.upsertedCount;
+      newCategories     = result.upsertedCount;
+      updatedCategories = result.modifiedCount;
     }
 
     await brandsCol.createIndex(    { sourceBrandId:    1 }, { unique: true, sparse: true });
@@ -330,25 +340,27 @@ export async function runSupabaseSync(): Promise<SyncResult> {
 
     const { brandCount, categoryCount } = await recomputeCatalogCounts(db);
 
-    const skippedProducts   = docs.length        - newProducts   - updatedPrices;
-    const skippedBrands     = brands.length      - newBrands;
-    const skippedCategories = categories.length  - newCategories;
+    const skippedProducts   = docs.length        - newProducts   - updatedProducts;
+    const skippedBrands     = brands.length      - newBrands     - updatedBrands;
+    const skippedCategories = categories.length  - newCategories - updatedCategories;
 
     return {
       newProducts,
-      updatedPrices,
+      updatedProducts,
       skippedProducts,
       newBrands,
+      updatedBrands,
       skippedBrands,
       newCategories,
+      updatedCategories,
       skippedCategories,
       brandCountsUpdated:    brandCount,
       categoryCountsUpdated: categoryCount,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
-        `Products  : ${newProducts} new · ${updatedPrices} prices updated · ${skippedProducts} unchanged or suspended (skipped)${suspendedIds.size ? ` — ${suspendedIds.size} suspended` : ""}.`,
-        `Brands    : ${newBrands} new · ${skippedBrands} already here (skipped).`,
-        `Categories: ${newCategories} new · ${skippedCategories} already here (skipped).`,
+        `Products  : ${newProducts} new · ${updatedProducts} updated (stock preserved) · ${skippedProducts} unchanged${suspendedIds.size ? ` — ${suspendedIds.size} suspended (skipped)` : ""}.`,
+        `Brands    : ${newBrands} new · ${updatedBrands} updated · ${skippedBrands} unchanged.`,
+        `Categories: ${newCategories} new · ${updatedCategories} updated · ${skippedCategories} unchanged.`,
         `Product counts relinked: ${brandCount} brands · ${categoryCount} categories.`,
         "Supabase was not modified — all operations were read-only.",
       ],
