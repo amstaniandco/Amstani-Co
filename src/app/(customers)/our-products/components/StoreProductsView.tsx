@@ -487,10 +487,10 @@ export default function StoreProductsView() {
                 >
                   <Link
                     href={`/product?productId=${product.productId}&storeId=${product.storeId}`}
-                    className="relative block w-full h-56 overflow-hidden bg-slate-100 dark:bg-slate-900"
+                    className="relative block w-full aspect-[3/4] overflow-hidden bg-slate-50 dark:bg-slate-900"
                   >
                     {img ? (
-                      <img src={img} alt={product.name} className="h-full w-full object-cover" />
+                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain p-1.5" />
                     ) : (
                       <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />
                     )}
