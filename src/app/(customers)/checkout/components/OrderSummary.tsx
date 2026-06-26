@@ -37,7 +37,7 @@ export default function OrderSummary() {
 
         <div className="flex justify-between items-center">
           <span className="flex items-center gap-1 text-black/80 dark:text-slate-300">
-            Total Tax
+            Sales Tax
             <span className="inline-flex h-3.5 w-3.5 cursor-default items-center justify-center rounded-full border border-gray-300 text-[9px] leading-none text-black/70 dark:border-slate-600 dark:text-slate-400">
               i
             </span>

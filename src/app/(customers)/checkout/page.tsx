@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
+import { Store, Info } from "lucide-react";
 import CheckoutForm from "./components/CheckoutForm";
 import StripePaymentForm from "./components/StripePaymentForm";
 import type { Address } from "../../../models/user";
@@ -21,6 +22,7 @@ type CartItem = {
   price: number;
   mainImage?: string | null;
   quantity: number;
+  selectedVariants?: { size?: string; color?: string };
 };
 
 type Step = "address" | "payment";
@@ -207,7 +209,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen px-2 py-4 dark:bg-slate-950">
-      <div className="mx-auto grid max-w-screen-xl grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_380px]">
+      <div className="mx-auto grid max-w-screen-xl grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_440px]">
 
         {/* Left: Address (step 1) or Payment (step 2) */}
         {step === "address" ? (
@@ -222,10 +224,10 @@ export default function CheckoutPage() {
         ) : (
           <div className="ui-panel rounded-2xl bg-white p-8 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
             <div className="flex justify-between items-start mb-1">
-              <h1 className="text-3xl font-bold tracking-tight text-black dark:text-slate-100">
+              <h1 className="text-xl font-bold tracking-tight text-black dark:text-slate-100 sm:text-3xl">
                 Secure Checkout
               </h1>
-              <span className="mt-2 text-xs text-black/80 dark:text-slate-300">Step 2 of 2</span>
+              <span className="mt-1 flex-shrink-0 whitespace-nowrap text-xs text-black/80 dark:text-slate-300 sm:mt-2">Step 2 of 2</span>
             </div>
             <p className="mb-4 text-sm text-black/80 dark:text-slate-300">
               Enter your card details to complete payment.
@@ -251,33 +253,54 @@ export default function CheckoutPage() {
         )}
 
         {/* Right: Order Summary (always visible) */}
-        <div className="ui-panel rounded-2xl bg-white p-7 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 lg:sticky lg:top-10">
-          <h2 className="mb-5 text-2xl font-bold tracking-tight text-black dark:text-slate-100">Order Summary</h2>
+        <div className="ui-panel rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 lg:sticky lg:top-10">
+          <h2 className="mb-3 text-xl font-bold tracking-tight text-black dark:text-slate-100">Order Summary</h2>
 
           {cartLoading ? (
             <p className="text-sm text-slate-400">Loading cart…</p>
           ) : cartItems.length === 0 ? (
             <p className="text-sm text-slate-400">Your cart is empty.</p>
           ) : (
-            <div className="space-y-4 text-sm text-black/80 dark:text-slate-300">
-              {/* Items by store */}
-              {Object.entries(storeGroups).map(([store, items]) => (
-                <div key={store}>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 mb-2">{store}</p>
-                  {items.map((item, idx) => (
-                    <div key={`${item.productId}-${item.storeId}-${idx}`} className="flex justify-between mb-1">
-                      <span className="truncate max-w-[200px]">{item.name} ×{item.quantity}</span>
-                      <span className="font-medium text-black dark:text-slate-100">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </span>
+            <div className="space-y-3 text-sm text-black/80 dark:text-slate-300">
+              {/* Items grouped by store — scrolls on desktop, full list on mobile */}
+              <div className="space-y-2.5 lg:max-h-[44vh] lg:overflow-y-auto lg:pr-1">
+                {Object.entries(storeGroups).map(([store, items]) => (
+                  <div key={store} className="rounded-lg border border-gray-100 p-2.5 dark:border-slate-700">
+                    {/* Prominent store name */}
+                    <div className="mb-2 flex items-center gap-1.5 border-b border-gray-100 pb-1.5 dark:border-slate-700">
+                      <Store className="h-3.5 w-3.5 flex-shrink-0 text-teal-600 dark:text-teal-400" />
+                      <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{store}</p>
                     </div>
-                  ))}
-                  <div className="h-px bg-gray-100 dark:bg-slate-700 mt-2" />
-                </div>
-              ))}
+
+                    {items.map((item, idx) => {
+                      const size = item.selectedVariants?.size;
+                      const color = item.selectedVariants?.color;
+                      return (
+                        <div key={`${item.productId}-${item.storeId}-${idx}`} className="mb-2 flex items-center gap-2 last:mb-0">
+                          {item.mainImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={item.mainImage} alt={item.name} className="h-9 w-9 flex-shrink-0 rounded-md object-cover" />
+                          ) : (
+                            <div className="h-9 w-9 flex-shrink-0 rounded-md bg-slate-100 dark:bg-slate-700" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium text-slate-800 dark:text-slate-100">{item.name}</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {[size && `Size ${size}`, color && `Color ${color}`, `Qty ${item.quantity}`].filter(Boolean).join(" · ")}
+                            </p>
+                          </div>
+                          <span className="whitespace-nowrap text-xs font-semibold text-black dark:text-slate-100">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
 
               {/* Breakdown */}
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-1.5 border-t border-gray-100 pt-2.5 dark:border-slate-700">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Subtotal</span>
                   <span>${displaySubtotal.toFixed(2)}</span>
@@ -291,7 +314,12 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Tax</span>
+                  <span className="flex items-center gap-1 text-slate-500">
+                    Sales Tax
+                    {serverTaxRate != null && step === "payment" && (
+                      <span className="text-[11px] text-slate-400">({serverTaxRate}%)</span>
+                    )}
+                  </span>
                   <span>
                     {stateCode || step === "payment" ? `$${displayTax.toFixed(2)}` : "—"}
                   </span>
@@ -299,13 +327,22 @@ export default function CheckoutPage() {
               </div>
 
               {/* Total */}
-              <div className="flex items-center justify-between border-t-2 border-gray-900 pt-4 dark:border-slate-600">
+              <div className="flex items-center justify-between border-t-2 border-gray-900 pt-3 dark:border-slate-600">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-gray-900 dark:text-slate-100">
                   Total
                 </span>
                 <span className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                   ${displayTotal.toFixed(2)}
                 </span>
+              </div>
+
+              {/* Sales tax explainer */}
+              <div className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-900/60">
+                <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+                <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                  Sales tax is calculated based on your shipping state{stateCode ? ` (${stateCode})` : ""} and applied
+                  to the order subtotal. This is the final amount you will be charged.
+                </p>
               </div>
             </div>
           )}

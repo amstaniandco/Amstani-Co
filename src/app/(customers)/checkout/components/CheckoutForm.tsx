@@ -39,10 +39,10 @@ export default function CheckoutForm({
   return (
     <div className="ui-panel rounded-2xl bg-white p-8 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
       <div className="flex justify-between items-start mb-1">
-        <h1 className="text-3xl font-bold tracking-tight text-black dark:text-slate-100">
+        <h1 className="text-xl font-bold tracking-tight text-black dark:text-slate-100 sm:text-3xl">
           Secure Checkout
         </h1>
-        <span className="mt-2 text-xs text-black/80 dark:text-slate-300">Step 1 of 2</span>
+        <span className="mt-1 flex-shrink-0 whitespace-nowrap text-xs text-black/80 dark:text-slate-300 sm:mt-2">Step 1 of 2</span>
       </div>
       <p className="mb-4 text-sm text-black/80 dark:text-slate-300">
         Your luxury selection is almost there.
@@ -56,9 +56,9 @@ export default function CheckoutForm({
         Shipping Details
       </p>
 
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2">
         {savedAddresses.length === 0 ? (
-          <div className="col-span-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400">
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400 sm:col-span-2">
             No saved shipping addresses yet. Add one from your profile or enter the details below.
           </div>
         ) : savedAddresses.map((addr) => (
@@ -79,11 +79,11 @@ export default function CheckoutForm({
             <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} leading-relaxed text-black dark:text-slate-300`}>
               {addr.street}
             </p>
-            <div className="flex justify-between items-center mt-1">
-              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} text-black dark:text-slate-300`}>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} min-w-0 flex-1 text-black dark:text-slate-300`}>
                 {addr.city}, {addr.state}
               </p>
-              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} font-semibold text-black dark:text-slate-100`}>
+              <p className={`${selectedAddress === addr.id ? "text-sm" : "text-xs"} flex-shrink-0 whitespace-nowrap font-semibold text-black dark:text-slate-100`}>
                 {addr.zip}
               </p>
             </div>
