@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TrendingDown, TrendingUp, RotateCcw } from "lucide-react";
+
+type CurrentAdjustment = {
+  type: "increase" | "decrease" | null;
+  percent: number;
+  updatedAt: string | null;
+};
 
 export default function PriceAdjustmentTab() {
   const [mode, setMode] = useState<"increase" | "decrease">("increase");
@@ -9,6 +15,23 @@ export default function PriceAdjustmentTab() {
   const [applying, setApplying] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [current, setCurrent] = useState<CurrentAdjustment | null>(null);
+
+  // Load the currently applied adjustment so the admin can see it at a glance.
+  const loadCurrent = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/global-catalog/compute-prices");
+      if (!res.ok) return;
+      const data = (await res.json()) as CurrentAdjustment;
+      setCurrent(data);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCurrent();
+  }, [loadCurrent]);
 
   async function apply() {
     const pct = parseFloat(pctInput);
@@ -38,6 +61,7 @@ export default function PriceAdjustmentTab() {
         text: `${mode === "increase" ? "Increased" : "Decreased"} ${data.updatedProducts} product prices by ${pct}%.`,
       });
       setPctInput("");
+      loadCurrent();
     } finally {
       setApplying(false);
     }
@@ -62,6 +86,7 @@ export default function PriceAdjustmentTab() {
         text: `Reset ${data.updatedProducts} products to their original prices.`,
       });
       setPctInput("");
+      loadCurrent();
     } finally {
       setResetting(false);
     }
@@ -112,6 +137,40 @@ export default function PriceAdjustmentTab() {
           percentage. The original price is always preserved — use{" "}
           <span className="font-semibold">Reset</span> to restore it.
         </p>
+
+        {/* Current adjustment indicator */}
+        <div className="mb-5">
+          {current && current.type && current.percent > 0 ? (
+            <div
+              className={`flex flex-wrap items-center gap-2 rounded-xl border px-4 py-3 text-sm ${
+                current.type === "increase"
+                  ? "border-[#58b8c3]/30 bg-[#58b8c3]/10 text-[#2f7f8d]"
+                  : "border-amber-300 bg-amber-50 text-amber-700"
+              }`}
+            >
+              {current.type === "increase" ? (
+                <TrendingUp className="h-4 w-4 shrink-0" />
+              ) : (
+                <TrendingDown className="h-4 w-4 shrink-0" />
+              )}
+              <span className="font-semibold">
+                Currently applied: {current.type === "increase" ? "+" : "−"}
+                {current.percent}%
+              </span>
+              <span className="opacity-70">
+                ({current.type === "increase" ? "Increase" : "Decrease"} on every
+                product&apos;s base price)
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              <RotateCcw className="h-4 w-4 shrink-0" />
+              <span className="font-medium">
+                No adjustment applied — products are at their original prices.
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-wrap items-end gap-3">
           {/* Mode toggle */}
