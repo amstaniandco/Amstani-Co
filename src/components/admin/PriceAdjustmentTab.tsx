@@ -158,8 +158,8 @@ export default function PriceAdjustmentTab() {
                 {current.percent}%
               </span>
               <span className="opacity-70">
-                ({current.type === "increase" ? "Increase" : "Decrease"} on every
-                product&apos;s base price)
+                ({current.type === "increase" ? "Increase" : "Decrease"}{" "}
+                on every product&apos;s base price)
               </span>
             </div>
           ) : (
