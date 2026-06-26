@@ -197,7 +197,7 @@ function QuickViewModal({
 
         <div className="overflow-y-auto">
           {/* Image carousel */}
-          <div className="relative bg-slate-50 h-64 sm:h-80 flex-shrink-0">
+          <div className="relative bg-slate-50 h-72 sm:h-96 flex-shrink-0">
             {images.length > 0 ? (
               <img
                 src={images[imgIdx]}
@@ -243,8 +243,24 @@ function QuickViewModal({
             )}
           </div>
 
+          {/* Thumbnail row */}
+          {images.length > 1 && (
+            <div className="flex gap-2 px-5 pt-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={() => setImgIdx(i)}
+                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${i === imgIdx ? "border-[#68B8C1]" : "border-slate-200"}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Details */}
-          <div className="p-5 space-y-4">
+          <div className="p-4 space-y-3">
             {/* Name + price */}
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -653,7 +669,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
                     className="relative block aspect-[3/4] w-full overflow-hidden bg-slate-50 dark:bg-slate-900"
                   >
                     {imgs[0] ? (
-                      <img src={imgs[0]} alt={product.name} className={`absolute inset-0 h-full w-full object-contain p-1.5 ${outOfStock ? "opacity-50 grayscale" : ""}`} />
+                      <img src={imgs[0]} alt={product.name} className={`absolute inset-0 h-full w-full object-contain ${outOfStock ? "opacity-50 grayscale" : ""}`} />
                     ) : (
                       <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />
                     )}

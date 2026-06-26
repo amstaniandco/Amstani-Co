@@ -80,12 +80,12 @@ export default function NewArrivalsSection({ products }: { products: NewArrivalP
               </button>
 
               <Link href={`/product?productId=${p.productId}&storeId=${p.storeId}`}>
-                <div className="relative h-[140px] overflow-hidden sm:h-[160px]">
+                <div className="relative h-[140px] overflow-hidden bg-slate-50 dark:bg-slate-900 sm:h-[160px]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={img}
                     alt={p.name}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => { (e.target as HTMLImageElement).src = "/assets/placeholder-store.svg"; }}
                   />
                   <span className="absolute left-2 top-2 rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">

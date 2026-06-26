@@ -64,7 +64,7 @@ function ProductDetailModal({ product, onClose }: {
 
         <div className="overflow-y-auto">
           {/* Images */}
-          <div className="relative bg-slate-50 dark:bg-slate-700 h-64 sm:h-80 flex-shrink-0">
+          <div className="relative bg-slate-50 dark:bg-slate-700 h-72 sm:h-96 flex-shrink-0">
             {imgs[imgIdx] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imgs[imgIdx]} alt={product.name} className="h-full w-full object-contain" />
@@ -108,7 +108,7 @@ function ProductDetailModal({ product, onClose }: {
                 <button
                   key={i}
                   onClick={() => setImgIdx(i)}
-                  className={`h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${i === imgIdx ? "border-[#68B8C1]" : "border-slate-200 dark:border-slate-600"}`}
+                  className={`h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${i === imgIdx ? "border-[#68B8C1]" : "border-slate-200 dark:border-slate-600"}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" className="h-full w-full object-cover" />
@@ -117,7 +117,7 @@ function ProductDetailModal({ product, onClose }: {
             </div>
           )}
 
-          <div className="p-5 space-y-5">
+          <div className="p-4 space-y-4">
             {/* Title + price */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -319,7 +319,7 @@ export default function StoreCatalogClient() {
                   <div className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-700 overflow-hidden">
                     {img ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain p-1.5" />
+                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain" />
                     ) : (
                       <div className="h-full bg-slate-200 dark:bg-slate-600" />
                     )}

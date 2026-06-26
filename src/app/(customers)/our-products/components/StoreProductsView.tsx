@@ -181,7 +181,7 @@ function QuickViewModal({
 
         <div className="overflow-y-auto">
           {/* Image carousel */}
-          <div className="relative bg-slate-50 h-64 sm:h-80 flex-shrink-0">
+          <div className="relative bg-slate-50 h-72 sm:h-96 flex-shrink-0">
             {images.length > 0 ? (
               <img src={images[imgIdx]} alt={product.name} className="h-full w-full object-contain" />
             ) : (
@@ -207,7 +207,23 @@ function QuickViewModal({
             )}
           </div>
 
-          <div className="p-5 space-y-4">
+          {/* Thumbnail row */}
+          {images.length > 1 && (
+            <div className="flex gap-2 px-5 pt-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={() => setImgIdx(i)}
+                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${i === imgIdx ? "border-[#68B8C1]" : "border-slate-200"}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-slate-900">{product.name}</h2>
@@ -490,7 +506,7 @@ export default function StoreProductsView() {
                     className="relative block w-full aspect-[3/4] overflow-hidden bg-slate-50 dark:bg-slate-900"
                   >
                     {img ? (
-                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain p-1.5" />
+                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain" />
                     ) : (
                       <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />
                     )}
