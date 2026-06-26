@@ -157,7 +157,7 @@ export const customerTutorialSteps: CustomerTutorialStep[] = [
   {
     id: "store-form",
     title: "",
-    description: "Ready to join the mall? Start with the form.",
+    description: "Ready to be a part of the digital mall? Start with the form.",
     page: null,
     target: "customer-store-form",
   },
@@ -165,7 +165,7 @@ export const customerTutorialSteps: CustomerTutorialStep[] = [
     id: "catalog",
     title: "",
     description:
-      "Spotted something you love in the Amstani & Co Catalog? Don't just stare at it. Screenshot it, send it to your favorite store, and ask them to bring it in for you. And hey, check a few stores while you're at it as prices can vary, and the best deal might be hanging out next door.",
+      "Spotted something you love in the Amstani & Co's Catalog? Don't just stare at it. Screenshot it, send it to your favorite store, and ask them to bring it in for you. And hey, check a few stores while you're at it as prices can vary, and the best deal might be hanging out next door.",
     page: null,
     target: "customer-store-catalog",
   },
@@ -174,8 +174,8 @@ export const customerTutorialSteps: CustomerTutorialStep[] = [
     title: "",
     description:
       "**Good news:** These products aren't stuck on a boat somewhere. They're already in stock, right here in the USA, and ready to head your way.",
-    page: "_store-catalog",
-    target: "customer-store-catalog",
+    page: "_store",
+    target: "customer-our-products",
   },
   {
     id: "store-rating",

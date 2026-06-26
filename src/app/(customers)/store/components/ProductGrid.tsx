@@ -527,7 +527,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
     return (
       <>
         {catalogBanner}
-        <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+        <div data-tutorial-id="customer-our-products" className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-5 flex items-center gap-2">
             <span className="text-[#5fb9c3]">📦</span>
             <h3 className="text-base font-semibold text-[#68B8C1]">Our Products</h3>
@@ -592,7 +592,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
       )}
 
       {/* ── Products section ─────────────────────────────────────────────── */}
-      <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+      <div data-tutorial-id="customer-our-products" className="mt-5 rounded-2xl bg-white p-5 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
         {/* Header row */}
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
