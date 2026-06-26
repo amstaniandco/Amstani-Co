@@ -218,7 +218,7 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
             <button
               onClick={handleAddCard}
               disabled={isSaving || !newCard.number || !newCard.name || !newCard.expiry || !newCard.cvc}
-              className="rounded-lg bg-cyan-400 px-4 py-2 font-semibold text-white hover:bg-cyan-500 transition disabled:opacity-50"
+              className="rounded-lg bg-[#4DB8B8] px-4 py-2 font-semibold text-white hover:bg-[#3aa3a3] transition disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save Card"}
             </button>
