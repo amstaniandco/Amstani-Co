@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "../../../components/global/ToastProvider";
 import { useWishlist } from "../../../hooks/useWishlist";
 import { fetchAndUpdateCartCount } from "../../../lib/cart-events";
@@ -76,10 +77,19 @@ function RatingBar({ label, percent }: { label: string; percent: number }) {
 }
 
 export default function ProductPageClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get("productId") ?? "";
   const storeId = searchParams.get("storeId") ?? "";
   const toast = useToast();
+
+  function handleBack() {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(storeId ? `/store/catalog?storeId=${storeId}` : "/");
+    }
+  }
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [productLoading, setProductLoading] = useState(true);
@@ -411,6 +421,14 @@ export default function ProductPageClient() {
     <>
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b1220]">
       <div className="mx-auto max-w-[1480px] px-4 py-4 md:px-6 md:py-10 lg:px-10">
+
+        <button
+          onClick={handleBack}
+          className="mb-4 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
 
         {/* ═══ MOBILE LAYOUT ═══ */}
         <div className="md:hidden space-y-4">
