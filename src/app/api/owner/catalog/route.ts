@@ -170,7 +170,7 @@ export async function GET() {
       };
     });
 
-  return NextResponse.json({ products, markupPercent, discountCap });
+  return NextResponse.json({ products, markupPercent, discountCap, adjustment: ownerAdj });
 }
 
 // Bulk-apply markup or discount to ALL products in this owner's catalog

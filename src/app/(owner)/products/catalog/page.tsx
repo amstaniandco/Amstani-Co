@@ -169,6 +169,9 @@ export default function OwnerCatalogPage() {
   const [applying,   setApplying]   = useState(false);
   const [resetting,  setResetting]  = useState(false);
   const [msg,        setMsg]        = useState<{ ok: boolean; text: string } | null>(null);
+  // The currently applied bulk adjustment (persisted server-side), shown above
+  // the controls so the owner can see it at a glance.
+  const [current,    setCurrent]    = useState<{ type: "markup" | "discount"; percent: number } | null>(null);
 
   useEffect(() => {
     fetch("/api/owner/catalog")
@@ -177,6 +180,7 @@ export default function OwnerCatalogPage() {
         setProducts(data.products ?? []);
         setMarkupPercent(data.markupPercent ?? 20);
         setDiscountCap(data.discountCap ?? 20);
+        setCurrent(data.adjustment ?? null);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -193,6 +197,7 @@ export default function OwnerCatalogPage() {
       setProducts(next);
       setMarkupPercent(data.markupPercent ?? 20);
       setDiscountCap(data.discountCap ?? 20);
+      setCurrent(data.adjustment ?? null);
       const added = next.length - before;
       setMsg({
         ok: true,
@@ -225,6 +230,7 @@ export default function OwnerCatalogPage() {
       // Refresh products
       const refreshed = await fetch("/api/owner/catalog").then((r) => r.json());
       setProducts(refreshed.products ?? []);
+      setCurrent(refreshed.adjustment ?? null);
     } finally { setApplying(false); }
   }
 
@@ -241,6 +247,7 @@ export default function OwnerCatalogPage() {
       setMsg({ ok: true, text: `Reset ${data.updatedCount} products to catalog prices.` });
       const refreshed = await fetch("/api/owner/catalog").then((r) => r.json());
       setProducts(refreshed.products ?? []);
+      setCurrent(refreshed.adjustment ?? null);
     } finally { setResetting(false); }
   }
 
@@ -282,6 +289,40 @@ export default function OwnerCatalogPage() {
           <p className="text-xs text-slate-500 mb-4">
             Apply a markup or discount to <span className="font-semibold">all products</span> instantly. Markup max: <span className="font-semibold">{markupPercent}%</span> · Discount max: <span className="font-semibold">{discountCap}%</span>.
           </p>
+
+          {/* Currently applied adjustment — stays applied to new products too */}
+          <div className="mb-4">
+            {current && current.percent > 0 ? (
+              <div
+                className={`flex flex-wrap items-center gap-2 rounded-xl border px-4 py-3 text-sm ${
+                  current.type === "markup"
+                    ? "border-teal-200 bg-teal-50 text-teal-700"
+                    : "border-amber-300 bg-amber-50 text-amber-700"
+                }`}
+              >
+                {current.type === "markup" ? (
+                  <TrendingUp className="h-4 w-4 shrink-0" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 shrink-0" />
+                )}
+                <span className="font-semibold">
+                  Currently applied: {current.type === "markup" ? "+" : "−"}
+                  {current.percent}%
+                </span>
+                <span className="opacity-70">
+                  ({current.type === "markup" ? "Markup" : "Discount"} on every
+                  product — auto-applied to new products too)
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                <RotateCcw className="h-4 w-4 shrink-0" />
+                <span className="font-medium">
+                  No adjustment applied — products are at their catalog prices.
+                </span>
+              </div>
+            )}
+          </div>
 
           <div className="flex flex-wrap items-end gap-3">
             {/* Mode toggle */}
