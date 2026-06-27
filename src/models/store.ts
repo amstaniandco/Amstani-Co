@@ -7,7 +7,8 @@ export type StoreTimings = {
 };
 
 export type StoreSettings = {
-  musicUrl?: string; // For the owner music feature
+  musicUrl?: string; // First applied track — kept for backward compatibility
+  musicUrls?: string[]; // Ordered playlist of applied tracks (play one after another)
   themeColor?: string;
   languages?: string[]; // E.g. ["English", "Spanish"]
 };

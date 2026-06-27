@@ -106,7 +106,35 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH — apply a track as the store's playing music
+// Recompute the store's applied playlist from the currently-applied tracks.
+// Tracks play one after another in upload order (oldest first), so the
+// customer-side order stays stable as tracks are toggled on and off.
+async function syncStorePlaylist(
+  db: ReturnType<typeof import("mongodb").MongoClient.prototype.db>,
+  storeId: ObjectId
+) {
+  const applied = await db
+    .collection("storeTracks")
+    .find({ storeId, isApplied: true })
+    .sort({ createdAt: 1 })
+    .toArray();
+  const musicUrls = applied.map((t) => t.url as string);
+
+  if (musicUrls.length === 0) {
+    await db.collection("stores").updateOne(
+      { _id: storeId },
+      { $set: { "settings.musicUrls": [], updatedAt: new Date() }, $unset: { "settings.musicUrl": "" } }
+    );
+  } else {
+    await db.collection("stores").updateOne(
+      { _id: storeId },
+      { $set: { "settings.musicUrls": musicUrls, "settings.musicUrl": musicUrls[0], updatedAt: new Date() } }
+    );
+  }
+}
+
+// PATCH — toggle whether a track is applied. Multiple tracks can be applied
+// at once; they play one after another in the store.
 export async function PATCH(req: NextRequest) {
   try {
     const tokenUser = await getUserFromToken();
@@ -124,15 +152,13 @@ export async function PATCH(req: NextRequest) {
     const track = await db.collection("storeTracks").findOne({ _id: new ObjectId(id), storeId: store._id });
     if (!track) return NextResponse.json({ error: "Track not found" }, { status: 404 });
 
-    // Un-apply all tracks, apply selected one
-    await db.collection("storeTracks").updateMany({ storeId: store._id }, { $set: { isApplied: false } });
-    await db.collection("storeTracks").updateOne({ _id: new ObjectId(id) }, { $set: { isApplied: true } });
-
-    // Save musicUrl on the store settings
-    await db.collection("stores").updateOne(
-      { _id: store._id },
-      { $set: { "settings.musicUrl": track.url, updatedAt: new Date() } }
+    // Toggle this track's applied state
+    await db.collection("storeTracks").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { isApplied: !track.isApplied } }
     );
+
+    await syncStorePlaylist(db, store._id);
 
     const updated = await db.collection("storeTracks").find({ storeId: store._id }).sort({ createdAt: -1 }).toArray();
     return NextResponse.json({ tracks: updated.map(mapTrack) });
@@ -160,20 +186,18 @@ export async function DELETE(req: NextRequest) {
     const track = await db.collection("storeTracks").findOne({ _id: new ObjectId(id), storeId: store._id });
     if (!track) return NextResponse.json({ error: "Track not found" }, { status: 404 });
 
-    // If this was the applied track, clear store music
-    if (track.isApplied) {
-      await db.collection("stores").updateOne(
-        { _id: store._id },
-        { $unset: { "settings.musicUrl": "" }, $set: { updatedAt: new Date() } }
-      );
-    }
-
     // Delete from Cloudinary
     if (track.cloudinaryId) {
       await cloudinary.uploader.destroy(track.cloudinaryId, { resource_type: "video" }).catch(() => {});
     }
 
     await db.collection("storeTracks").deleteOne({ _id: new ObjectId(id) });
+
+    // If this track was part of the playlist, recompute it
+    if (track.isApplied) {
+      await syncStorePlaylist(db, store._id);
+    }
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("DELETE /api/owner/music error:", error);

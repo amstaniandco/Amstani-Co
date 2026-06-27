@@ -18,6 +18,7 @@ export type StoreInfo = {
   settings?: {
     languages?: string[];
     musicUrl?: string;
+    musicUrls?: string[];
   };
 };
 

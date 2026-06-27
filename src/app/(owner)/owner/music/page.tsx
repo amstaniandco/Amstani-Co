@@ -91,9 +91,9 @@ export default function OwnerMusicPage() {
     setPlayingId(track._id);
   };
 
-  // ── Apply ───────────────────────────────────────────────────────────────────
-  const handleApply = async (track: Track) => {
-    if (track.isApplied) return;
+  // ── Apply / Unapply (toggle) ─────────────────────────────────────────────────
+  // Multiple tracks can be applied at once; they play one after another in store.
+  const handleToggleApply = async (track: Track) => {
     setApplying(track._id);
     try {
       const res = await fetch("/api/owner/music", {
@@ -147,7 +147,7 @@ export default function OwnerMusicPage() {
           <div>
             <h2 className="pt-1 text-[18px] font-semibold tracking-[0.06em] text-slate-900">Upload music file</h2>
             <p className="mt-1 text-[13px] text-slate-500">
-              Upload an MP3 track, then <strong>Apply</strong> it to play it in your store.
+              Upload MP3 tracks, then <strong>Apply</strong> one or more — applied tracks play one after another in your store.
             </p>
           </div>
 
@@ -213,22 +213,25 @@ export default function OwnerMusicPage() {
                   </span>
                 )}
 
-                {/* Apply button */}
+                {/* Apply / Remove toggle */}
                 <button
                   type="button"
-                  onClick={() => handleApply(track)}
-                  disabled={track.isApplied || applying === track._id}
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition ${
+                  onClick={() => handleToggleApply(track)}
+                  disabled={applying === track._id}
+                  className={`group shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition disabled:opacity-50 ${
                     track.isApplied
-                      ? "cursor-default bg-transparent text-[#007f88]"
-                      : "border border-slate-300 bg-white text-slate-700 hover:border-[#65bbc5] hover:text-[#65bbc5] disabled:opacity-50"
+                      ? "bg-white text-[#007f88] hover:bg-red-50 hover:text-red-500"
+                      : "border border-slate-300 bg-white text-slate-700 hover:border-[#65bbc5] hover:text-[#65bbc5]"
                   }`}
-                  aria-label={track.isApplied ? "Currently applied" : "Apply to store"}
+                  aria-label={track.isApplied ? "Remove from store playlist" : "Apply to store"}
                 >
                   {applying === track._id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : track.isApplied ? (
-                    "✓ Active"
+                    <>
+                      <span className="group-hover:hidden">✓ Active</span>
+                      <span className="hidden group-hover:inline">Remove</span>
+                    </>
                   ) : (
                     "Apply"
                   )}
