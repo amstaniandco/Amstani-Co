@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { MongoClient } from "mongodb";
 import { recomputeCatalogCounts } from "./catalog-counts";
+import { reapplyStoredAdjustment } from "./price-adjustment";
 
 function groupById<T extends Record<string, unknown>>(rows: T[], key: string): Record<string, T[]> {
   const map: Record<string, T[]> = {};
@@ -191,6 +192,7 @@ export type SyncResult = {
   skippedCategories:    number;
   brandCountsUpdated:   number;
   categoryCountsUpdated: number;
+  priceAdjustedProducts: number;
   log: string[];
 };
 
@@ -340,6 +342,11 @@ export async function runSupabaseSync(): Promise<SyncResult> {
 
     const { brandCount, categoryCount } = await recomputeCatalogCounts(db);
 
+    // Re-apply the admin's saved bulk price adjustment so new products and any
+    // products whose Supabase price changed instantly inherit the markup —
+    // without the admin having to re-enter the percentage after every sync.
+    const priceAdjustedProducts = await reapplyStoredAdjustment(db);
+
     const skippedProducts   = docs.length        - newProducts   - updatedProducts;
     const skippedBrands     = brands.length      - newBrands     - updatedBrands;
     const skippedCategories = categories.length  - newCategories - updatedCategories;
@@ -356,12 +363,16 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       skippedCategories,
       brandCountsUpdated:    brandCount,
       categoryCountsUpdated: categoryCount,
+      priceAdjustedProducts,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
         `Products  : ${newProducts} new · ${updatedProducts} updated (stock preserved) · ${skippedProducts} unchanged${suspendedIds.size ? ` — ${suspendedIds.size} suspended (skipped)` : ""}.`,
         `Brands    : ${newBrands} new · ${updatedBrands} updated · ${skippedBrands} unchanged.`,
         `Categories: ${newCategories} new · ${updatedCategories} updated · ${skippedCategories} unchanged.`,
         `Product counts relinked: ${brandCount} brands · ${categoryCount} categories.`,
+        priceAdjustedProducts > 0
+          ? `Price adjustment re-applied to ${priceAdjustedProducts} products.`
+          : "No saved price adjustment to re-apply.",
         "Supabase was not modified — all operations were read-only.",
       ],
     };
