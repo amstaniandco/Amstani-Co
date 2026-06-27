@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { MongoClient } from "mongodb";
+import { MongoClient, type Db } from "mongodb";
 import { recomputeCatalogCounts } from "./catalog-counts";
 import { reapplyStoredAdjustment } from "./price-adjustment";
 
@@ -193,8 +193,85 @@ export type SyncResult = {
   brandCountsUpdated:   number;
   categoryCountsUpdated: number;
   priceAdjustedProducts: number;
+  storeProductsRefreshed: number;
+  ownerCatalogRefreshed: number;
   log: string[];
 };
+
+// Pushes the latest global product data into the store-facing snapshot
+// collections so a Supabase change is reflected everywhere:
+//   • store_products (customer listings) — refresh the snapshot fields that
+//     shadow the live join (name, sku, mainImage).
+//   • owner_catalog (owner catalog views)  — refresh display/snapshot fields
+//     (name, images, category, brand, variants, stock, …).
+// Owner-set pricing (price, sellingPrice, discountPercent, isOnSale,
+// variantPrices) and the original-price baseline are deliberately left
+// untouched so store owners' customizations survive every sync.
+async function propagateGlobalChangesToStores(
+  db: Db
+): Promise<{ storeProducts: number; ownerCatalog: number }> {
+  const globalProducts = await db
+    .collection("products")
+    .find({})
+    .project({
+      _id: 1, name: 1, sku: 1, mainImage: 1, imageUrls: 1, images: 1,
+      category: 1, brand: 1, description: 1, variants: 1,
+      allowCustomOrders: 1, totalStock: 1, stock: 1, status: 1,
+    })
+    .toArray();
+
+  if (!globalProducts.length) return { storeProducts: 0, ownerCatalog: 0 };
+
+  const now = new Date();
+  const storeProductOps = [];
+  const ownerCatalogOps = [];
+
+  for (const p of globalProducts) {
+    const productId = p._id.toString();
+    const mainImage = (p.mainImage as string | null) ?? (p.imageUrls as string[] | undefined)?.[0] ?? null;
+
+    // Customer listings read most fields live from global; only these snapshot
+    // fields shadow the live values, so they are the ones that go stale.
+    storeProductOps.push({
+      updateMany: {
+        filter: { productId },
+        update: { $set: { name: p.name, sku: p.sku ?? "", mainImage, updatedAt: now } },
+      },
+    });
+
+    // Owner catalog stores a fuller snapshot — refresh everything except the
+    // owner's price/discount fields and the originalPrice baseline.
+    ownerCatalogOps.push({
+      updateMany: {
+        filter: { productId },
+        update: {
+          $set: {
+            name: p.name,
+            sku: p.sku ?? "",
+            description: p.description ?? "",
+            mainImage,
+            imageUrls: p.imageUrls ?? [],
+            images: p.images ?? [],
+            category: p.category ?? "",
+            brand: p.brand ?? null,
+            variants: p.variants ?? [],
+            allowCustomOrders: p.allowCustomOrders ?? false,
+            totalStock: p.totalStock ?? p.stock ?? 0,
+            status: p.status ?? "active",
+            updatedAt: now,
+          },
+        },
+      },
+    });
+  }
+
+  const [storeRes, ownerRes] = await Promise.all([
+    db.collection("store_products").bulkWrite(storeProductOps, { ordered: false }),
+    db.collection("owner_catalog").bulkWrite(ownerCatalogOps, { ordered: false }),
+  ]);
+
+  return { storeProducts: storeRes.modifiedCount, ownerCatalog: ownerRes.modifiedCount };
+}
 
 export async function runSupabaseSync(): Promise<SyncResult> {
   const SUPABASE_DATABASE_URL = process.env.SUPABASE_DATABASE_URL;
@@ -345,7 +422,14 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     // Re-apply the admin's saved bulk price adjustment so new products and any
     // products whose Supabase price changed instantly inherit the markup —
     // without the admin having to re-enter the percentage after every sync.
+    // Must run BEFORE propagation so per-variant adjusted prices flow downstream.
     const priceAdjustedProducts = await reapplyStoredAdjustment(db);
+
+    // Push the refreshed global product data (name, images, variants, stock,
+    // category, …) down into the store-facing snapshots so a Supabase change is
+    // reflected everywhere. Owner-set prices/discounts are never touched.
+    const { storeProducts: storeProductsRefreshed, ownerCatalog: ownerCatalogRefreshed } =
+      await propagateGlobalChangesToStores(db);
 
     const skippedProducts   = docs.length        - newProducts   - updatedProducts;
     const skippedBrands     = brands.length      - newBrands     - updatedBrands;
@@ -364,6 +448,8 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       brandCountsUpdated:    brandCount,
       categoryCountsUpdated: categoryCount,
       priceAdjustedProducts,
+      storeProductsRefreshed,
+      ownerCatalogRefreshed,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
         `Products  : ${newProducts} new · ${updatedProducts} updated (stock preserved) · ${skippedProducts} unchanged${suspendedIds.size ? ` — ${suspendedIds.size} suspended (skipped)` : ""}.`,
@@ -373,6 +459,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
         priceAdjustedProducts > 0
           ? `Price adjustment re-applied to ${priceAdjustedProducts} products.`
           : "No saved price adjustment to re-apply.",
+        `Store snapshots refreshed: ${storeProductsRefreshed} customer listings · ${ownerCatalogRefreshed} catalog entries.`,
         "Supabase was not modified — all operations were read-only.",
       ],
     };
