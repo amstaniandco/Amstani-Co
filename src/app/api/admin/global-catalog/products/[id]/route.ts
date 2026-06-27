@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../../lib/db";
 import { getUserFromToken } from "../../../../../../lib/auth";
 import { recomputeCatalogCounts } from "../../../../../../lib/catalog-counts";
+import { reapplyStoredAdjustment, resetAdjustment } from "../../../../../../lib/price-adjustment";
 
 type ProductPayload = {
   name?: string;
@@ -213,8 +214,18 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     }
 
     const client = await clientPromise;
-    const result = await client.db(DB_NAME).collection("products").updateOne({ _id: objectId }, { $set: updates });
+    const db = client.db(DB_NAME);
+    const result = await db.collection("products").updateOne({ _id: objectId }, { $set: updates });
     if (!result.matchedCount) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+
+    // Keep the price adjustment in sync with eligibility:
+    // - unsuspend → re-apply the saved adjustment automatically
+    // - suspend   → strip the adjustment, restoring the original price
+    if (body.isSuspended === false) {
+      await reapplyStoredAdjustment(db, { _id: objectId });
+    } else if (body.isSuspended === true) {
+      await resetAdjustment(db, { _id: objectId });
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {

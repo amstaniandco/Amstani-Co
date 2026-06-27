@@ -90,11 +90,12 @@ function adjustVariants(variants: Variant[] | undefined, factor: number): Varian
 export async function applyAdjustmentToProducts(
   db: Db,
   type: AdjustmentType,
-  percent: number
+  percent: number,
+  extraFilter: Record<string, unknown> = {}
 ): Promise<number> {
   const products = await db
     .collection("products")
-    .find(ELIGIBLE_PRODUCTS_FILTER)
+    .find({ ...ELIGIBLE_PRODUCTS_FILTER, ...extraFilter })
     .project({ _id: 1, price: 1, variants: 1 })
     .toArray();
 
@@ -140,11 +141,16 @@ export async function applyAdjustmentToProducts(
 }
 
 // Removes the adjustment from every product, restoring original prices.
-// Returns the number of products modified.
-export async function resetAdjustment(db: Db): Promise<number> {
+// Returns the number of products modified. `extraFilter` narrows the scope,
+// e.g. { _id: { $in: ids } } to strip the adjustment from just-suspended or
+// just-unpublished products while leaving the rest of the catalog adjusted.
+export async function resetAdjustment(
+  db: Db,
+  extraFilter: Record<string, unknown> = {}
+): Promise<number> {
   const products = await db
     .collection("products")
-    .find({ price: { $exists: true, $gt: 0 } })
+    .find({ price: { $exists: true, $gt: 0 }, ...extraFilter })
     .project({ _id: 1, variants: 1 })
     .toArray();
 
@@ -176,11 +182,17 @@ export async function resetAdjustment(db: Db): Promise<number> {
   return result.modifiedCount;
 }
 
-// Re-applies the currently persisted adjustment (if any) to all eligible
-// products. Used after a Supabase sync so new/updated products instantly inherit
-// the admin's markup. No-op when no adjustment is stored.
-export async function reapplyStoredAdjustment(db: Db): Promise<number> {
+// Re-applies the currently persisted adjustment (if any) to eligible products.
+// Used after a Supabase sync (no filter) so new/updated products instantly
+// inherit the admin's markup, and after publish/unsuspend toggles (with a
+// filter) so products that just became eligible get the markup automatically.
+// No-op when no adjustment is stored. `extraFilter` narrows the scope, e.g.
+// { _id: { $in: ids } } or { "brand.name": "Acme" }.
+export async function reapplyStoredAdjustment(
+  db: Db,
+  extraFilter: Record<string, unknown> = {}
+): Promise<number> {
   const stored = await getStoredAdjustment(db);
   if (!stored.type || stored.percent <= 0) return 0;
-  return applyAdjustmentToProducts(db, stored.type, stored.percent);
+  return applyAdjustmentToProducts(db, stored.type, stored.percent, extraFilter);
 }

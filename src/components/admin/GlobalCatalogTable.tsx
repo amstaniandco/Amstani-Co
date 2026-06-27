@@ -86,6 +86,9 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
   const [total,      setTotal]      = useState(0);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState("");
+  // Bumped after actions that change a product's price adjustment server-side
+  // (publish/unpublish/suspend/activate) so the table re-fetches the new prices.
+  const [reloadTick, setReloadTick] = useState(0);
   const [showFilters, setShowFilters] = useState(saved.showFilters ?? false);
   const [bulkLoading, setBulkLoading] = useState(false);
 
@@ -184,7 +187,7 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
     }, 250);
 
     return () => { window.clearTimeout(timeout); controller.abort(); };
-  }, [search, page, refreshKey, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
+  }, [search, page, refreshKey, reloadTick, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
 
   // ── Single-row actions ──────────────────────────────────────────────────────
 
@@ -228,6 +231,9 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
       });
       if (!res.ok) { const d = await res.json(); setError(d.error || "Failed to update"); return; }
       setProducts((prev) => prev.map((p) => p._id === product._id ? { ...p, isSuspended: !current } : p));
+      // Suspend/activate applies or removes the price adjustment server-side —
+      // re-fetch so the displayed price updates without a manual refresh.
+      setReloadTick((t) => t + 1);
     } catch { setError("Failed to update suspension"); }
   };
 
@@ -265,6 +271,9 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
       toast.success(successMsg);
       setProducts((prev) => prev.map((p) => selectedIds.has(p._id) ? { ...p, ...update } : p));
       setSelectedIds(new Set());
+      // Publish/unpublish/suspend/activate applies or removes the price
+      // adjustment server-side — re-fetch so displayed prices update at once.
+      setReloadTick((t) => t + 1);
     } catch { toast.error("Bulk update failed"); }
     finally { setBulkLoading(false); }
   };

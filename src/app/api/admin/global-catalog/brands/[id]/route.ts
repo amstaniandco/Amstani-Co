@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../../lib/db";
 import { requireAdminResponse, slugify } from "../../../../../../lib/admin-catalog-taxonomy";
 import { recomputeCatalogCounts } from "../../../../../../lib/catalog-counts";
+import { reapplyStoredAdjustment, resetAdjustment } from "../../../../../../lib/price-adjustment";
 
 function toObjectId(id: string) {
   return ObjectId.isValid(id) ? new ObjectId(id) : null;
@@ -117,6 +118,15 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       filter,
       { $set: { brandSuspended, updatedAt: now } }
     );
+
+    // Keep the price adjustment in sync with eligibility for all the brand's
+    // products: re-activate → re-apply the saved adjustment; suspend → strip it,
+    // restoring original prices.
+    if (!brandSuspended) {
+      await reapplyStoredAdjustment(db, filter);
+    } else {
+      await resetAdjustment(db, filter);
+    }
 
     const updated = await db.collection("brands").findOne({ _id: objectId });
     return NextResponse.json({ brand: updated }, { status: 200 });

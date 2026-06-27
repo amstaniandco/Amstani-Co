@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
 import { recomputeCatalogCounts } from "../../../../../lib/catalog-counts";
+import { reapplyStoredAdjustment, resetAdjustment } from "../../../../../lib/price-adjustment";
 
 type ProductImageInput = {
   imageUrl: string;
@@ -282,10 +283,21 @@ export async function PATCH(req: Request) {
     if (body.status !== undefined) update.status = body.status;
 
     const client = await clientPromise;
-    const result = await client.db(DB_NAME).collection("products").updateMany(
+    const db = client.db(DB_NAME);
+    const result = await db.collection("products").updateMany(
       { _id: { $in: objectIds } },
       { $set: update }
     );
+
+    // Keep the price adjustment in sync with eligibility:
+    // - publish / unsuspend → re-apply the saved adjustment automatically
+    // - unpublish / suspend → strip the adjustment, restoring original prices
+    if (body.isPublished === true || body.isSuspended === false) {
+      await reapplyStoredAdjustment(db, { _id: { $in: objectIds } });
+    } else if (body.isPublished === false || body.isSuspended === true) {
+      await resetAdjustment(db, { _id: { $in: objectIds } });
+    }
+
     return NextResponse.json({ updated: result.modifiedCount }, { status: 200 });
   } catch (error) {
     console.error("PATCH /api/admin/global-catalog/products error:", error);
