@@ -69,6 +69,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -145,6 +146,7 @@ export default function LoginPage() {
             </h1>
           </div>
 
+          {!showEmailLogin && (
           <div className="space-y-5">
             <button
               type="button"
@@ -173,52 +175,61 @@ export default function LoginPage() {
               <span>Continue with X</span>
             </button>
           </div>
+          )}
 
-          <div className="my-7 flex items-center gap-3 text-[#7a7a7a] dark:text-slate-400">
-            <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
-            <span className="text-xs">or</span>
-            <div className="ui-divider h-px flex-1 bg-[#9f9f9f]" />
-          </div>
+          {showEmailLogin && (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <label className="block">
+                  <span className="text-sm text-black dark:text-slate-200">
+                    Email
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="Email"
+                    className="ui-input mt-1 w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-black placeholder:text-gray-400 outline-none disabled:bg-gray-100 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
+                  />
+                </label>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="block">
-              <span className="text-sm text-black dark:text-slate-200">
-                Email
-              </span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-                placeholder="Email"
-                className="ui-input mt-1 w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-black placeholder:text-gray-400 outline-none disabled:bg-gray-100 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
-              />
-            </label>
+                <label className="block">
+                  <span className="text-sm text-black dark:text-slate-200">
+                    Password
+                  </span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="Password"
+                    className="ui-input mt-1 w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-black placeholder:text-gray-400 outline-none disabled:bg-gray-100 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
+                  />
+                </label>
 
-            <label className="block">
-              <span className="text-sm text-black dark:text-slate-200">
-                Password
-              </span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-                placeholder="Password"
-                className="ui-input mt-1 w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-black placeholder:text-gray-400 outline-none disabled:bg-gray-100 dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
-              />
-            </label>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-6 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] disabled:bg-gray-400"
+                >
+                  {loading ? "Logging in..." : "Log in"}
+                </button>
+              </form>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-6 w-full rounded-2xl bg-[#6FAFB3] px-6 py-4 text-[16px] font-semibold text-white transition hover:bg-[#619da1] disabled:bg-gray-400"
-            >
-              {loading ? "Logging in..." : "Log in"}
-            </button>
-          </form>
+              <p className="mt-4 text-center text-[13px] text-black/60 dark:text-slate-400">
+                <button
+                  type="button"
+                  onClick={() => setShowEmailLogin(false)}
+                  className="font-medium text-[#6FAFB3] underline-offset-2 hover:underline"
+                >
+                  ← Back to social login
+                </button>
+              </p>
+            </>
+          )}
 
           <p className="mt-8 text-center text-[15px] text-black/80 dark:text-slate-300">
             Don&apos;t have an account?{" "}
@@ -229,6 +240,19 @@ export default function LoginPage() {
               Sign up here
             </Link>
           </p>
+
+          {!showEmailLogin && (
+            <p className="mt-3 text-center text-[15px] text-black/80 dark:text-slate-300">
+              Admin or store owner?{" "}
+              <button
+                type="button"
+                onClick={() => setShowEmailLogin(true)}
+                className="font-medium text-[#6FAFB3] hover:text-[#5b9ca1]"
+              >
+                Sign in with email
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </main>
