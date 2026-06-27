@@ -67,6 +67,35 @@ function clearProgress() {
   try { localStorage.removeItem(PROGRESS_KEY); } catch { /* ignore */ }
 }
 
+// ── Auth helpers ──────────────────────────────────────────────────────────────
+// The login API sets a non-httpOnly `token` cookie (a JWT whose payload carries
+// the user's role), so we can read it client-side to decide whether to auto-start.
+
+function getCookieValue(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const encodedName = `${encodeURIComponent(name)}=`;
+  const entry = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(encodedName));
+  if (!entry) return null;
+  return decodeURIComponent(entry.slice(encodedName.length));
+}
+
+/** True only when a logged-in customer (role "user") has an active session. */
+function isLoggedInCustomer(): boolean {
+  const token = getCookieValue("token");
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    return (payload.role ?? "user") === "user";
+  } catch {
+    return false;
+  }
+}
+
 // ── Icon map ─────────────────────────────────────────────────────────────────
 
 const STEP_ICONS: Record<string, LucideIcon> = {
@@ -264,13 +293,20 @@ export function CustomerTutorialProvider({ children }: { children: React.ReactNo
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted]);
 
-  // Auto-start on first visit to landing page (all visitors, logged in or not)
+  // Auto-start on the landing page only for a logged-in customer who hasn't seen
+  // the tutorial yet. This means a first-time customer gets the tour right after
+  // signing in (login redirects them to "/"), while anonymous visitors who are
+  // just browsing the public landing page are never interrupted by it.
   useEffect(() => {
     if (!mounted) return;
     try {
       // Don't auto-start if a tutorial is already being resumed.
       if (readProgress()?.active) return;
-      if (!localStorage.getItem(STORAGE_KEY) && pathname === "/") {
+      if (
+        !localStorage.getItem(STORAGE_KEY) &&
+        pathname === "/" &&
+        isLoggedInCustomer()
+      ) {
         const t = setTimeout(() => { setStepIndex(0); setIsActive(true); }, 1400);
         return () => clearTimeout(t);
       }
