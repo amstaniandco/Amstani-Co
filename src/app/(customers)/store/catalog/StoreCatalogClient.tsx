@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
@@ -38,6 +38,23 @@ function ProductDetailModal({ product, onClose }: {
 
   const [imgIdx, setImgIdx] = useState(0);
 
+  // Carousel navigation — buttons on desktop, swipe on touch devices.
+  const goPrev = () => setImgIdx((i) => Math.max(0, i - 1));
+  const goNext = () => setImgIdx((i) => Math.min(imgs.length - 1, i + 1));
+  const touchStartX = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) goNext();
+      else goPrev();
+    }
+    touchStartX.current = null;
+  };
+
   const sizes = [...new Set((product.variants ?? []).map((v) => v.size).filter(Boolean))] as string[];
   const colors = [...new Set((product.variants ?? []).map((v) => v.color).filter(Boolean))] as string[];
 
@@ -64,7 +81,11 @@ function ProductDetailModal({ product, onClose }: {
 
         <div className="overflow-y-auto">
           {/* Images */}
-          <div className="relative bg-slate-50 dark:bg-slate-700 h-72 sm:h-96 flex-shrink-0">
+          <div
+            className="relative bg-slate-50 dark:bg-slate-700 h-72 sm:h-96 flex-shrink-0"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
             {imgs[imgIdx] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imgs[imgIdx]} alt={product.name} className="h-full w-full object-contain" />
@@ -74,14 +95,14 @@ function ProductDetailModal({ product, onClose }: {
             {imgs.length > 1 && (
               <>
                 <button
-                  onClick={() => setImgIdx((i) => Math.max(0, i - 1))}
+                  onClick={goPrev}
                   disabled={imgIdx === 0}
                   className="absolute left-3 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/80 shadow disabled:opacity-30 transition"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setImgIdx((i) => Math.min(imgs.length - 1, i + 1))}
+                  onClick={goNext}
                   disabled={imgIdx === imgs.length - 1}
                   className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/80 shadow disabled:opacity-30 transition"
                 >
@@ -100,22 +121,6 @@ function ProductDetailModal({ product, onClose }: {
               </>
             )}
           </div>
-
-          {/* Thumbnail row */}
-          {imgs.length > 1 && (
-            <div className="flex gap-2 px-5 pt-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {imgs.map((src, i) => (
-                <button
-                  key={i}
-                  onClick={() => setImgIdx(i)}
-                  className={`h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${i === imgIdx ? "border-[#68B8C1]" : "border-slate-200 dark:border-slate-600"}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
 
           <div className="p-4 space-y-4">
             {/* Title + price */}
