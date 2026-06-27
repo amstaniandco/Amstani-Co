@@ -78,7 +78,7 @@ export async function proxy(req: NextRequest) {
     const role = await getRole(req);
     if (role === "admin") return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     if (role === "owner") return NextResponse.redirect(new URL("/owner/profile", req.url));
-    if (role === "user")  return NextResponse.redirect(new URL("/home", req.url));
+    if (role === "user")  return NextResponse.redirect(new URL("/", req.url));
   }
 
   return NextResponse.next();

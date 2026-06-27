@@ -57,7 +57,7 @@ export default function OAuthStatePage() {
         return;
       }
 
-      router.push("/home");
+      router.push("/");
     } catch {
       toast.error("An error occurred. Please try again.");
     } finally {
