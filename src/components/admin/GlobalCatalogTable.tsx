@@ -78,29 +78,31 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
   const confirm = useConfirm();
   const toast   = useToast();
 
-  const [saved] = useState(loadSavedState);
-
   const [products,   setProducts]   = useState<CatalogProductRow[]>([]);
-  const [search,     setSearch]     = useState(saved.search ?? "");
-  const [page,       setPage]       = useState(saved.page ?? 1);
+  const [search,     setSearch]     = useState("");
+  const [page,       setPage]       = useState(1);
   const [total,      setTotal]      = useState(0);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState("");
   // Bumped after actions that change a product's price adjustment server-side
   // (publish/unpublish/suspend/activate) so the table re-fetches the new prices.
   const [reloadTick, setReloadTick] = useState(0);
-  const [showFilters, setShowFilters] = useState(saved.showFilters ?? false);
+  const [showFilters, setShowFilters] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  // Saved search/filters/page are restored after mount (see effect below), not
+  // during render, so SSR and the first client render match (no hydration
+  // mismatch). `hydrated` gates fetching/persisting until that restore is done.
+  const [hydrated, setHydrated] = useState(false);
 
   // Filters
-  const [statusFilter,       setStatusFilter]       = useState(saved.statusFilter ?? "");
-  const [suspendedFilter,    setSuspendedFilter]    = useState(saved.suspendedFilter ?? "");
-  const [sourceFilter,       setSourceFilter]       = useState(saved.sourceFilter ?? "");
-  const [stockFilter,        setStockFilter]        = useState(saved.stockFilter ?? "");
-  const [customOrdersFilter, setCustomOrdersFilter] = useState(saved.customOrdersFilter ?? "");
-  const [featuredFilter,     setFeaturedFilter]     = useState(saved.featuredFilter ?? "");
-  const [categoryFilter,     setCategoryFilter]     = useState(saved.categoryFilter ?? "");
-  const [brandFilter,        setBrandFilter]        = useState(saved.brandFilter ?? "");
+  const [statusFilter,       setStatusFilter]       = useState("");
+  const [suspendedFilter,    setSuspendedFilter]    = useState("");
+  const [sourceFilter,       setSourceFilter]       = useState("");
+  const [stockFilter,        setStockFilter]        = useState("");
+  const [customOrdersFilter, setCustomOrdersFilter] = useState("");
+  const [featuredFilter,     setFeaturedFilter]     = useState("");
+  const [categoryFilter,     setCategoryFilter]     = useState("");
+  const [brandFilter,        setBrandFilter]        = useState("");
 
   // Filter dropdown options
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
@@ -132,31 +134,61 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
 
   const clearAll = () => { setSearch(""); clearFilters(); };
 
-  // Persist search/filters/page so they survive editing or opening a product
+  // Signature of all filters; used to detect genuine user-initiated changes.
+  const filterSig = [search, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter].join("|");
+  const prevFilterSig = useRef(filterSig);
+
+  // Restore persisted search/filters/page once, on the client, after mount.
+  // Done in an effect (not during render) so SSR and the first client render
+  // are identical — reading sessionStorage during render caused the hydration
+  // mismatch (server page 1 vs client saved page).
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const saved = loadSavedState();
+    if (saved.search != null)             setSearch(saved.search);
+    if (saved.page != null)               setPage(saved.page);
+    if (saved.showFilters != null)        setShowFilters(saved.showFilters);
+    if (saved.statusFilter != null)       setStatusFilter(saved.statusFilter);
+    if (saved.suspendedFilter != null)    setSuspendedFilter(saved.suspendedFilter);
+    if (saved.sourceFilter != null)       setSourceFilter(saved.sourceFilter);
+    if (saved.stockFilter != null)        setStockFilter(saved.stockFilter);
+    if (saved.customOrdersFilter != null) setCustomOrdersFilter(saved.customOrdersFilter);
+    if (saved.featuredFilter != null)     setFeaturedFilter(saved.featuredFilter);
+    if (saved.categoryFilter != null)     setCategoryFilter(saved.categoryFilter);
+    if (saved.brandFilter != null)        setBrandFilter(saved.brandFilter);
+    // Baseline the restored filters so the reset-to-page-1 effect below doesn't
+    // fire for the restoration itself and wipe the restored page.
+    prevFilterSig.current = [
+      saved.search ?? "", saved.statusFilter ?? "", saved.suspendedFilter ?? "",
+      saved.sourceFilter ?? "", saved.stockFilter ?? "", saved.customOrdersFilter ?? "",
+      saved.featuredFilter ?? "", saved.categoryFilter ?? "", saved.brandFilter ?? "",
+    ].join("|");
+    setHydrated(true);
+  }, []);
+
+  // Persist search/filters/page so they survive editing or opening a product.
+  // Gated on `hydrated` so defaults never overwrite saved state before restore.
+  useEffect(() => {
+    if (!hydrated || typeof window === "undefined") return;
     const toSave: SavedState = {
       search, page, showFilters,
       statusFilter, suspendedFilter, sourceFilter, stockFilter,
       customOrdersFilter, featuredFilter, categoryFilter, brandFilter,
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  }, [search, page, showFilters, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
+  }, [hydrated, search, page, showFilters, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
 
-  // Reset page when filters/search actually change. We compare against a
-  // signature seeded with the *restored* values, so the saved page survives
-  // remounts (after editing/opening a product) and dev StrictMode re-runs —
-  // it only resets to page 1 on a genuine user-initiated filter/search change.
-  const filterSig = [search, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter].join("|");
-  const prevFilterSig = useRef(filterSig);
+  // Reset to page 1 only on a genuine user-initiated filter/search change (after
+  // hydration), never during the initial restore or dev StrictMode re-runs.
   useEffect(() => {
+    if (!hydrated) return;
     if (prevFilterSig.current === filterSig) return;
     prevFilterSig.current = filterSig;
     setPage(1); setSelectedIds(new Set());
-  }, [filterSig]);
+  }, [hydrated, filterSig]);
 
   // Fetch products
   useEffect(() => {
+    if (!hydrated) return; // wait until saved page/filters are restored
     const controller = new AbortController();
     setLoading(true);
     setError("");
@@ -187,7 +219,7 @@ export default function GlobalCatalogTable({ refreshKey = 0, onEdit }: Props) {
     }, 250);
 
     return () => { window.clearTimeout(timeout); controller.abort(); };
-  }, [search, page, refreshKey, reloadTick, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
+  }, [hydrated, search, page, refreshKey, reloadTick, statusFilter, suspendedFilter, sourceFilter, stockFilter, customOrdersFilter, featuredFilter, categoryFilter, brandFilter]);
 
   // ── Single-row actions ──────────────────────────────────────────────────────
 

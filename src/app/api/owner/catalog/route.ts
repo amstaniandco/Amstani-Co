@@ -1,9 +1,37 @@
 import { NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
+import { ObjectId, type Db } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
 
 const CONFIG_ID = "pricing_config";
+
+type OwnerAdjustment = { type: "markup" | "discount"; percent: number };
+
+// Per-store record of the owner's last bulk markup/discount, kept so new
+// products entering the catalog inherit the same adjustment automatically.
+// One document per store, keyed by storeId.
+async function getOwnerAdjustment(db: Db, storeId: string): Promise<OwnerAdjustment | null> {
+  const doc = await db
+    .collection("owner_catalog_settings")
+    .findOne({ _id: storeId as unknown as never });
+  if (!doc) return null;
+  const type = doc.type as "markup" | "discount";
+  const percent = Number(doc.percent);
+  if ((type !== "markup" && type !== "discount") || !(percent > 0)) return null;
+  return { type, percent };
+}
+
+async function saveOwnerAdjustment(db: Db, storeId: string, type: "markup" | "discount", percent: number) {
+  await db.collection("owner_catalog_settings").updateOne(
+    { _id: storeId as unknown as never },
+    { $set: { type, percent, updatedAt: new Date() } },
+    { upsert: true }
+  );
+}
+
+async function clearOwnerAdjustment(db: Db, storeId: string) {
+  await db.collection("owner_catalog_settings").deleteOne({ _id: storeId as unknown as never });
+}
 
 export async function GET() {
   const user = await getUserFromToken();
@@ -29,32 +57,56 @@ export async function GET() {
 
   const ACTIVE_FILTER = { isPublished: { $ne: false }, status: { $nin: ["archived", "draft"] }, brandSuspended: { $ne: true }, isSuspended: { $ne: true } };
 
+  // The owner's saved bulk markup/discount, so new products entering the catalog
+  // inherit the same adjustment automatically (no need to re-apply each time).
+  const ownerAdj = await getOwnerAdjustment(db, storeId);
+
+  // Builds a fresh owner_catalog entry for a global product, pre-applying the
+  // owner's saved markup/discount (if any) on top of the catalog base price
+  // (adminAdjustedPrice ?? wholesale price).
+  function buildCatalogDoc(p: Record<string, unknown>) {
+    const base = (p.adminAdjustedPrice as number) ?? (p.price as number) ?? 0;
+    let price = base; // owner's price defaults to the catalog base
+    let discountPercent = 0;
+    let isOnSale = false;
+    if (ownerAdj) {
+      if (ownerAdj.type === "markup") {
+        price = Math.round(base * (1 + ownerAdj.percent / 100) * 100) / 100;
+      } else {
+        discountPercent = ownerAdj.percent;
+        isOnSale = ownerAdj.percent > 0;
+      }
+    }
+    return {
+      storeId,
+      ownerId: user!.id,
+      productId: (p._id as ObjectId).toString(),
+      name: p.name,
+      sku: p.sku,
+      description: p.description ?? "",
+      mainImage: (p.mainImage as string | null) ?? (p.imageUrls as string[] | undefined)?.[0] ?? null,
+      imageUrls: p.imageUrls ?? [],
+      images: p.images ?? [],
+      category: p.category ?? "",
+      brand: p.brand ?? null,
+      variants: p.variants ?? [],
+      originalPrice: p.price ?? 0,
+      price,
+      discountPercent,
+      isOnSale,
+      status: p.status ?? "active",
+      totalStock: p.totalStock ?? p.stock ?? 0,
+      allowCustomOrders: p.allowCustomOrders ?? false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
   if (existing === 0) {
     // Seed: copy only active/published products into owner_catalog for this store
     const globalProducts = await db.collection("products").find(ACTIVE_FILTER).toArray();
     if (globalProducts.length > 0) {
-      const docs = globalProducts.map((p) => ({
-        storeId,
-        ownerId: user.id,
-        productId: p._id.toString(),
-        name: p.name,
-        sku: p.sku,
-        description: p.description ?? "",
-        mainImage: p.mainImage ?? p.imageUrls?.[0] ?? null,
-        imageUrls: p.imageUrls ?? [],
-        images: p.images ?? [],
-        category: p.category ?? "",
-        brand: p.brand ?? null,
-        variants: p.variants ?? [],
-        originalPrice: p.price ?? 0,
-        price: p.price ?? 0, // owner's custom price starts at original
-        status: p.status ?? "active",
-        totalStock: p.totalStock ?? p.stock ?? 0,
-        allowCustomOrders: p.allowCustomOrders ?? false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-      await db.collection("owner_catalog").insertMany(docs);
+      await db.collection("owner_catalog").insertMany(globalProducts.map(buildCatalogDoc));
     }
   } else {
     // Sync: add any new global products not yet in owner_catalog
@@ -73,28 +125,7 @@ export async function GET() {
       .toArray();
 
     if (newGlobal.length > 0) {
-      const docs = newGlobal.map((p) => ({
-        storeId,
-        ownerId: user.id,
-        productId: p._id.toString(),
-        name: p.name,
-        sku: p.sku,
-        description: p.description ?? "",
-        mainImage: p.mainImage ?? p.imageUrls?.[0] ?? null,
-        imageUrls: p.imageUrls ?? [],
-        images: p.images ?? [],
-        category: p.category ?? "",
-        brand: p.brand ?? null,
-        variants: p.variants ?? [],
-        originalPrice: p.price ?? 0,
-        price: p.price ?? 0,
-        status: p.status ?? "active",
-        totalStock: p.totalStock ?? p.stock ?? 0,
-        allowCustomOrders: p.allowCustomOrders ?? false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-      await db.collection("owner_catalog").insertMany(docs);
+      await db.collection("owner_catalog").insertMany(newGlobal.map(buildCatalogDoc));
     }
   }
 
@@ -230,5 +261,14 @@ export async function POST(req: Request) {
   });
 
   const result = await db.collection("owner_catalog").bulkWrite(bulkOps, { ordered: false });
+
+  // Persist the owner's choice so products added to the catalog later inherit
+  // the same adjustment automatically. Reset clears it.
+  if (type === "reset") {
+    await clearOwnerAdjustment(db, storeId);
+  } else {
+    await saveOwnerAdjustment(db, storeId, type, percent);
+  }
+
   return NextResponse.json({ ok: true, updatedCount: result.modifiedCount });
 }
