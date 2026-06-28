@@ -9,7 +9,7 @@ type GovernanceCard = {
 
 const governanceCards: GovernanceCard[] = [
   {
-    title: "Diverse Brand Portfolio",
+    title: "Multiple brands, one destination",
     description:
       "Amstani & Co brings together multiple textile brands, offering customers a wide variety of styles, fabrics, and design aesthetics in one place.",
     icon: BriefcaseBusiness,
@@ -49,7 +49,7 @@ export default function GovernanceStandardsSection() {
                   <Icon className="h-8 w-8 text-[#2f9fb3]" />
                 </div>
 
-                <h3 className="mt-5 text-center text-[24px] font-semibold leading-tight text-[#1e293b] dark:text-slate-100 sm:text-[30px]">
+                <h3 className="mt-5 whitespace-nowrap text-center text-[18px] font-semibold leading-tight text-[#1e293b] dark:text-slate-100 sm:text-[22px]">
                   {card.title}
                 </h3>
 

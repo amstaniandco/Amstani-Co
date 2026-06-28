@@ -36,10 +36,10 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function LinkedinIcon({ size = 18 }: { size?: number }) {
+function TikTokIcon({ size = 18 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">
-      <path d="M4.98 3.5a2.35 2.35 0 1 0 0 4.7 2.35 2.35 0 0 0 0-4.7Zm.02 21.5H2V8h3v17Zm7.78 0h-3V8h3v17Zm5.5-4.9a2.18 2.18 0 0 1-2.4 2.05 2.33 2.33 0 0 1-1.86-.84v.84h-3V8h3v3c.4-.56 1.1-1.2 2.3-1.2 2.85 0 3.5 1.8 3.5 4.1v7.6Z" />
+      <path d="M16.6 5.82a4.28 4.28 0 0 1-1.05-2.82h-3.2v12.78a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 1 1 .77-5.06v-3.28a5.8 5.8 0 0 0-1.06-.1 5.86 5.86 0 1 0 5.86 5.86V8.95a7.46 7.46 0 0 0 4.36 1.4V7.13a4.28 4.28 0 0 1-3.09-1.31Z" />
     </svg>
   );
 }
@@ -61,22 +61,31 @@ export default function Footer() {
             </p>
             <div className="flex gap-4 mt-6">
               <Link
-                href="#"
+                href="https://www.facebook.com/profile.php?id=61591070536391"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
                 className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600 hover:border-teal-400 hover:text-teal-400 transition"
               >
                 <FacebookIcon size={18} />
               </Link>
               <Link
-                href="#"
+                href="https://www.instagram.com/amstaniandco?igsh=NDFncmhubWcxanZz&utm_source=qr"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
                 className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600 hover:border-teal-400 hover:text-teal-400 transition"
               >
                 <InstagramIcon size={18} />
               </Link>
               <Link
-                href="#"
+                href="https://www.tiktok.com/@amstaniandco?_r=1&_t=ZS-97XiqSgdVuX"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
                 className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-600 hover:border-teal-400 hover:text-teal-400 transition"
               >
-                <LinkedinIcon size={18} />
+                <TikTokIcon size={18} />
               </Link>
             </div>
           </div>
