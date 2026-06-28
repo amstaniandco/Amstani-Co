@@ -9,7 +9,7 @@ type GovernanceCard = {
 
 const governanceCards: GovernanceCard[] = [
   {
-    title: "Diverse Brand Portfolio",
+    title: "Multiple brands, one destination",
     description:
       "Amstani & Co brings together multiple textile brands, offering customers a wide variety of styles, fabrics, and design aesthetics in one place.",
     icon: BriefcaseBusiness,
