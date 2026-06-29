@@ -16,6 +16,13 @@ const FilterIcon = () => (
   </svg>
 );
 
+const StoreOffIcon = () => (
+  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M3 9.5 4.2 5A1.5 1.5 0 0 1 5.65 4H18.35A1.5 1.5 0 0 1 19.8 5L21 9.5M3 9.5h18M3 9.5a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 3 0M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="m4 4 16 16" />
+  </svg>
+);
+
 type SortOption = "default" | "az" | "za";
 
 interface BrowseStoreSectionProps {
@@ -23,12 +30,20 @@ interface BrowseStoreSectionProps {
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   stateFilter?: string;
+  loading?: boolean;
 }
 
-export default function BrowseStoresSection({ stores, searchQuery, onSearchQueryChange, stateFilter }: BrowseStoreSectionProps) {
+export default function BrowseStoresSection({ stores, searchQuery, onSearchQueryChange, stateFilter, loading = false }: BrowseStoreSectionProps) {
   const [sortOpen, setSortOpen] = useState(false);
   const [sort, setSort] = useState<SortOption>("default");
+  // Stores are fetched client-side (state preference lives in localStorage), so the
+  // skeleton must only render after mount to avoid an SSR/client hydration mismatch.
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -98,22 +113,46 @@ export default function BrowseStoresSection({ stores, searchQuery, onSearchQuery
         </div>
       </div>
 
-      {filteredStores.length > 0 ? (
+      {mounted && loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:gap-5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-44 animate-pulse rounded-2xl border border-[#e2e8f0] bg-[#f1f5f9] dark:border-slate-700 dark:bg-slate-800"
+            />
+          ))}
+        </div>
+      ) : filteredStores.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:gap-5">
           {filteredStores.map((store) => (
             <StoreCard key={store.id} store={store} />
           ))}
         </div>
-      ) : (
+      ) : searchQuery.trim() ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <p className="text-lg font-semibold text-slate-500 dark:text-slate-400">
-            {stateFilter ? `No stores found in ${stateFilter}` : "No stores found"}
+            No stores match &ldquo;{searchQuery.trim()}&rdquo;
           </p>
-          {stateFilter && (
-            <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-              Try selecting a different state or check back later.
-            </p>
-          )}
+          <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
+            Try a different search term.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#cdd7e1] bg-[#f7fafc] py-16 text-center dark:border-slate-700 dark:bg-slate-800/40">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#7acbd6]/15 text-[#0b9db0] dark:bg-[#4DB8B8]/15 dark:text-[#4DB8B8]">
+            <StoreOffIcon />
+          </div>
+          <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
+            {stateFilter ? `No stores in ${stateFilter} yet` : "No stores available yet"}
+          </p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {stateFilter
+              ? "We're bringing stores to this state soon — check back later."
+              : "New stores are coming soon. Check back later."}
+          </p>
+          <span className="mt-4 inline-flex items-center rounded-full bg-[#7acbd6]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#0b9db0] dark:bg-[#4DB8B8]/15 dark:text-[#4DB8B8]">
+            Coming soon
+          </span>
         </div>
       )}
 

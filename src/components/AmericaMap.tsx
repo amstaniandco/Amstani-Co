@@ -173,6 +173,7 @@ export default function AmericaMap() {
 
     publishSelectedState(selectedState);
     toast.success(`Showing stores in ${selectedState}.`);
+    router.push("/home");
   };
 
   return (

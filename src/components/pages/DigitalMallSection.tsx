@@ -113,8 +113,21 @@ export default function DigitalMallSection() {
             Loading real stores…
           </div>
         ) : stores.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-            No active stores found.
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-12 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#56aebb]/15 text-[#56aebb] dark:bg-[#7fd3df]/15 dark:text-[#7fd3df]">
+              <Store className="h-7 w-7" />
+            </div>
+            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
+              {selectedState ? `No stores in ${selectedState} yet` : "No stores available yet"}
+            </p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {selectedState
+                ? "We're bringing stores to this state soon — check back later."
+                : "New stores are coming soon. Check back later."}
+            </p>
+            <span className="mt-4 inline-flex items-center rounded-full bg-[#56aebb]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#56aebb] dark:bg-[#7fd3df]/15 dark:text-[#7fd3df]">
+              Coming soon
+            </span>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
