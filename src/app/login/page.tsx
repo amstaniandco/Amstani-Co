@@ -107,7 +107,7 @@ export default function LoginPage() {
       } else if (role === "owner") {
         router.push("/owner/profile");
       } else {
-        router.push("/");
+        router.push("/home");
       }
     } catch (err) {
       console.error("Login error:", err);

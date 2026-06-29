@@ -16,6 +16,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [liveStores, setLiveStores] = useState<any[]>([]);
   const [browseStores, setBrowseStores] = useState<any[]>([]);
+  const [browseLoading, setBrowseLoading] = useState(true);
   const [stateFilter, setStateFilter] = useState("");
   const [onSaleProducts, setOnSaleProducts] = useState<OnSaleStore[]>([]);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
@@ -113,13 +114,17 @@ export default function Home() {
   // Re-fetch browse stores whenever the selected state changes
   useEffect(() => {
     let mounted = true;
+    setBrowseLoading(true);
     (async () => {
       try {
         const url = stateFilter
           ? `/api/stores/browse?state=${encodeURIComponent(stateFilter)}`
           : '/api/stores/browse';
         const res = await fetch(url);
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (mounted) setBrowseStores([]);
+          return;
+        }
         const data = await res.json();
         if (!mounted) return;
 
@@ -142,6 +147,9 @@ export default function Home() {
         setBrowseStores(mapped);
       } catch (e) {
         console.error('Failed to load browse stores', e);
+        if (mounted) setBrowseStores([]);
+      } finally {
+        if (mounted) setBrowseLoading(false);
       }
     })();
 
@@ -163,6 +171,7 @@ export default function Home() {
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             stateFilter={stateFilter}
+            loading={browseLoading}
           />
         </div>
 
