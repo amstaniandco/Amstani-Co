@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
           ? "/admin/dashboard"
           : user.role === "owner"
           ? "/owner/profile"
-          : "/";
+          : "/home";
 
       const response = NextResponse.redirect(`${APP_URL}${redirectPath}`);
       response.cookies.set("token", token, {
