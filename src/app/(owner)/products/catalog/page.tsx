@@ -270,7 +270,13 @@ export default function OwnerCatalogPage() {
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase">
               Amstani &amp; Co&apos;s Catalog
             </h1>
-            {!loading && <p className="text-sm text-slate-500 mt-0.5">{products.length} products</p>}
+            {!loading && (
+              <p className="text-sm text-slate-500 mt-0.5">
+                {search.trim()
+                  ? `${filtered.length} of ${products.length} products`
+                  : `${products.length} ${products.length === 1 ? "product" : "products"} in total`}
+              </p>
+            )}
           </div>
           <button
             onClick={refreshCatalog}
