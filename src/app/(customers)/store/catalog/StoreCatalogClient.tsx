@@ -319,27 +319,43 @@ export default function StoreCatalogClient() {
                   key={product.productId}
                   type="button"
                   onClick={() => setSelected(product)}
-                  className="group text-left overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#68B8C1]/40 hover:shadow-lg hover:shadow-[#68B8C1]/10"
+                  className="group relative block aspect-[3/4] overflow-hidden rounded-3xl bg-slate-100 text-left shadow-sm ring-1 ring-slate-200/70 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-[#68B8C1]/20 dark:bg-slate-700 dark:ring-slate-700"
                 >
-                  <div className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-700 overflow-hidden">
-                    {img ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain" />
-                    ) : (
-                      <div className="h-full bg-slate-200 dark:bg-slate-600" />
-                    )}
-                    {product.allowCustomOrders && (
-                      <span className="absolute top-2 left-2 rounded-full bg-purple-600/90 px-2 py-0.5 text-[10px] font-semibold text-white">✎ Custom</span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{product.name}</p>
+                  {/* Full-bleed product image */}
+                  {img ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={img}
+                      alt={product.name}
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-200 text-sm text-slate-400 dark:bg-slate-600">
+                      No image
+                    </div>
+                  )}
+
+                  {/* Legibility gradient for the overlaid text */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+
+                  {/* Custom-orders badge */}
+                  {product.allowCustomOrders && (
+                    <span className="absolute left-2.5 top-2.5 rounded-full bg-purple-600/90 px-2.5 py-0.5 text-[10px] font-semibold text-white shadow">
+                      ✎ Custom
+                    </span>
+                  )}
+
+                  {/* Name, brand/category + green price pill (matches homepage categories) */}
+                  <div className="absolute inset-x-0 bottom-0 p-3">
+                    <p className="truncate text-sm font-bold text-white drop-shadow-sm">{product.name}</p>
                     {(product.brand?.name || product.category) && (
-                      <p className="text-[11px] text-slate-400 truncate">
+                      <p className="mt-0.5 truncate text-[11px] text-white/75">
                         {[product.brand?.name, product.category].filter(Boolean).join(" · ")}
                       </p>
                     )}
-                    <p className="mt-2 text-base font-extrabold text-slate-900 dark:text-slate-100">${product.price.toFixed(2)}</p>
+                    <span className="mt-2 inline-flex items-center rounded-full bg-[#68B8C1] px-3 py-1 text-sm font-extrabold text-white shadow-lg ring-1 ring-white/25">
+                      ${product.price.toFixed(2)}
+                    </span>
                   </div>
                 </button>
               );
