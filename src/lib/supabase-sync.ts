@@ -184,6 +184,7 @@ export type SyncResult = {
   newProducts:          number;
   updatedProducts:      number;
   skippedProducts:      number;
+  deletedProducts:      number;
   newBrands:            number;
   updatedBrands:        number;
   skippedBrands:        number;
@@ -341,6 +342,40 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     await productsCol.createIndex({ slug: 1 }, { sparse: true });
     await productsCol.createIndex({ sku:  1 }, { sparse: true });
 
+    // ── Remove every product that isn't in Supabase ──────────────────────────
+    // Supabase is the single source of truth: after the upsert, anything in the
+    // local catalog whose sourceProductId is absent from the freshly-fetched set
+    // is deleted — including admin-created products (which have no
+    // sourceProductId at all) and suspended ones. Their store-facing snapshots
+    // are torn down too so nothing points at a product that no longer exists.
+    let deletedProducts = 0;
+    const supabaseSourceIds = docs.map((d) => d.sourceProductId);
+    // Safety guard: if Supabase returned nothing this is almost certainly a
+    // fetch problem, not a genuinely empty catalog — skip deletion so a hiccup
+    // can't wipe the whole local catalog.
+    if (supabaseSourceIds.length > 0) {
+      const orphans = await productsCol
+        .find(
+          { sourceProductId: { $nin: supabaseSourceIds } },
+          { projection: { _id: 1 } }
+        )
+        .toArray();
+
+      if (orphans.length > 0) {
+        const orphanObjectIds  = orphans.map((o) => o._id);
+        const orphanProductIds = orphans.map((o) => o._id.toString());
+
+        const delRes = await productsCol.deleteMany({ _id: { $in: orphanObjectIds } });
+        deletedProducts = delRes.deletedCount;
+
+        // Tear down the store-facing snapshots that shadowed these now-gone products.
+        await Promise.all([
+          db.collection("store_products").deleteMany({ productId: { $in: orphanProductIds } }),
+          db.collection("owner_catalog").deleteMany({ productId: { $in: orphanProductIds } }),
+        ]);
+      }
+    }
+
     // ── Brands ───────────────────────────────────────────────────────────────
     let newBrands = 0;
     let updatedBrands = 0;
@@ -439,6 +474,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       newProducts,
       updatedProducts,
       skippedProducts,
+      deletedProducts,
       newBrands,
       updatedBrands,
       skippedBrands,
@@ -452,7 +488,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       ownerCatalogRefreshed,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
-        `Products  : ${newProducts} new · ${updatedProducts} updated (stock preserved) · ${skippedProducts} unchanged${suspendedIds.size ? ` — ${suspendedIds.size} suspended (skipped)` : ""}.`,
+        `Products  : ${newProducts} new · ${updatedProducts} updated (stock preserved) · ${skippedProducts} unchanged${deletedProducts ? ` · ${deletedProducts} deleted (gone from Supabase)` : ""}${suspendedIds.size ? ` — ${suspendedIds.size} suspended (skipped)` : ""}.`,
         `Brands    : ${newBrands} new · ${updatedBrands} updated · ${skippedBrands} unchanged.`,
         `Categories: ${newCategories} new · ${updatedCategories} updated · ${skippedCategories} unchanged.`,
         `Product counts relinked: ${brandCount} brands · ${categoryCount} categories.`,
