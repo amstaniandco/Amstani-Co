@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users, X } from "lucide-react";
+import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users, ClipboardList, X } from "lucide-react";
 
 export type AdminSidebarItem = {
   label: string;
@@ -24,6 +24,7 @@ const defaultItems: AdminSidebarItem[] = [
   { label: "User Management", href: "/admin/users", icon: Users },
   { label: "Stores", href: "/admin/stores", icon: Store },
   { label: "Global Catalog", href: "/admin/global-catalog", icon: Store },
+  { label: "Listing", href: "/admin/listing", icon: ClipboardList },
   { label: "Finance & Stock", href: "/admin/finance-stock", icon: WalletCards },
   { label: "Communications", href: "/admin/communications", icon: Megaphone },
   { label: "Claims", href: "/admin/claims", icon: FileWarning },
