@@ -12,6 +12,7 @@ type Communication = {
   audience: "customers" | "owners" | "all";
   communicationType: "banner" | "announcement";
   imageUrl?: string;
+  mediaType?: "image" | "video";
   status: "Live" | "Draft";
   createdAt: string;
 };
@@ -56,6 +57,7 @@ export default function CommunicationsTable({
   const [audience, setAudience] = useState<Communication["audience"]>("all");
   const [communicationType, setCommunicationType] = useState<Communication["communicationType"]>("announcement");
   const [imageUrl, setImageUrl] = useState("");
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -82,10 +84,11 @@ export default function CommunicationsTable({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Image upload failed");
+        setError(data.error ?? "Media upload failed");
         return;
       }
       setImageUrl(data.url);
+      setMediaType(data.mediaType === "video" ? "video" : "image");
     } finally {
       setUploading(false);
     }
@@ -100,7 +103,7 @@ export default function CommunicationsTable({
       const res = await fetch("/api/admin/communications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, subtitle, audience, communicationType, imageUrl }),
+        body: JSON.stringify({ title, subtitle, audience, communicationType, imageUrl, mediaType }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -114,6 +117,7 @@ export default function CommunicationsTable({
       setAudience("all");
       setCommunicationType("announcement");
       setImageUrl("");
+      setMediaType("image");
       onCloseComposer?.();
     } finally {
       setSaving(false);
@@ -212,11 +216,15 @@ export default function CommunicationsTable({
               <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600">
                 <span className="inline-flex items-center gap-2 rounded-lg border border-[#d8e3e8] bg-white px-3 py-2">
                   <ImagePlus className="h-4 w-4" />
-                  {uploading ? "Uploading..." : imageUrl ? "Image ready" : "Upload banner image"}
+                  {uploading
+                    ? "Uploading..."
+                    : imageUrl
+                      ? mediaType === "video" ? "Video ready" : "Image ready"
+                      : "Upload banner image / video"}
                 </span>
                 <input
                   type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
                   className="hidden"
                   onChange={(event) => handleImageUpload(event.target.files?.[0])}
                 />
@@ -233,7 +241,9 @@ export default function CommunicationsTable({
             </div>
 
             {imageUrl && (
-              <p className="mt-2 truncate text-xs text-slate-500">Banner image: {imageUrl}</p>
+              <p className="mt-2 truncate text-xs text-slate-500">
+                Banner {mediaType === "video" ? "video" : "image"}: {imageUrl}
+              </p>
             )}
             {error && <p className="mt-2 text-xs font-medium text-red-500">{error}</p>}
           </form>
@@ -257,13 +267,23 @@ export default function CommunicationsTable({
               </button>
             </div>
             {previewItem.imageUrl && (
-              <Image
-                src={previewItem.imageUrl}
-                alt={previewItem.title}
-                width={640}
-                height={260}
-                className="mb-4 max-h-64 w-full rounded-xl object-cover"
-              />
+              previewItem.mediaType === "video" ? (
+                <video
+                  src={previewItem.imageUrl}
+                  controls
+                  muted
+                  playsInline
+                  className="mb-4 max-h-64 w-full rounded-xl bg-black object-contain"
+                />
+              ) : (
+                <Image
+                  src={previewItem.imageUrl}
+                  alt={previewItem.title}
+                  width={640}
+                  height={260}
+                  className="mb-4 max-h-64 w-full rounded-xl object-cover"
+                />
+              )
             )}
             <p className="text-sm text-slate-700">{previewItem.subtitle}</p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -280,7 +300,7 @@ export default function CommunicationsTable({
           </div>
         </div>
       )}
-      <div className="overflow-x-auto rounded-xl border border-[#dbe5ea] bg-white">
+      <div className="rounded-xl border border-[#dbe5ea] bg-white max-w-full overflow-x-auto lg:overflow-x-visible">
         <table className="w-full min-w-[920px] border-collapse text-left text-xs sm:text-sm">
           <thead className="border-b border-[#e6edf2] bg-[#f8fbfd] text-[10px] uppercase tracking-[0.08em] text-slate-500">
             <tr>
@@ -299,7 +319,7 @@ export default function CommunicationsTable({
                 </td>
               </tr>
             ) : (
-              items.map((item) => (
+              items.map((item, rowIndex) => (
                 <tr key={item._id} className="border-b border-[#edf2f6] text-slate-700">
                   <td className="px-4 py-3.5">
                     <p className="text-[22px] font-semibold leading-5 text-slate-800">{item.title}</p>
@@ -333,7 +353,9 @@ export default function CommunicationsTable({
                       <MoreVertical className="h-4 w-4" />
                     </button>
                     {openMenuId === item._id && (
-                      <div className="absolute right-4 top-11 z-20 w-48 rounded-lg border border-[#e5edf1] bg-white py-1 text-left shadow-lg">
+                      <div className={`absolute right-4 z-20 w-48 rounded-lg border border-[#e5edf1] bg-white py-1 text-left shadow-lg ${
+                        items.length > 1 && rowIndex === items.length - 1 ? "bottom-11" : "top-11"
+                      }`}>
                         <button
                           type="button"
                           onClick={() => {
@@ -352,7 +374,7 @@ export default function CommunicationsTable({
                             className="flex w-full items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
                           >
                             <Copy className="h-3.5 w-3.5" />
-                            Copy image URL
+                            {item.mediaType === "video" ? "Copy video URL" : "Copy image URL"}
                           </button>
                         )}
                         <button

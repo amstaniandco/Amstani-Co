@@ -33,44 +33,43 @@ export async function POST(req: Request) {
 
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-    const allowedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    const allowedVideoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/ogg"];
-    const isVideo = allowedVideoTypes.includes(file.type);
-    const isImage = allowedImageTypes.includes(file.type);
+    const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const videoTypes = ["video/mp4", "video/webm", "video/quicktime"];
+    const isImage = imageTypes.includes(file.type);
+    const isVideo = videoTypes.includes(file.type);
+
     if (!isImage && !isVideo) {
       return NextResponse.json(
-        { error: "Only JPEG, PNG, WebP, GIF images or MP4, WebM, MOV, OGG videos are allowed" },
-        { status: 400 },
+        { error: "Only JPEG, PNG, WebP, GIF images or MP4, WebM, MOV videos are allowed" },
+        { status: 400 }
       );
     }
 
-    // 5 MB limit for images, 100 MB for videos
-    const maxSize = isVideo ? 100 * 1024 * 1024 : 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    // Images: 5 MB, videos: 50 MB
+    const maxBytes = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
       return NextResponse.json(
-        { error: isVideo ? "Video size must be under 100 MB" : "Image size must be under 5 MB" },
-        { status: 400 },
+        { error: `File size must be under ${isVideo ? "50" : "5"} MB` },
+        { status: 400 }
       );
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const result = await new Promise<{ secure_url: string; resource_type: string }>((resolve, reject) => {
+    const resourceType = isVideo ? "video" : "image";
+    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
       cloudinary.uploader
-        .upload_stream(
-          { folder: "amstani/stores", resource_type: isVideo ? "video" : "image" },
-          (error, result) => {
-            if (error || !result) reject(error ?? new Error("Upload failed"));
-            else resolve(result as { secure_url: string; resource_type: string });
-          },
-        )
+        .upload_stream({ folder: "amstani/stores", resource_type: resourceType }, (error, result) => {
+          if (error || !result) reject(error ?? new Error("Upload failed"));
+          else resolve(result as { secure_url: string });
+        })
         .end(buffer);
     });
 
     return NextResponse.json(
-      { url: result.secure_url, mediaType: result.resource_type === "video" ? "video" : "image" },
-      { status: 200 },
+      { url: result.secure_url, mediaType: resourceType },
+      { status: 200 }
     );
   } catch (error) {
     console.error("POST /api/upload error:", error);

@@ -11,7 +11,8 @@ export async function POST(req: Request, { params }: Ctx) {
   if (authError) return authError;
 
   const { storeId } = await params;
-  const { imageUrl, mediaType, endDate } = await req.json();
+  const { imageUrl, endDate, mediaType: rawMediaType } = await req.json();
+  const mediaType = rawMediaType === "video" ? "video" : "image";
 
   if (!endDate) {
     return NextResponse.json({ error: "endDate is required" }, { status: 400 });
@@ -62,7 +63,7 @@ export async function POST(req: Request, { params }: Ctx) {
     storeEmail: store.owner?.email ?? "",
     storeState: store.owner?.state ?? "",
     imageUrl: imageUrl ?? null,
-    mediaType: mediaType === "video" ? "video" : "image",
+    mediaType,
     endDate,
     createdAt: now,
     updatedAt: now,

@@ -82,7 +82,7 @@ function ProductDetailModal({ product, onClose }: {
         <div className="overflow-y-auto">
           {/* Images */}
           <div
-            className="relative bg-slate-50 dark:bg-slate-700 h-72 sm:h-96 flex-shrink-0"
+            className="relative bg-slate-50 dark:bg-slate-700 h-[60vh] max-h-[460px] sm:h-96 flex-shrink-0"
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
           >
@@ -122,30 +122,34 @@ function ProductDetailModal({ product, onClose }: {
             )}
           </div>
 
-          <div className="p-4 space-y-4">
+          <div className="p-4 pt-5 space-y-3.5">
             {/* Title + price */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug">{product.name}</h2>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug">{product.name}</h2>
                 {product.sku && (
-                  <p className="mt-0.5 text-xs font-mono text-slate-400">SKU: {product.sku}</p>
+                  <p className="mt-0.5 text-[11px] font-mono text-slate-400">SKU: {product.sku}</p>
                 )}
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {product.category && (
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300">{product.category}</span>
-                  )}
-                  {product.brand?.name && (
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300">{product.brand.name}</span>
-                  )}
-                  {product.allowCustomOrders && (
-                    <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700">✎ Custom Orders</span>
-                  )}
-                </div>
               </div>
               <div className="flex-shrink-0 text-right">
-                <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">${product.price.toFixed(2)}</p>
+                <p className="text-lg sm:text-xl font-extrabold text-[#68B8C1]">${product.price.toFixed(2)}</p>
               </div>
             </div>
+
+            {/* Category / brand / custom tags */}
+            {(product.category || product.brand?.name || product.allowCustomOrders) && (
+              <div className="flex flex-wrap gap-1.5">
+                {product.category && (
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300">{product.category}</span>
+                )}
+                {product.brand?.name && (
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300">{product.brand.name}</span>
+                )}
+                {product.allowCustomOrders && (
+                  <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700">✎ Custom Orders</span>
+                )}
+              </div>
+            )}
 
             {/* Description */}
             {product.description && (
@@ -336,7 +340,7 @@ export default function StoreCatalogClient() {
                   )}
 
                   {/* Legibility gradient for the overlaid text */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
                   {/* Custom-orders badge */}
                   {product.allowCustomOrders && (
@@ -346,14 +350,14 @@ export default function StoreCatalogClient() {
                   )}
 
                   {/* Name, brand/category + green price pill (matches homepage categories) */}
-                  <div className="absolute inset-x-0 bottom-0 p-3">
-                    <p className="truncate text-sm font-bold text-white drop-shadow-sm">{product.name}</p>
+                  <div className="absolute inset-x-0 bottom-0 flex flex-col p-2.5 sm:p-3">
+                    <p className="text-xs sm:text-sm font-bold leading-tight text-white drop-shadow-sm line-clamp-2 sm:truncate sm:line-clamp-none">{product.name}</p>
                     {(product.brand?.name || product.category) && (
-                      <p className="mt-0.5 truncate text-[11px] text-white/75">
+                      <p className="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">
                         {[product.brand?.name, product.category].filter(Boolean).join(" · ")}
                       </p>
                     )}
-                    <span className="mt-2 inline-flex items-center rounded-full bg-[#68B8C1] px-3 py-1 text-sm font-extrabold text-white shadow-lg ring-1 ring-white/25">
+                    <span className="mt-1.5 sm:mt-2 inline-flex w-fit items-center rounded-full bg-[#68B8C1] px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-extrabold text-white shadow-lg ring-1 ring-white/25">
                       ${product.price.toFixed(2)}
                     </span>
                   </div>
