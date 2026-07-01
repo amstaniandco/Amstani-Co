@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
+import { Volume2, VolumeX } from "lucide-react";
 
 type Slide = {
   imageUrl: string;
   label: string;
+  mediaType: "image" | "video";
   storeId?: string;
   endDate?: string;
   isPromotion: boolean;
@@ -20,6 +22,7 @@ export default function PromotionBannerSlideshow() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIdx, setModalIdx] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [muted, setMuted] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -33,6 +36,7 @@ export default function PromotionBannerSlideshow() {
       const promoSlides: Slide[] = (promoData.promotions || []).map((p: any) => ({
         imageUrl: p.imageUrl,
         label: p.storeName,
+        mediaType: p.mediaType === "video" ? "video" : "image",
         storeId: p.storeId,
         endDate: p.endDate,
         isPromotion: true,
@@ -42,6 +46,7 @@ export default function PromotionBannerSlideshow() {
         .map((b: any) => ({
           imageUrl: b.imageUrl,
           label: b.title || "",
+          mediaType: b.mediaType === "video" ? "video" : "image",
           isPromotion: false,
         }));
       setPromotions([...promoSlides, ...commSlides]);
@@ -90,13 +95,37 @@ export default function PromotionBannerSlideshow() {
         onKeyDown={(e) => e.key === "Enter" && openModal(current)}
         aria-label="View featured promotion"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={slide.imageUrl}
-          alt={slide.label}
-          className="h-[180px] w-full object-cover transition-opacity duration-500"
-        />
+        {slide.mediaType === "video" ? (
+          <video
+            key={slide.imageUrl}
+            src={slide.imageUrl}
+            autoPlay
+            loop
+            muted={muted}
+            playsInline
+            className="h-[350px] w-full object-cover transition-opacity duration-500"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={slide.imageUrl}
+            alt={slide.label}
+            className="h-[350px] w-full object-cover transition-opacity duration-500"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+        {/* Mute / unmute toggle (video only) */}
+        {slide.mediaType === "video" && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
+            className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            aria-label={muted ? "Unmute video" : "Mute video"}
+          >
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
+        )}
 
         {/* Label */}
         <div className="absolute bottom-3 left-3 right-3">
@@ -163,15 +192,38 @@ export default function PromotionBannerSlideshow() {
                     i === modalIdx ? "opacity-100 z-10" : "opacity-0 z-0"
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.imageUrl}
-                    alt={p.label}
-                    className="h-full w-full object-cover"
-                  />
+                  {p.mediaType === "video" ? (
+                    <video
+                      src={p.imageUrl}
+                      autoPlay={i === modalIdx}
+                      loop
+                      muted={muted}
+                      playsInline
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.imageUrl}
+                      alt={p.label}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                 </div>
               ))}
+
+              {/* Mute / unmute toggle (video only) */}
+              {modalSlide.mediaType === "video" && (
+                <button
+                  type="button"
+                  onClick={() => setMuted((m) => !m)}
+                  className="absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+                  aria-label={muted ? "Unmute video" : "Mute video"}
+                >
+                  {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                </button>
+              )}
 
               {/* Desktop arrow buttons */}
               {promotions.length > 1 && (

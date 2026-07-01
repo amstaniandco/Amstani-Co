@@ -15,7 +15,7 @@ export async function GET() {
       })
       .sort({ createdAt: -1 })
       .limit(5)
-      .project({ _id: 1, title: 1, imageUrl: 1 })
+      .project({ _id: 1, title: 1, imageUrl: 1, mediaType: 1 })
       .toArray();
 
     return NextResponse.json({
@@ -23,6 +23,7 @@ export async function GET() {
         _id: String(b._id),
         title: b.title,
         imageUrl: b.imageUrl,
+        mediaType: b.mediaType ?? "image",
       })),
     });
   } catch (error) {

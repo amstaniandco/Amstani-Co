@@ -79,6 +79,11 @@ export async function GET(request: Request) {
       {
         $addFields: {
           isPromoted: { $gt: [{ $size: "$activePromotion" }, 0] },
+          // Surface the active promotion's media so promoted cards can show it
+          promoImageUrl: { $arrayElemAt: ["$activePromotion.imageUrl", 0] },
+          promoMediaType: {
+            $ifNull: [{ $arrayElemAt: ["$activePromotion.mediaType", 0] }, "image"],
+          },
         },
       },
       // Landing page passes promoted_only=true to show only promoted stores
