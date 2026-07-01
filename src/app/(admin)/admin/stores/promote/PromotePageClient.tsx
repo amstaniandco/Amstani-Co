@@ -15,9 +15,18 @@ type Promotion = {
   storeEmail: string;
   storeState: string;
   imageUrl?: string | null;
+  mediaType?: "image" | "video" | null;
   endDate: string;
   createdAt: string;
 };
+
+// Cloudinary video uploads are served under a /video/ delivery path; fall back to
+// extension sniffing for any other source.
+function isVideoMedia(url?: string | null, mediaType?: "image" | "video" | null): boolean {
+  if (mediaType) return mediaType === "video";
+  if (!url) return false;
+  return /\/video\/upload\//.test(url) || /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url);
+}
 
 export default function PromotePageClient() {
   const searchParams = useSearchParams();
@@ -28,6 +37,7 @@ export default function PromotePageClient() {
   const [storeName, setStoreName] = useState("Store");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
   const [uploading, setUploading] = useState(false);
   const [endDate, setEndDate] = useState("");
   const [promoting, setPromoting] = useState(false);
@@ -75,11 +85,12 @@ export default function PromotePageClient() {
       formData.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Image upload failed"); return; }
+      if (!res.ok) { toast.error(data.error || "Media upload failed"); return; }
       setImageUrl(data.url);
       setImagePreview(data.url);
+      setMediaType(data.mediaType === "video" ? "video" : "image");
     } catch {
-      toast.error("Image upload failed. Please try again.");
+      toast.error("Media upload failed. Please try again.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -95,13 +106,14 @@ export default function PromotePageClient() {
       const res = await fetch(`/api/admin/stores/${storeId}/promote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl, endDate }),
+        body: JSON.stringify({ imageUrl, mediaType, endDate }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Failed to promote store"); return; }
       toast.success("Store promoted successfully.");
       setImageUrl(null);
       setImagePreview(null);
+      setMediaType(null);
       setEndDate("");
       fetchPromotions();
     } catch {
@@ -158,7 +170,7 @@ export default function PromotePageClient() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/ogg"
                   className="hidden"
                   onChange={handleFileChange}
                 />
@@ -169,15 +181,25 @@ export default function PromotePageClient() {
                   className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-3xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-white disabled:opacity-60"
                 >
                   <Upload className="h-4 w-4" />
-                  {uploading ? "Uploading…" : "Upload Image"}
+                  {uploading ? "Uploading…" : "Upload Image or Video"}
                 </button>
                 <div className="mt-4 flex items-center gap-3">
                   {imagePreview ? (
                     <div className="relative">
-                      <img src={imagePreview} alt="Preview" className="h-12 w-12 rounded-2xl object-cover" />
+                      {isVideoMedia(imagePreview, mediaType) ? (
+                        <video
+                          src={imagePreview}
+                          muted
+                          playsInline
+                          controls
+                          className="h-12 w-12 rounded-2xl object-cover"
+                        />
+                      ) : (
+                        <img src={imagePreview} alt="Preview" className="h-12 w-12 rounded-2xl object-cover" />
+                      )}
                       <button
                         type="button"
-                        onClick={() => { setImageUrl(null); setImagePreview(null); }}
+                        onClick={() => { setImageUrl(null); setImagePreview(null); setMediaType(null); }}
                         className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
                       >
                         <X className="h-3 w-3" />
@@ -231,7 +253,7 @@ export default function PromotePageClient() {
                 <table className="min-w-full border-collapse text-left text-sm">
                   <thead className="bg-white text-[11px] uppercase tracking-[0.14em] text-slate-500">
                     <tr>
-                      <th className="px-4 py-4">Image</th>
+                      <th className="px-4 py-4">Media</th>
                       <th className="px-4 py-4">Name</th>
                       <th className="px-4 py-4">Email</th>
                       <th className="px-4 py-4">State</th>
@@ -244,7 +266,17 @@ export default function PromotePageClient() {
                       <tr key={promo._id} className={index % 2 === 0 ? "bg-[#fbfcfd]" : "bg-white"}>
                         <td className="px-4 py-4">
                           {promo.imageUrl ? (
-                            <img src={promo.imageUrl} alt={promo.storeName} className="h-10 w-10 rounded-xl object-cover" />
+                            isVideoMedia(promo.imageUrl, promo.mediaType) ? (
+                              <video
+                                src={promo.imageUrl}
+                                muted
+                                playsInline
+                                controls
+                                className="h-10 w-10 rounded-xl object-cover"
+                              />
+                            ) : (
+                              <img src={promo.imageUrl} alt={promo.storeName} className="h-10 w-10 rounded-xl object-cover" />
+                            )
                           ) : (
                             <div className="h-10 w-10 rounded-xl bg-slate-200" />
                           )}

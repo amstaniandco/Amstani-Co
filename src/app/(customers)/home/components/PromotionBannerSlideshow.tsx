@@ -10,9 +10,18 @@ type Slide = {
   storeId?: string;
   endDate?: string;
   isPromotion: boolean;
+  isVideo: boolean;
 };
 
 const INTERVAL = 4500;
+
+// Cloudinary video uploads are served under a /video/ delivery path; fall back to
+// extension sniffing for any other source.
+function isVideoMedia(url?: string | null, mediaType?: string | null): boolean {
+  if (mediaType) return mediaType === "video";
+  if (!url) return false;
+  return /\/video\/upload\//.test(url) || /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url);
+}
 
 export default function PromotionBannerSlideshow() {
   const [promotions, setPromotions] = useState<Slide[]>([]);
@@ -36,6 +45,7 @@ export default function PromotionBannerSlideshow() {
         storeId: p.storeId,
         endDate: p.endDate,
         isPromotion: true,
+        isVideo: isVideoMedia(p.imageUrl, p.mediaType),
       }));
       const commSlides: Slide[] = (commData.banners || [])
         .filter((b: any) => b.imageUrl)
@@ -43,6 +53,7 @@ export default function PromotionBannerSlideshow() {
           imageUrl: b.imageUrl,
           label: b.title || "",
           isPromotion: false,
+          isVideo: isVideoMedia(b.imageUrl, b.mediaType),
         }));
       setPromotions([...promoSlides, ...commSlides]);
     });
@@ -90,12 +101,23 @@ export default function PromotionBannerSlideshow() {
         onKeyDown={(e) => e.key === "Enter" && openModal(current)}
         aria-label="View featured promotion"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={slide.imageUrl}
-          alt={slide.label}
-          className="h-[180px] w-full object-cover transition-opacity duration-500"
-        />
+        {slide.isVideo ? (
+          <video
+            src={slide.imageUrl}
+            muted
+            loop
+            autoPlay
+            playsInline
+            className="h-[180px] w-full object-cover transition-opacity duration-500"
+          />
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={slide.imageUrl}
+            alt={slide.label}
+            className="h-[180px] w-full object-cover transition-opacity duration-500"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
         {/* Label */}
@@ -163,13 +185,25 @@ export default function PromotionBannerSlideshow() {
                     i === modalIdx ? "opacity-100 z-10" : "opacity-0 z-0"
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.imageUrl}
-                    alt={p.label}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  {p.isVideo ? (
+                    <video
+                      src={p.imageUrl}
+                      muted
+                      loop
+                      playsInline
+                      controls
+                      autoPlay={i === modalIdx}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={p.imageUrl}
+                      alt={p.label}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                 </div>
               ))}
 

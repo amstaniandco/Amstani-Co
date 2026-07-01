@@ -33,29 +33,45 @@ export async function POST(req: Request) {
 
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Only JPEG, PNG, WebP, and GIF images are allowed" }, { status: 400 });
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const allowedVideoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/ogg"];
+    const isVideo = allowedVideoTypes.includes(file.type);
+    const isImage = allowedImageTypes.includes(file.type);
+    if (!isImage && !isVideo) {
+      return NextResponse.json(
+        { error: "Only JPEG, PNG, WebP, GIF images or MP4, WebM, MOV, OGG videos are allowed" },
+        { status: 400 },
+      );
     }
 
-    // 5 MB limit
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "File size must be under 5 MB" }, { status: 400 });
+    // 5 MB limit for images, 100 MB for videos
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: isVideo ? "Video size must be under 100 MB" : "Image size must be under 5 MB" },
+        { status: 400 },
+      );
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+    const result = await new Promise<{ secure_url: string; resource_type: string }>((resolve, reject) => {
       cloudinary.uploader
-        .upload_stream({ folder: "amstani/stores", resource_type: "image" }, (error, result) => {
-          if (error || !result) reject(error ?? new Error("Upload failed"));
-          else resolve(result as { secure_url: string });
-        })
+        .upload_stream(
+          { folder: "amstani/stores", resource_type: isVideo ? "video" : "image" },
+          (error, result) => {
+            if (error || !result) reject(error ?? new Error("Upload failed"));
+            else resolve(result as { secure_url: string; resource_type: string });
+          },
+        )
         .end(buffer);
     });
 
-    return NextResponse.json({ url: result.secure_url }, { status: 200 });
+    return NextResponse.json(
+      { url: result.secure_url, mediaType: result.resource_type === "video" ? "video" : "image" },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("POST /api/upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
