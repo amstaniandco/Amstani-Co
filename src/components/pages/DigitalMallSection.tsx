@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, Star, Store } from "lucide-react";
+import { MapPin, Star, Store, Volume2, VolumeX } from "lucide-react";
 import {
   getSelectedState,
   subscribeSelectedState,
@@ -16,12 +16,15 @@ type StoreCard = {
   rating: string;
   live: boolean;
   liveLink?: string | null;
+  videoUrl?: string | null;
 };
 
 export default function DigitalMallSection() {
   const [stores, setStores] = useState<StoreCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState("");
+  // Which store card's video is currently unmuted (only one plays audio at a time)
+  const [unmutedId, setUnmutedId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -40,7 +43,12 @@ export default function DigitalMallSection() {
 
         const mapped: StoreCard[] = (data.stores ?? []).map(
           (store: Record<string, any>) => {
-            const imageSource = (store.bannerUrl || store.logoUrl || "").trim();
+            const promoUrl = (store.promoImageUrl || "").trim();
+            const promoIsVideo = store.promoMediaType === "video" && promoUrl;
+            const promoImage = !promoIsVideo && promoUrl ? promoUrl : "";
+
+            // Promotion media wins over the store's own banner.
+            const imageSource = (promoImage || store.bannerUrl || store.logoUrl || "").trim();
             const image = imageSource.startsWith("https://")
               ? imageSource
               : "/assets/placeholder-store.svg";
@@ -48,6 +56,7 @@ export default function DigitalMallSection() {
             return {
               id: String(store._id),
               image,
+              videoUrl: promoIsVideo ? promoUrl : null,
               title: store.name || "Store",
               description:
                 store.description ||
@@ -137,14 +146,41 @@ export default function DigitalMallSection() {
                 className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-800"
               >
                 <div
-                  className="relative h-[280px] overflow-hidden"
-                  style={{
-                    backgroundImage: `url(${store.image})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
+                  className="relative h-[280px] overflow-hidden bg-slate-900"
+                  style={
+                    store.videoUrl
+                      ? undefined
+                      : {
+                          backgroundImage: `url(${store.image})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                  }
                 >
+                  {store.videoUrl && (
+                    <video
+                      key={store.videoUrl}
+                      src={store.videoUrl}
+                      autoPlay
+                      loop
+                      muted={unmutedId !== store.id}
+                      playsInline
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-b from-slate-900/5 via-slate-900/25 to-black/85" />
+                  {store.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setUnmutedId((id) => (id === store.id ? null : store.id))
+                      }
+                      className="absolute right-3 top-12 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+                      aria-label={unmutedId === store.id ? "Mute video" : "Unmute video"}
+                    >
+                      {unmutedId === store.id ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                    </button>
+                  )}
                   <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
                     {store.live ? "Live" : "Store"}
                   </div>

@@ -11,12 +11,14 @@ export async function GET() {
       .collection("promotions")
       .find(
         { endDate: { $gte: today }, imageUrl: { $exists: true, $nin: [null, ""] } },
-        { projection: { storeId: 1, storeName: 1, imageUrl: 1, endDate: 1 } }
+        { projection: { storeId: 1, storeName: 1, imageUrl: 1, mediaType: 1, endDate: 1 } }
       )
       .sort({ createdAt: -1 })
       .toArray();
 
-    return NextResponse.json({ promotions });
+    return NextResponse.json({
+      promotions: promotions.map((p) => ({ ...p, mediaType: p.mediaType ?? "image" })),
+    });
   } catch {
     return NextResponse.json({ promotions: [] });
   }

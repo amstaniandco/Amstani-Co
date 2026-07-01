@@ -13,6 +13,7 @@ type CommunicationDoc = {
   audience?: string;
   communicationType?: string;
   imageUrl?: string;
+  mediaType?: string;
   status?: string;
   createdAt?: Date;
 };
@@ -25,6 +26,7 @@ function mapCommunication(doc: CommunicationDoc) {
     audience: doc.audience,
     communicationType: doc.communicationType,
     imageUrl: doc.imageUrl,
+    mediaType: doc.mediaType ?? "image",
     status: doc.status,
     createdAt: doc.createdAt,
   };
@@ -58,6 +60,7 @@ export async function POST(req: NextRequest) {
   const audience = String(body.audience ?? "all");
   const communicationType = String(body.communicationType ?? "announcement");
   const imageUrl = String(body.imageUrl ?? "").trim();
+  const mediaType = body.mediaType === "video" ? "video" : "image";
 
   if (!title || !subtitle) {
     return NextResponse.json({ error: "Title and message are required" }, { status: 400 });
@@ -81,6 +84,7 @@ export async function POST(req: NextRequest) {
     audience,
     communicationType,
     imageUrl: imageUrl || undefined,
+    mediaType,
     status: "Live",
     createdBy: new ObjectId(user.id),
     createdAt: now,
