@@ -168,7 +168,7 @@ export default function PromotionBannerSlideshow() {
           onClick={closeModal}
         >
           <div
-            className="relative w-full max-w-xl overflow-hidden rounded-2xl bg-black shadow-2xl"
+            className="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-black shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
@@ -184,13 +184,13 @@ export default function PromotionBannerSlideshow() {
             </button>
 
             {/* Slides */}
-            <div className="relative h-[60vw] max-h-[400px] min-h-[220px]">
+            <div className="relative flex max-h-[80vh] min-h-[220px] items-center justify-center bg-black">
               {promotions.map((p, i) => (
                 <div
                   key={p.imageUrl + i}
-                  className={`absolute inset-0 transition-opacity duration-500 ${
-                    i === modalIdx ? "opacity-100 z-10" : "opacity-0 z-0"
-                  }`}
+                  className={`${
+                    i === modalIdx ? "relative z-10 opacity-100" : "absolute inset-0 z-0 opacity-0"
+                  } flex h-full w-full items-center justify-center transition-opacity duration-500`}
                 >
                   {p.mediaType === "video" ? (
                     <video
@@ -199,17 +199,17 @@ export default function PromotionBannerSlideshow() {
                       loop
                       muted={muted}
                       playsInline
-                      className="h-full w-full object-cover"
+                      className="max-h-[80vh] w-full object-contain"
                     />
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={p.imageUrl}
                       alt={p.label}
-                      className="h-full w-full object-cover"
+                      className="max-h-[80vh] w-full object-contain"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 </div>
               ))}
 
