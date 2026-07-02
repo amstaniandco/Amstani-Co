@@ -177,7 +177,7 @@ export default function DigitalMallSection() {
                 className="group relative block cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-800"
               >
                 <div
-                  className="relative h-[280px] overflow-hidden bg-slate-900"
+                  className="relative h-[480px] overflow-hidden bg-slate-900"
                   style={
                     store.videoUrl
                       ? undefined
