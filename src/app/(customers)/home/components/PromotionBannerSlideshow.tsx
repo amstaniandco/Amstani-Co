@@ -177,7 +177,7 @@ export default function PromotionBannerSlideshow() {
             <button
               type="button"
               onClick={closeModal}
-              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70"
+              className="absolute right-3 top-3 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70"
               aria-label="Close"
             >
               ✕
