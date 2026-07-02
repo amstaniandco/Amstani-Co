@@ -1,11 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, Store, Volume2, VolumeX } from "lucide-react";
 import {
   getSelectedState,
   subscribeSelectedState,
 } from "../../lib/state-preference";
+
+// Imperatively syncs `muted` on the underlying <video> element. React does not
+// reliably reflect the `muted` prop to the DOM, so we set it via a ref and
+// re-issue play() after unmuting to satisfy browser autoplay policies.
+function StoreVideo({ src, muted }: { src: string; muted: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    video.muted = muted;
+    if (!muted) {
+      // Resuming playback within the click's user gesture allows audio.
+      video.play().catch(() => {});
+    }
+  }, [muted]);
+
+  return (
+    <video
+      ref={ref}
+      key={src}
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+}
 
 type StoreCard = {
   id: string;
@@ -159,15 +189,7 @@ export default function DigitalMallSection() {
                   }
                 >
                   {store.videoUrl && (
-                    <video
-                      key={store.videoUrl}
-                      src={store.videoUrl}
-                      autoPlay
-                      loop
-                      muted={unmutedId !== store.id}
-                      playsInline
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
+                    <StoreVideo src={store.videoUrl} muted={unmutedId !== store.id} />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-b from-slate-900/5 via-slate-900/25 to-black/85" />
                   {store.videoUrl && (
@@ -178,7 +200,7 @@ export default function DigitalMallSection() {
                         e.stopPropagation();
                         setUnmutedId((id) => (id === store.id ? null : store.id));
                       }}
-                      className="absolute right-3 top-12 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+                      className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
                       aria-label={unmutedId === store.id ? "Mute video" : "Unmute video"}
                     >
                       {unmutedId === store.id ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
