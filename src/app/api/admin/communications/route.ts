@@ -125,19 +125,53 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (user.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { id, status } = await req.json();
+  const body = await req.json();
+  const { id } = body;
   if (!id || !ObjectId.isValid(id)) {
     return NextResponse.json({ error: "Invalid communication id" }, { status: 400 });
   }
-  if (!["Live", "Draft"].includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+  if (body.status !== undefined) {
+    if (!["Live", "Draft"].includes(body.status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+    updates.status = body.status;
+  }
+
+  if (body.title !== undefined) {
+    const title = String(body.title).trim();
+    if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    updates.title = title;
+  }
+
+  if (body.subtitle !== undefined) {
+    const subtitle = String(body.subtitle).trim();
+    if (!subtitle) return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    updates.subtitle = subtitle;
+  }
+
+  if (body.audience !== undefined) {
+    if (!validAudiences.includes(body.audience as (typeof validAudiences)[number])) {
+      return NextResponse.json({ error: "Invalid audience" }, { status: 400 });
+    }
+    updates.audience = body.audience;
+  }
+
+  if (body.imageUrl !== undefined) {
+    updates.imageUrl = String(body.imageUrl).trim() || undefined;
+  }
+
+  if (body.mediaType !== undefined) {
+    updates.mediaType = body.mediaType === "video" ? "video" : "image";
   }
 
   const client = await clientPromise;
   const db = client.db(DB_NAME);
   await db.collection("communications").updateOne(
     { _id: new ObjectId(id as string) },
-    { $set: { status, updatedAt: new Date() } }
+    { $set: updates }
   );
 
   const updated = await db.collection("communications").findOne({ _id: new ObjectId(id as string) });

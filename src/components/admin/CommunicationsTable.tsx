@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Clock3, Copy, Eye, ImagePlus, MoreVertical, Power, Send, Trash2, X } from "lucide-react";
+import { CalendarDays, Clock3, Copy, Eye, ImagePlus, MoreVertical, Pencil, Power, Send, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import { useConfirm } from "../global/ConfirmProvider";
@@ -63,6 +63,7 @@ export default function CommunicationsTable({
   const [error, setError] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<Communication | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/communications")
@@ -94,12 +95,57 @@ export default function CommunicationsTable({
     }
   };
 
+  const resetForm = () => {
+    setTitle("");
+    setSubtitle("");
+    setAudience("all");
+    setCommunicationType("announcement");
+    setImageUrl("");
+    setMediaType("image");
+    setEditingId(null);
+    setError("");
+  };
+
+  const startEdit = (item: Communication) => {
+    setEditingId(item._id);
+    setTitle(item.title);
+    setSubtitle(item.subtitle);
+    setAudience(item.audience);
+    setCommunicationType(item.communicationType);
+    setImageUrl(item.imageUrl ?? "");
+    setMediaType(item.mediaType ?? "image");
+    setError("");
+    setOpenMenuId(null);
+  };
+
+  const closeComposer = () => {
+    resetForm();
+    onCloseComposer?.();
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setError("");
 
     try {
+      if (editingId) {
+        const res = await fetch("/api/admin/communications", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingId, title, subtitle, audience, imageUrl, mediaType }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "Failed to update communication");
+          return;
+        }
+        setItems((prev) => prev.map((entry) => entry._id === editingId ? data.communication : entry));
+        resetForm();
+        onCloseComposer?.();
+        return;
+      }
+
       const res = await fetch("/api/admin/communications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,12 +158,7 @@ export default function CommunicationsTable({
       }
 
       setItems((prev) => [data.communication, ...prev]);
-      setTitle("");
-      setSubtitle("");
-      setAudience("all");
-      setCommunicationType("announcement");
-      setImageUrl("");
-      setMediaType("image");
+      resetForm();
       onCloseComposer?.();
     } finally {
       setSaving(false);
@@ -154,7 +195,7 @@ export default function CommunicationsTable({
 
   return (
     <>
-      {isComposerOpen && (
+      {(isComposerOpen || editingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 px-4">
           <form
             onSubmit={handleSubmit}
@@ -162,12 +203,16 @@ export default function CommunicationsTable({
           >
             <div className="mb-4 flex items-start justify-between gap-3 border-b border-[#e7edf1] pb-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Add Communication</h2>
-                <p className="mt-1 text-xs text-slate-500">Create a notification or homepage banner.</p>
+                <h2 className="text-lg font-bold text-slate-900">
+                  {editingId ? "Edit Communication" : "Add Communication"}
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  {editingId ? "Update this notification or homepage banner." : "Create a notification or homepage banner."}
+                </p>
               </div>
               <button
                 type="button"
-                onClick={onCloseComposer}
+                onClick={closeComposer}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8e1e8] text-slate-500 transition hover:bg-slate-50"
                 aria-label="Close"
               >
@@ -205,7 +250,8 @@ export default function CommunicationsTable({
                   setCommunicationType(nextType);
                   if (nextType === "banner") setAudience("customers");
                 }}
-                className="rounded-lg border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-700 outline-none"
+                className="rounded-lg border border-[#d8e3e8] bg-white px-3 py-2 text-sm text-slate-700 outline-none disabled:opacity-60"
+                disabled={Boolean(editingId)}
               >
                 <option value="announcement">Notification</option>
                 <option value="banner">Homepage banner</option>
@@ -236,7 +282,11 @@ export default function CommunicationsTable({
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#54b9c9] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#489fad] disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
-                {saving ? "Publishing..." : communicationType === "banner" ? "Publish Banner" : "Send Notification"}
+                {saving
+                  ? editingId ? "Saving..." : "Publishing..."
+                  : editingId
+                    ? "Save Changes"
+                    : communicationType === "banner" ? "Publish Banner" : "Send Notification"}
               </button>
             </div>
 
@@ -366,6 +416,14 @@ export default function CommunicationsTable({
                         >
                           <Eye className="h-3.5 w-3.5" />
                           View details
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(item)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
                         </button>
                         {item.imageUrl && (
                           <button
