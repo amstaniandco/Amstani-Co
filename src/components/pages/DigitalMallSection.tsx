@@ -1,11 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { MapPin, Star, Store, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MapPin, Store, Volume2, VolumeX } from "lucide-react";
 import {
   getSelectedState,
   subscribeSelectedState,
 } from "../../lib/state-preference";
+
+// Imperatively syncs `muted` on the underlying <video> element. React does not
+// reliably reflect the `muted` prop to the DOM, so we set it via a ref and
+// re-issue play() after unmuting to satisfy browser autoplay policies.
+function StoreVideo({ src, muted }: { src: string; muted: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    video.muted = muted;
+    if (!muted) {
+      // Resuming playback within the click's user gesture allows audio.
+      video.play().catch(() => {});
+    }
+  }, [muted]);
+
+  return (
+    <video
+      ref={ref}
+      key={src}
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+}
 
 type StoreCard = {
   id: string;
@@ -141,12 +171,13 @@ export default function DigitalMallSection() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {stores.map((store) => (
-              <article
+              <a
                 key={store.id}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-800"
+                href={`/store?storeId=${store.id}`}
+                className="group relative block cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-800"
               >
                 <div
-                  className="relative h-[280px] overflow-hidden bg-slate-900"
+                  className="relative h-[480px] overflow-hidden bg-slate-900"
                   style={
                     store.videoUrl
                       ? undefined
@@ -158,61 +189,34 @@ export default function DigitalMallSection() {
                   }
                 >
                   {store.videoUrl && (
-                    <video
-                      key={store.videoUrl}
-                      src={store.videoUrl}
-                      autoPlay
-                      loop
-                      muted={unmutedId !== store.id}
-                      playsInline
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
+                    <StoreVideo src={store.videoUrl} muted={unmutedId !== store.id} />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-b from-slate-900/5 via-slate-900/25 to-black/85" />
                   {store.videoUrl && (
                     <button
                       type="button"
-                      onClick={() =>
-                        setUnmutedId((id) => (id === store.id ? null : store.id))
-                      }
-                      className="absolute right-3 top-12 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setUnmutedId((id) => (id === store.id ? null : store.id));
+                      }}
+                      className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
                       aria-label={unmutedId === store.id ? "Mute video" : "Unmute video"}
                     >
                       {unmutedId === store.id ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                     </button>
                   )}
-                  <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
-                    {store.live ? "Live" : "Store"}
-                  </div>
-                  <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-[#56aebb] px-2.5 py-1 text-[10px] font-semibold text-white">
-                    <Star className="h-3 w-3 fill-white text-white" />
-                    {store.rating}
-                  </div>
-
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                     <h3 className="text-lg font-semibold leading-tight">
                       {store.title}
                     </h3>
-                    <p className="mt-1 line-clamp-2 text-xs text-white/85">
-                      {store.description}
-                    </p>
-
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-1 text-xs text-white/90">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {store.state || "Nationwide"}
-                      </span>
-
-                      <a
-                        href={`/store?storeId=${store.id}`}
-                        className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold text-slate-900 transition hover:bg-slate-100"
-                      >
-                        Open Store
-                      </a>
-                    </div>
+                    <span className="mt-1 inline-flex items-center gap-1 text-xs text-white/90">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {store.state || "Nationwide"}
+                    </span>
                   </div>
                 </div>
-              </article>
+              </a>
             ))}
           </div>
         )}
