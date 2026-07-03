@@ -63,6 +63,7 @@ type ListingOrder = {
   shippingPostalCode: string | null;
   shippingCountry: string | null;
   items: OrderItem[];
+  orderStoreId: string | null;
   store: StoreMatch;
   alreadyListed: boolean;
 };
@@ -143,6 +144,7 @@ function OrderCard({ order }: { order: ListingOrder }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: order.id,
+          storeId: order.store?.storeId,
           email: order.customerEmail,
           items: order.items
             .filter((i) => i.productId)
@@ -241,7 +243,12 @@ function OrderCard({ order }: { order: ListingOrder }) {
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <StoreIcon className="h-4 w-4" />
           {order.store ? (
-            <span>Target store: <span className="font-semibold text-slate-700">{order.store.storeName}</span></span>
+            <span>
+              Target store: <span className="font-semibold text-slate-700">{order.store.storeName}</span>
+              {order.orderStoreId && (
+                <span className="ml-1 font-mono text-[11px] text-slate-400">(store {order.orderStoreId})</span>
+              )}
+            </span>
           ) : (
             <span className="text-amber-600">No store found for this email</span>
           )}

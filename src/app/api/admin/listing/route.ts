@@ -54,6 +54,8 @@ export type ListingOrder = {
   shippingCountry: string | null;
 
   items: OrderItem[];
+  // The raw storeId that came with the Supabase order (the short store id).
+  orderStoreId: string | null;
   // The store owned by the customer (matched by email) — where "List" will list to.
   store: StoreMatch;
   // True when every listable product of this order is already in the store.
@@ -89,6 +91,20 @@ async function resolveStoreForEmail(db: any, email: string): Promise<StoreMatch>
   const store = await db
     .collection("stores")
     .findOne({ ownerId: user._id }, { projection: { name: 1 } });
+  if (!store) return null;
+  return { storeId: store._id.toString(), storeName: store.name as string };
+}
+
+// Resolve a store directly by its id (the Supabase order's storeId column holds
+// the MongoDB store _id as a string). Returns null when the id is missing or no
+// such store exists.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveStoreById(db: any, storeId: string): Promise<StoreMatch> {
+  const clean = (storeId ?? "").trim();
+  if (!clean || !ObjectId.isValid(clean)) return null;
+  const store = await db
+    .collection("stores")
+    .findOne({ _id: new ObjectId(clean) }, { projection: { name: 1 } });
   if (!store) return null;
   return { storeId: store._id.toString(), storeName: store.name as string };
 }
@@ -167,6 +183,17 @@ export async function GET() {
       storeByEmail.set(em.toLowerCase(), await resolveStoreForEmail(db, em));
     }
 
+    // Also resolve stores by the order's storeId column — a customer may order
+    // from an email that doesn't match a store owner, so the direct storeId is
+    // the more reliable link when present.
+    const storeIds = Array.from(
+      new Set(orders.map((o) => (o.storeId as string) ?? "").filter(Boolean))
+    );
+    const storeById = new Map<string, StoreMatch>();
+    for (const sid of storeIds) {
+      storeById.set(sid, await resolveStoreById(db, sid));
+    }
+
     const result: ListingOrder[] = orders.map((o) => ({
       id: o.id as string,
       status: (o.status as string) ?? null,
@@ -194,7 +221,12 @@ export async function GET() {
       shippingPostalCode: (o.shippingPostalCode as string) ?? null,
       shippingCountry: (o.shippingCountry as string) ?? null,
       items: itemsByOrder[o.id as string] ?? [],
-      store: storeByEmail.get(((o.customerEmail as string) ?? "").toLowerCase()) ?? null,
+      orderStoreId: (o.storeId as string) ?? null,
+      // Prefer the direct storeId link; fall back to matching by owner email.
+      store:
+        storeById.get((o.storeId as string) ?? "") ??
+        storeByEmail.get(((o.customerEmail as string) ?? "").toLowerCase()) ??
+        null,
       alreadyListed: false,
     }));
 
@@ -231,11 +263,12 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const email: string = body.email ?? "";
+    const storeId: string = body.storeId ?? "";
     const orderId: string = body.orderId ?? "";
     const rawItems: Array<{ productId: string; quantity: number }> = Array.isArray(body.items) ? body.items : [];
 
-    if (!email.trim()) {
-      return NextResponse.json({ error: "Customer email is required" }, { status: 400 });
+    if (!storeId.trim() && !email.trim()) {
+      return NextResponse.json({ error: "A store id or customer email is required" }, { status: 400 });
     }
     if (rawItems.length === 0) {
       return NextResponse.json({ error: "No items to list" }, { status: 400 });
@@ -244,10 +277,17 @@ export async function POST(req: Request) {
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
-    const store = await resolveStoreForEmail(db, email);
+    // Prefer the direct storeId link; fall back to matching by owner email.
+    const store =
+      (await resolveStoreById(db, storeId)) ?? (await resolveStoreForEmail(db, email));
     if (!store) {
       return NextResponse.json(
-        { error: `No store is owned by ${email}. The order's email must match a store owner.` },
+        {
+          error:
+            `No store found for this order` +
+            (email ? ` (email ${email})` : "") +
+            `. It must link to a store by id or the order's email must match a store owner.`,
+        },
         { status: 404 }
       );
     }
