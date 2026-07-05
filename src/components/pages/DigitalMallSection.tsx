@@ -191,7 +191,6 @@ export default function DigitalMallSection() {
                   {store.videoUrl && (
                     <StoreVideo src={store.videoUrl} muted={unmutedId !== store.id} />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-b from-slate-900/5 via-slate-900/25 to-black/85" />
                   {store.videoUrl && (
                     <button
                       type="button"
@@ -206,15 +205,15 @@ export default function DigitalMallSection() {
                       {unmutedId === store.id ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                     </button>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <h3 className="text-lg font-semibold leading-tight">
-                      {store.title}
-                    </h3>
-                    <span className="mt-1 inline-flex items-center gap-1 text-xs text-white/90">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {store.state || "Nationwide"}
-                    </span>
-                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                    {store.title}
+                  </h3>
+                  <span className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {store.state || "Nationwide"}
+                  </span>
                 </div>
               </a>
             ))}
