@@ -196,6 +196,7 @@ export type SyncResult = {
   priceAdjustedProducts: number;
   storeProductsRefreshed: number;
   ownerCatalogRefreshed: number;
+  ownerCatalogSeeded: number;
   log: string[];
 };
 
@@ -272,6 +273,109 @@ async function propagateGlobalChangesToStores(
   ]);
 
   return { storeProducts: storeRes.modifiedCount, ownerCatalog: ownerRes.modifiedCount };
+}
+
+// Active-catalog filter — a product is visible to store owners only when it's
+// published, not archived/draft, and neither it nor its brand is suspended.
+// Mirrors ACTIVE_FILTER in GET /api/owner/catalog so both entry points agree.
+const OWNER_ACTIVE_FILTER = {
+  isPublished: { $ne: false },
+  status: { $nin: ["archived", "draft"] },
+  brandSuspended: { $ne: true },
+  isSuspended: { $ne: true },
+};
+
+// Push newly-synced products into EVERY store's owner_catalog immediately, so an
+// owner sees new products without having to open their portal (which is what
+// otherwise lazily seeds them via GET /api/owner/catalog). This only INSERTS
+// rows that are missing — existing rows (and their owner-set pricing) are left
+// to propagateGlobalChangesToStores. New rows pre-apply the store's saved bulk
+// markup/discount, identical to buildCatalogDoc in the GET route.
+async function seedNewProductsIntoStores(db: Db): Promise<number> {
+  const [stores, activeProducts] = await Promise.all([
+    db.collection("stores").find({}, { projection: { _id: 1, ownerId: 1 } }).toArray(),
+    db.collection("products").find(OWNER_ACTIVE_FILTER).toArray(),
+  ]);
+
+  if (!stores.length || !activeProducts.length) return 0;
+
+  const now = new Date();
+  let inserted = 0;
+
+  for (const store of stores) {
+    const storeId = store._id.toString();
+    const ownerId = store.ownerId ? store.ownerId.toString() : null;
+
+    const existingIds = new Set(
+      (
+        await db
+          .collection("owner_catalog")
+          .find({ storeId }, { projection: { productId: 1 } })
+          .toArray()
+      ).map((d) => d.productId as string)
+    );
+
+    // The store's saved bulk markup/discount, so new products inherit it.
+    const settings = await db
+      .collection("owner_catalog_settings")
+      .findOne({ _id: storeId as unknown as never });
+    const adjType =
+      settings?.type === "markup" || settings?.type === "discount"
+        ? (settings.type as "markup" | "discount")
+        : null;
+    const adjPct = Number(settings?.percent);
+    const ownerAdj = adjType && adjPct > 0 ? { type: adjType, percent: adjPct } : null;
+
+    const docs = [];
+    for (const p of activeProducts) {
+      const productId = p._id.toString();
+      if (existingIds.has(productId)) continue;
+
+      const base = (p.adminAdjustedPrice as number) ?? (p.price as number) ?? 0;
+      let price = base;
+      let discountPercent = 0;
+      let isOnSale = false;
+      if (ownerAdj) {
+        if (ownerAdj.type === "markup") {
+          price = Math.round(base * (1 + ownerAdj.percent / 100) * 100) / 100;
+        } else {
+          discountPercent = ownerAdj.percent;
+          isOnSale = ownerAdj.percent > 0;
+        }
+      }
+
+      docs.push({
+        storeId,
+        ownerId,
+        productId,
+        name: p.name,
+        sku: p.sku,
+        description: p.description ?? "",
+        mainImage: (p.mainImage as string | null) ?? (p.imageUrls as string[] | undefined)?.[0] ?? null,
+        imageUrls: p.imageUrls ?? [],
+        images: p.images ?? [],
+        category: p.category ?? "",
+        brand: p.brand ?? null,
+        variants: p.variants ?? [],
+        originalPrice: p.price ?? 0,
+        price,
+        discountPercent,
+        isOnSale,
+        status: p.status ?? "active",
+        totalStock: p.totalStock ?? p.stock ?? 0,
+        allowCustomOrders: p.allowCustomOrders ?? false,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    if (docs.length) {
+      const res = await db.collection("owner_catalog").insertMany(docs, { ordered: false });
+      inserted += res.insertedCount;
+    }
+  }
+
+  return inserted;
 }
 
 export async function runSupabaseSync(): Promise<SyncResult> {
@@ -466,6 +570,10 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     const { storeProducts: storeProductsRefreshed, ownerCatalog: ownerCatalogRefreshed } =
       await propagateGlobalChangesToStores(db);
 
+    // Fan new products out into every store's catalog now, so owners don't have
+    // to open their portal for new products to appear.
+    const ownerCatalogSeeded = await seedNewProductsIntoStores(db);
+
     const skippedProducts   = docs.length        - newProducts   - updatedProducts;
     const skippedBrands     = brands.length      - newBrands     - updatedBrands;
     const skippedCategories = categories.length  - newCategories - updatedCategories;
@@ -486,6 +594,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       priceAdjustedProducts,
       storeProductsRefreshed,
       ownerCatalogRefreshed,
+      ownerCatalogSeeded,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
         `Products  : ${newProducts} new · ${updatedProducts} updated (stock preserved) · ${skippedProducts} unchanged${deletedProducts ? ` · ${deletedProducts} deleted (gone from Supabase)` : ""}${suspendedIds.size ? ` — ${suspendedIds.size} suspended (skipped)` : ""}.`,
@@ -496,6 +605,9 @@ export async function runSupabaseSync(): Promise<SyncResult> {
           ? `Price adjustment re-applied to ${priceAdjustedProducts} products.`
           : "No saved price adjustment to re-apply.",
         `Store snapshots refreshed: ${storeProductsRefreshed} customer listings · ${ownerCatalogRefreshed} catalog entries.`,
+        ownerCatalogSeeded > 0
+          ? `New products fanned out to store catalogs: ${ownerCatalogSeeded} entries added.`
+          : "No new products to add to store catalogs.",
         "Supabase was not modified — all operations were read-only.",
       ],
     };
