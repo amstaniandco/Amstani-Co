@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MoreHorizontal, Pencil, Reply, Trash2 } from "lucide-react";
+import { Ban, MoreHorizontal, Pencil, Reply, Trash2, UserCheck } from "lucide-react";
 
 export type Message = {
   _id: string;
@@ -37,6 +37,10 @@ type Props = {
   onReply: (msg: Message) => void;
   onEdit: (msgId: string, newText: string) => void;
   onDelete: (msgId: string) => void;
+  /** When provided (owner group-chat view), shows a Block/Unblock action for other users' messages */
+  onBlock?: (msg: Message, block: boolean) => void;
+  /** Whether the sender of this message is currently blocked */
+  blocked?: boolean;
 };
 
 export default function MessageBubble({
@@ -49,6 +53,8 @@ export default function MessageBubble({
   onReply,
   onEdit,
   onDelete,
+  onBlock,
+  blocked = false,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ bottom: number; left?: number; right?: number } | null>(null);
@@ -149,6 +155,25 @@ export default function MessageBubble({
                 <Trash2 className="h-3.5 w-3.5" /> Delete
               </button>
             </>
+          )}
+          {onBlock && !isOwn && (
+            blocked ? (
+              <button
+                type="button"
+                onClick={() => { onBlock(msg, false); setMenuOpen(false); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-green-600 hover:bg-green-50"
+              >
+                <UserCheck className="h-3.5 w-3.5" /> Unblock user
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { onBlock(msg, true); setMenuOpen(false); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"
+              >
+                <Ban className="h-3.5 w-3.5" /> Block user
+              </button>
+            )
           )}
         </div>,
         document.body

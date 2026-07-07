@@ -46,6 +46,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
       let lastId = afterParam && ObjectId.isValid(afterParam) ? new ObjectId(afterParam) : new ObjectId();
       let lastUpdateCheck = new Date();
+      let lastBlockedKey = "";
       const sleep = (ms: number) =>
         new Promise<void>((resolve) => {
           const t = setTimeout(resolve, ms);
@@ -54,6 +55,19 @@ export async function GET(req: NextRequest, { params }: Params) {
 
       while (!req.signal.aborted) {
         try {
+          // Push the current block list whenever it changes so viewers can hide
+          // blocked users' messages (and block the blocked user's send button) live.
+          const storeDoc = await db.collection("stores").findOne(
+            { _id: storeObjectId },
+            { projection: { blockedUserIds: 1 } }
+          );
+          const blockedUserIds = ((storeDoc?.blockedUserIds as ObjectId[]) ?? []).map((id) => id.toString());
+          const blockedKey = blockedUserIds.slice().sort().join(",");
+          if (blockedKey !== lastBlockedKey) {
+            lastBlockedKey = blockedKey;
+            send({ type: "blocked", blockedUserIds });
+          }
+
           const messages = await db
             .collection("store_group_messages")
             .find({ storeId: storeObjectId, _id: { $gt: lastId } })

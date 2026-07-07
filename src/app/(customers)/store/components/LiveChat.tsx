@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { Languages, Lock, SendHorizontal, Users } from "lucide-react";
+import { Ban, Languages, Lock, SendHorizontal, Users } from "lucide-react";
 import { useStore } from "../../../../context/StoreContext";
 import MessageBubble, { type Message as ChatMessage } from "@/src/components/chat/MessageBubble";
 
@@ -43,6 +43,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
   const [groupSending, setGroupSending] = useState(false);
   const [groupAuthError, setGroupAuthError] = useState("");
   const [groupReplyingTo, setGroupReplyingTo] = useState<ChatMessage | null>(null);
+  const [groupBlockedUserIds, setGroupBlockedUserIds] = useState<string[]>([]);
 
   // ── Private chat (1:1 with the store owner) ────────────────────────────────
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -73,6 +74,8 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
           setGroupMessages((prev) =>
             prev.map((message) => (message._id === data.message._id ? data.message : message))
           );
+        } else if (data.type === "blocked") {
+          setGroupBlockedUserIds(data.blockedUserIds ?? []);
         }
       } catch {}
     };
@@ -111,6 +114,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
           const data = await res.json();
           const loaded: ChatMessage[] = data.messages ?? [];
           setGroupMessages(loaded);
+          setGroupBlockedUserIds(data.blockedUserIds ?? []);
           startGroupStream(sid, loaded.at(-1)?._id ?? "");
         })
         .catch(() => {});
@@ -243,6 +247,13 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
         return;
       }
 
+      if (res.status === 403) {
+        // Owner has blocked this user from the group chat.
+        if (myUserId) setGroupBlockedUserIds((prev) => (prev.includes(myUserId) ? prev : [...prev, myUserId]));
+        setGroupAuthError("You have been blocked from this chat.");
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         setGroupMessages((prev) =>
@@ -301,7 +312,13 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
   };
 
   const isGroup = view === "group";
-  const activeMessages = isGroup ? groupMessages : messages;
+  // Blocked users' messages are hidden from the group for everyone, and a blocked
+  // user cannot send messages.
+  const visibleGroupMessages = groupMessages.filter(
+    (message) => !message.senderId || !groupBlockedUserIds.includes(message.senderId)
+  );
+  const iAmBlocked = isGroup && !!myUserId && groupBlockedUserIds.includes(myUserId);
+  const activeMessages = isGroup ? visibleGroupMessages : messages;
   const activeDraft = isGroup ? groupDraft : draft;
   const activeSending = isGroup ? groupSending : sending;
   const activeAuthError = isGroup ? groupAuthError : authError;
@@ -333,7 +350,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
             {isGroup ? "No messages yet. Say hello to the group." : "No messages yet. Say hello to the owner."}
           </p>
         ) : isGroup ? (
-          groupMessages.map((message) => (
+          visibleGroupMessages.map((message) => (
             <MessageBubble
               key={message._id}
               msg={message}
@@ -365,7 +382,13 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
         )}
       </div>
 
-      {activeAuthError && <p className="mt-3 text-xs font-medium text-red-500">{activeAuthError}</p>}
+      {iAmBlocked && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-red-500">
+          <Ban className="h-3.5 w-3.5" />
+          You have been blocked from this chat.
+        </p>
+      )}
+      {!iAmBlocked && activeAuthError && <p className="mt-3 text-xs font-medium text-red-500">{activeAuthError}</p>}
 
       <form onSubmit={isGroup ? handleSendGroup : handleSend} className="ui-subpanel mt-5 flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-700">
         <div className="flex w-full flex-col gap-2">
@@ -390,12 +413,13 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
             <input
               value={activeDraft}
               onChange={(event) => (isGroup ? setGroupDraft(event.target.value) : setDraft(event.target.value))}
-              placeholder="Say something..."
-              className="ui-input w-full bg-transparent text-sm outline-none placeholder:text-gray-400 dark:text-slate-100 dark:placeholder:text-slate-400"
+              placeholder={iAmBlocked ? "You are blocked from this chat" : "Say something..."}
+              disabled={iAmBlocked}
+              className="ui-input w-full bg-transparent text-sm outline-none placeholder:text-gray-400 disabled:cursor-not-allowed dark:text-slate-100 dark:placeholder:text-slate-400"
             />
             <button
               type="submit"
-              disabled={activeSending || !activeDraft.trim() || !storeId}
+              disabled={activeSending || !activeDraft.trim() || !storeId || iAmBlocked}
               className="text-[#68B8C1] transition hover:text-[#4f9ea7] disabled:opacity-50"
               aria-label="Send message"
             >

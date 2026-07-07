@@ -146,6 +146,7 @@ export default function OwnerChatsPage() {
   const [selectedCustomerThread, setSelectedCustomerThread] = useState<CustomerThread | null>(null);
   const [customerMessages, setCustomerMessages] = useState<ChatMessage[]>([]);
   const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
+  const [groupBlockedUserIds, setGroupBlockedUserIds] = useState<string[]>([]);
   const [replyText, setReplyText] = useState("");
   const [customerReplyText, setCustomerReplyText] = useState("");
   const [groupReplyText, setGroupReplyText] = useState("");
@@ -264,6 +265,8 @@ export default function OwnerChatsPage() {
           setGroupMessages((prev) =>
             prev.map((m) => m._id === data.message._id ? data.message : m)
           );
+        } else if (data.type === "blocked") {
+          setGroupBlockedUserIds(data.blockedUserIds ?? []);
         }
       } catch {}
     };
@@ -277,8 +280,31 @@ export default function OwnerChatsPage() {
     const data = await res.json();
     const loadedMessages: ChatMessage[] = data.messages ?? [];
     setGroupMessages(loadedMessages);
+    setGroupBlockedUserIds(data.blockedUserIds ?? []);
     startGroupStream(storeId, loadedMessages.at(-1)?._id ?? "");
   }, [startGroupStream, storeId]);
+
+  const handleGroupBlock = useCallback(
+    async (message: ChatMessage, block: boolean) => {
+      if (!storeId || !message.senderId) return;
+      // Optimistic update so the menu reflects the new state immediately.
+      setGroupBlockedUserIds((prev) =>
+        block
+          ? (prev.includes(message.senderId!) ? prev : [...prev, message.senderId!])
+          : prev.filter((id) => id !== message.senderId)
+      );
+      const res = await fetch(`/api/group-conversations/${storeId}/block`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: message.senderId, action: block ? "block" : "unblock" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGroupBlockedUserIds(data.blockedUserIds ?? []);
+      }
+    },
+    [storeId]
+  );
 
   useEffect(() => {
     fetch("/api/owner/timings")
@@ -814,6 +840,8 @@ export default function OwnerChatsPage() {
                   onReply={setGroupReplyingTo}
                   onEdit={handleGroupEdit}
                   onDelete={handleGroupDelete}
+                  onBlock={handleGroupBlock}
+                  blocked={!!message.senderId && groupBlockedUserIds.includes(message.senderId)}
                 />
               ))
             ) : (

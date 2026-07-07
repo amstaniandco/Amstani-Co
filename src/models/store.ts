@@ -45,6 +45,9 @@ export type Store = {
     to: string;   // "15:00"
   };
 
+  /** Users the owner has blocked from this store's group chat */
+  blockedUserIds?: ObjectId[];
+
   warnings?: number;
   warningsResetAt?: Date | string | null;
   liveComplianceLastCheckedWeek?: string | null; // Monday date key for the last evaluated week

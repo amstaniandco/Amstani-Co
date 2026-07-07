@@ -45,9 +45,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .limit(200)
     .toArray();
 
+  const blockedUserIds = ((store.blockedUserIds as ObjectId[]) ?? []).map((id) => id.toString());
+
   return NextResponse.json({
     storeName: (store.name as string) ?? "Store",
     messages: messages.map(mapMessage),
+    blockedUserIds,
+    // Whether the requesting customer has been blocked from this group chat
+    blocked: user.role === "user" && blockedUserIds.includes(user.id),
   });
 }
 
@@ -71,6 +76,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
   if (user.role === "owner" && (store.ownerId as ObjectId)?.toString() !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Blocked customers cannot post to the group chat.
+  if (user.role === "user") {
+    const blockedUserIds = ((store.blockedUserIds as ObjectId[]) ?? []).map((id) => id.toString());
+    if (blockedUserIds.includes(user.id)) {
+      return NextResponse.json({ error: "blocked" }, { status: 403 });
+    }
   }
 
   const senderDoc = await db.collection("users").findOne({ _id: new ObjectId(user.id) });
