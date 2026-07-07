@@ -192,12 +192,12 @@ export async function PATCH(
     });
   }
 
-  // ── WRONG ITEM — customer must reorder ───────────────────────────────────
+  // ── WRONG ITEM — customer picks the correct size/colour (replacement) ────
   if (resolutionType === "reorder") {
     await createNotification({
       userId: claim.customerId,
-      title: "Wrong Item Acknowledged — Please Reorder",
-      message: `The store owner has reviewed your wrong item claim #${claim.claimNumber}. Please visit the store and place a new order for the correct product.`,
+      title: "Wrong Item Acknowledged — Choose Replacement",
+      message: `The store owner reviewed your wrong item claim #${claim.claimNumber}. Open the claim to select the correct size/colour and place your replacement order.`,
       referenceId: claimId,
     });
   }

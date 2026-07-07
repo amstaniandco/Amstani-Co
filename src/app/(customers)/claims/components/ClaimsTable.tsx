@@ -97,12 +97,12 @@ export default function ClaimsTable({ claims }: ClaimsTableProps) {
                       • {STATUS_LABEL[claim.status] || claim.status.toUpperCase()}
                     </td>
                     <td className="py-3">
-                      {needsReorder && claim.storeId ? (
+                      {needsReorder && claim._id ? (
                         <Link
-                          href={`/store?storeId=${claim.storeId}`}
+                          href={`/profile?claim=${claim._id}`}
                           className="px-3 py-1 bg-purple-600 hover:bg-purple-700 transition-colors text-white text-[11px] font-semibold rounded-md"
                         >
-                          Reorder from Store
+                          Choose Replacement
                         </Link>
                       ) : isEscalated ? (
                         <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400 text-[11px] font-semibold rounded-md">

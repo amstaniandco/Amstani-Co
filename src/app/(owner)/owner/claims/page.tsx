@@ -695,7 +695,9 @@ export default function OwnerClaimsPage() {
             {activeClaim.status === "awaiting_reorder" && (
               <div className="px-5 py-3 border-t border-slate-200 space-y-2">
                 <p className="text-xs text-purple-600 text-center font-semibold">
-                  Customer has been asked to reorder the correct product.
+                  Customer is selecting the correct size/colour. Once they submit, a replacement
+                  order appears in your orders to ship and the original order is cancelled. You can
+                  also close it manually below.
                 </p>
                 <button
                   onClick={() => handleResolve(activeClaim._id)}

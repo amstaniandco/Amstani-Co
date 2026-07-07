@@ -31,7 +31,16 @@ export type Claim = {
 
   // awaiting_reorder = wrong item, customer must re-select the correct product
   status: "open" | "owner_responded" | "resolved" | "admin_escalated" | "awaiting_reorder";
-  resolutionType?: "replacement" | "reorder" | "pending_refund" | "other" | null;
+  // exchange = wrong-item claim where the customer chose a different size/color of
+  // the same product and we shipped a free replacement (no re-charge).
+  resolutionType?:
+    | "replacement"
+    | "reorder"
+    | "reorder_completed"
+    | "exchange"
+    | "pending_refund"
+    | "other"
+    | null;
 
   messages: ClaimMessage[];
 

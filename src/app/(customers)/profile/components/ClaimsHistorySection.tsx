@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, ChevronDown } from "lucide-react";
 import Header from "../../../../components/pages/Header";
+import ClaimExchangePanel from "./ClaimExchangePanel";
 
 type ClaimMessage = {
   senderId: string;
@@ -93,6 +94,8 @@ export default function ClaimsHistorySection() {
   const [chatInput, setChatInput] = useState("");
   const [sending, setSending] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [pendingClaimId, setPendingClaimId] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   async function loadClaims() {
@@ -112,9 +115,32 @@ export default function ClaimsHistorySection() {
     if (open && claims.length === 0) loadClaims();
   }, [open]);
 
+  // Deep link: /profile?claim=<id> opens the panel straight to that claim.
+  useEffect(() => {
+    const target = new URLSearchParams(window.location.search).get("claim");
+    if (target) {
+      setPendingClaimId(target);
+      setOpen(true);
+      loadClaims();
+    }
+  }, []);
+
+  // Once claims are loaded, select the deep-linked claim.
+  useEffect(() => {
+    if (!pendingClaimId || claims.length === 0) return;
+    const match = claims.find((c) => c._id === pendingClaimId);
+    if (match) setActiveClaim(match);
+    setPendingClaimId(null);
+  }, [pendingClaimId, claims]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeClaim?.messages?.length]);
+
+  // Collapse the details section whenever a different claim is opened.
+  useEffect(() => {
+    setDetailsOpen(false);
+  }, [activeClaim?._id]);
 
   async function sendMessage() {
     if (!chatInput.trim() || !activeClaim) return;
@@ -257,54 +283,79 @@ export default function ClaimsHistorySection() {
                   </button>
                 </div>
 
-                {/* Disputed items strip */}
-                {activeClaim.items?.length > 0 && (
-                  <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-700 border-b border-slate-100 dark:border-slate-600 flex gap-2 overflow-x-auto">
-                    {activeClaim.items.map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 flex-shrink-0 bg-white dark:bg-slate-600 rounded-lg border border-slate-200 dark:border-slate-500 px-2.5 py-1.5">
-                        {item.image && (
-                          <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
-                        )}
-                        <div>
-                          <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 max-w-[120px] truncate">{item.name}</p>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-400">×{item.quantity} · ${item.price}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Photo evidence */}
-                {activeClaim.mediaUrls && activeClaim.mediaUrls.length > 0 && (
-                  <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-700 border-b border-slate-100 dark:border-slate-600">
-                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Photo Evidence</p>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {activeClaim.mediaUrls.map((url, i) => (
-                        <img
-                          key={i}
-                          src={url}
-                          alt={`Evidence ${i + 1}`}
-                          onClick={() => setLightboxUrl(url)}
-                          className="h-16 w-16 shrink-0 rounded-lg object-cover border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* awaiting_reorder action */}
-                {activeClaim.status === "awaiting_reorder" && (
-                  <div className="mx-5 mt-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 px-4 py-3 flex items-center justify-between gap-3">
-                    <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">
-                      The store acknowledged the wrong item. Please reorder the correct product.
-                    </p>
-                    <Link
-                      href={`/store?storeId=${activeClaim.storeId}`}
-                      className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition"
+                {/* Collapsible claim details — disputed items + photo evidence.
+                    Collapsed by default so the chat stays visible. */}
+                {(activeClaim.items?.length > 0 || (activeClaim.mediaUrls?.length ?? 0) > 0) && (
+                  <div className="border-b border-slate-100 dark:border-slate-600">
+                    <button
+                      type="button"
+                      onClick={() => setDetailsOpen((v) => !v)}
+                      aria-expanded={detailsOpen}
+                      className="flex w-full items-center justify-between gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-700 text-left"
                     >
-                      Reorder ↗
-                    </Link>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Claim details
+                        <span className="ml-1.5 font-normal normal-case text-slate-400">
+                          ({activeClaim.items?.length ?? 0} item{(activeClaim.items?.length ?? 0) === 1 ? "" : "s"}
+                          {(activeClaim.mediaUrls?.length ?? 0) > 0 ? `, ${activeClaim.mediaUrls!.length} photo${activeClaim.mediaUrls!.length === 1 ? "" : "s"}` : ""})
+                        </span>
+                      </span>
+                      <ChevronDown className={`h-4 w-4 flex-shrink-0 text-slate-400 transition-transform ${detailsOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {detailsOpen && (
+                      <>
+                        {/* Disputed items strip */}
+                        {activeClaim.items?.length > 0 && (
+                          <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-700 flex gap-2 overflow-x-auto">
+                            {activeClaim.items.map((item, i) => (
+                              <div key={i} className="flex items-center gap-2 flex-shrink-0 bg-white dark:bg-slate-600 rounded-lg border border-slate-200 dark:border-slate-500 px-2.5 py-1.5">
+                                {item.image && (
+                                  <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
+                                )}
+                                <div>
+                                  <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 max-w-[120px] truncate">{item.name}</p>
+                                  <p className="text-[10px] text-slate-400 dark:text-slate-400">×{item.quantity} · ${item.price}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Photo evidence */}
+                        {activeClaim.mediaUrls && activeClaim.mediaUrls.length > 0 && (
+                          <div className="px-5 py-2.5 bg-slate-50 dark:bg-slate-700">
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Photo Evidence</p>
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                              {activeClaim.mediaUrls.map((url, i) => (
+                                <img
+                                  key={i}
+                                  src={url}
+                                  alt={`Evidence ${i + 1}`}
+                                  onClick={() => setLightboxUrl(url)}
+                                  className="h-16 w-16 shrink-0 rounded-lg object-cover border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
+                )}
+
+                {/* awaiting_reorder — pick a replacement size/colour (free, no re-charge) */}
+                {activeClaim.status === "awaiting_reorder" && (
+                  <ClaimExchangePanel
+                    claimId={activeClaim._id}
+                    onResolved={() => {
+                      setActiveClaim((prev) => (prev ? { ...prev, status: "resolved" } : prev));
+                      setClaims((prev) =>
+                        prev.map((c) => (c._id === activeClaim._id ? { ...c, status: "resolved" } : c))
+                      );
+                      loadClaims();
+                    }}
+                  />
                 )}
 
                 {/* Messages */}
