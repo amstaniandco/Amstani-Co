@@ -38,9 +38,13 @@ export type User = {
 
   // Array of addresses for checkout/profile
   addresses?: Address[];
-  
+
   // Basic payment info for display (actual tokens used for API)
   paymentMethods?: PaymentMethod[];
+
+  // Stripe Customer this user's saved cards are attached to. Created lazily on
+  // first checkout / card save. Saved cards live in Stripe, not this document.
+  stripeCustomerId?: string;
   
   // If role === 'owner', they might be linked to a specific Store ID
   storeId?: ObjectId;

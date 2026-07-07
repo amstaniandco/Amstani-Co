@@ -2,36 +2,65 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import stripe, { getOrCreateStripeCustomer } from "../../../../lib/stripe";
 import { PaymentMethod } from "../../../../models/user";
 
 function getUserObjectId(id: string) {
   return ObjectId.isValid(id) ? new ObjectId(id) : null;
 }
 
-function cleanString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+function providerFromBrand(brand?: string | null): PaymentMethod["provider"] {
+  switch ((brand || "").toLowerCase()) {
+    case "visa":
+      return "Visa";
+    case "mastercard":
+      return "Mastercard";
+    case "amex":
+      return "Amex";
+    case "discover":
+      return "Discover";
+    default:
+      return brand ? brand.charAt(0).toUpperCase() + brand.slice(1) : "Card";
+  }
 }
 
-function normalizeCard(card: Partial<PaymentMethod>) {
-  const provider = cleanString(card.provider) || "Card";
-  const last4 = cleanString(card.last4);
-  const expiry = cleanString(card.expiry);
-
-  if (!/^\d{4}$/.test(last4)) return null;
-  if (!/^\d{2}\/\d{2}$/.test(expiry)) return null;
-
-  const [month] = expiry.split("/").map(Number);
-  if (month < 1 || month > 12) return null;
-
+function toDisplayCard(pm: { id: string; card?: { brand?: string; last4?: string; exp_month?: number; exp_year?: number } | null }): PaymentMethod {
+  const card = pm.card;
+  const month = String(card?.exp_month ?? "").padStart(2, "0");
+  const year = String(card?.exp_year ?? "").slice(-2);
   return {
-    id: cleanString(card.id) || crypto.randomUUID(),
-    provider,
-    last4,
-    expiry,
-    stripePaymentMethodId: cleanString(card.stripePaymentMethodId) || undefined,
-  } satisfies PaymentMethod;
+    id: pm.id,
+    stripePaymentMethodId: pm.id,
+    provider: providerFromBrand(card?.brand),
+    last4: card?.last4 ?? "",
+    expiry: month && year ? `${month}/${year}` : "",
+  };
 }
 
+// GET /api/user/cards — list the customer's saved cards from Stripe.
+export async function GET() {
+  try {
+    const tokenUser = await getUserFromToken();
+    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = getUserObjectId(tokenUser.id);
+    if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const customerId = await getOrCreateStripeCustomer(db, userId);
+
+    const methods = await stripe.paymentMethods.list({ customer: customerId, type: "card" });
+    const cards = methods.data.map(toDisplayCard);
+
+    return NextResponse.json({ cards }, { status: 200 });
+  } catch (error) {
+    console.error("GET /api/user/cards error:", error);
+    return NextResponse.json({ error: "Failed to load cards" }, { status: 500 });
+  }
+}
+
+// POST /api/user/cards — after a card is saved via a SetupIntent on the profile,
+// mark it redisplayable so it also appears at checkout. Body: { paymentMethodId }.
 export async function POST(req: Request) {
   try {
     const tokenUser = await getUserFromToken();
@@ -39,30 +68,30 @@ export async function POST(req: Request) {
     const userId = getUserObjectId(tokenUser.id);
     if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
-    const body = await req.json();
-    const newCard = normalizeCard(body.card ?? {});
-    if (!newCard) return NextResponse.json({ error: "Card data required" }, { status: 400 });
+    const body = await req.json().catch(() => ({}));
+    const paymentMethodId = typeof body.paymentMethodId === "string" ? body.paymentMethodId.trim() : "";
+    if (!paymentMethodId) return NextResponse.json({ error: "paymentMethodId required" }, { status: 400 });
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
+    const customerId = await getOrCreateStripeCustomer(db, userId);
 
-    const result = await db.collection("users").updateOne(
-      { _id: userId },
-      {
-        $push: { paymentMethods: newCard } as never,
-        $set: { updatedAt: new Date() },
-      }
-    );
+    const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+    if (pm.customer !== customerId) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
+    }
 
-    if (!result.matchedCount) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Redisplay lets the card surface in the checkout PaymentElement later.
+    const updated = await stripe.paymentMethods.update(paymentMethodId, { allow_redisplay: "always" });
 
-    return NextResponse.json({ message: "Card added", card: newCard }, { status: 201 });
+    return NextResponse.json({ message: "Card saved", card: toDisplayCard(updated) }, { status: 201 });
   } catch (error) {
     console.error("POST /api/user/cards error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save card" }, { status: 500 });
   }
 }
 
+// DELETE /api/user/cards?id=<paymentMethodId> — detach the card from the customer.
 export async function DELETE(req: Request) {
   try {
     const tokenUser = await getUserFromToken();
@@ -76,20 +105,18 @@ export async function DELETE(req: Request) {
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
+    const customerId = await getOrCreateStripeCustomer(db, userId);
 
-    const result = await db.collection("users").updateOne(
-      { _id: userId },
-      {
-        $pull: { paymentMethods: { id: cardId } } as never,
-        $set: { updatedAt: new Date() },
-      }
-    );
+    const pm = await stripe.paymentMethods.retrieve(cardId);
+    if (pm.customer !== customerId) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
+    }
 
-    if (!result.matchedCount) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    await stripe.paymentMethods.detach(cardId);
 
     return NextResponse.json({ message: "Card deleted" }, { status: 200 });
   } catch (error) {
     console.error("DELETE /api/user/cards error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete card" }, { status: 500 });
   }
 }

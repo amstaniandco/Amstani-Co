@@ -29,13 +29,24 @@ export default function ProfilePage() {
     }
   }, [toast]);
 
+  const fetchCards = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/cards");
+      if (res.ok) {
+        const data = await res.json();
+        setCards(data.cards || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch cards", error);
+    }
+  }, []);
+
   const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch("/api/user/profile");
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
-        setCards(data.user.paymentMethods || []);
       } else if (res.status === 401) {
         showToast("error", "Please sign in to view your profile");
       } else {
@@ -51,7 +62,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+    fetchCards();
+  }, [fetchProfile, fetchCards]);
 
   const handleSaveProfile = async (
     updatedData: Pick<User, "name" | "email" | "phone" | "state"> & Partial<Pick<User, "avatarUrl">>,
@@ -150,33 +162,11 @@ export default function ProfilePage() {
     await saveAddresses(updatedAddresses, "Default address updated!");
   };
 
-  const handleAddCard = async (cardPayload: PaymentMethod) => {
-    try {
-      const res = await fetch("/api/user/cards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card: cardPayload }),
-      });
-      if (res.ok) {
-        await fetchProfile();
-        showToast("success", "Card added successfully!");
-      } else {
-        const message = await readError(res, "Failed to add card");
-        showToast("error", message);
-        throw new Error(message);
-      }
-    } catch (error) {
-      console.error("Error adding card:", error);
-      if (!(error instanceof Error)) showToast("error", "Error adding card");
-      throw error;
-    }
-  };
-
   const handleDeleteCard = async (cardId: string) => {
     try {
-      const res = await fetch(`/api/user/cards?id=${cardId}`, { method: "DELETE" });
+      const res = await fetch(`/api/user/cards?id=${encodeURIComponent(cardId)}`, { method: "DELETE" });
       if (res.ok) {
-        await fetchProfile();
+        await fetchCards();
         showToast("success", "Card deleted successfully!");
       } else {
         const message = await readError(res, "Failed to delete card");
@@ -224,7 +214,7 @@ export default function ProfilePage() {
 
       <CardsSection
         cards={cards}
-        onAddCard={handleAddCard}
+        onCardAdded={fetchCards}
         onDeleteCard={handleDeleteCard}
       />
 

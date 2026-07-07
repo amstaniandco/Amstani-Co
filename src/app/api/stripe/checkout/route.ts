@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import stripe, { STRIPE_CURRENCY } from "../../../../lib/stripe";
+import stripe, {
+  STRIPE_CURRENCY,
+  getOrCreateStripeCustomer,
+  PAYMENT_ELEMENT_SAVED_CARD_FEATURES,
+} from "../../../../lib/stripe";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
 
@@ -229,17 +233,37 @@ export async function POST(req: Request) {
   }
 
   let paymentIntent;
+  let customerSessionClientSecret: string | null = null;
   try {
+    // Attach a Stripe Customer so the shopper can reuse saved cards and opt to
+    // save the one they enter. The Customer Session drives the PaymentElement's
+    // saved-card list + "Save this card" checkbox.
+    const stripeCustomerId = await getOrCreateStripeCustomer(db, new ObjectId(user.id));
+
     paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: STRIPE_CURRENCY,
-      automatic_payment_methods: { enabled: true },
+      customer: stripeCustomerId,
+      // Card only (incl. Apple/Google Pay). Excludes Link so saved cards surface
+      // in the PaymentElement instead of a Link account hijacking the flow.
+      payment_method_types: ["card"],
       metadata: {
         customerId: user.id,
         orderIds: JSON.stringify(orderIds),
         storeBreakdown: JSON.stringify(storeBreakdown),
       },
     });
+
+    const customerSession = await stripe.customerSessions.create({
+      customer: stripeCustomerId,
+      components: {
+        payment_element: {
+          enabled: true,
+          features: PAYMENT_ELEMENT_SAVED_CARD_FEATURES,
+        },
+      },
+    });
+    customerSessionClientSecret = customerSession.client_secret;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Payment setup failed";
     return NextResponse.json({ error: message }, { status: 400 });
@@ -253,6 +277,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     clientSecret: paymentIntent.client_secret,
+    customerSessionClientSecret,
     orderIds,
     total: totalCents / 100,
     subtotal: totalSubtotalCents / 100,

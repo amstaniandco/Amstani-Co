@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { deleteStripeCustomer } from "../../../../lib/stripe";
 import { Address, User } from "../../../../models/user";
 
 const editableFields = ["name", "email", "phone", "state", "avatarUrl"] as const;
@@ -139,6 +140,11 @@ export async function DELETE() {
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
+    // Capture the Stripe customer before anonymizing so we can delete it after.
+    const existing = await db
+      .collection<User>("users")
+      .findOne({ _id: userId }, { projection: { stripeCustomerId: 1 } });
+
     const result = await db.collection("users").updateOne(
       { _id: userId },
       {
@@ -154,13 +160,18 @@ export async function DELETE() {
         },
         // Clear credentials and OAuth links so re-authenticating (incl. social
         // login) never matches this anonymized record — it starts a fresh account.
-        $unset: { password: "", googleId: "", facebookId: "", twitterId: "" },
+        // Drop stripeCustomerId too so the record no longer points at the (now
+        // deleted) Stripe customer.
+        $unset: { password: "", googleId: "", facebookId: "", twitterId: "", stripeCustomerId: "" },
       }
     );
 
     if (!result.matchedCount) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Deleting the Stripe customer also detaches its saved cards. Best-effort.
+    await deleteStripeCustomer(existing?.stripeCustomerId);
 
     await Promise.all([
       db.collection("carts").deleteMany({ $or: [{ userId: tokenUser.id }, { userId }] }),

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Store, Info } from "lucide-react";
 import CheckoutForm from "./components/CheckoutForm";
@@ -10,8 +9,7 @@ import StripePaymentForm from "./components/StripePaymentForm";
 import type { Address } from "../../../models/user";
 import { useToast } from "../../../components/global/ToastProvider";
 import { getSelectedState } from "../../../lib/state-preference";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { stripePromise } from "../../../lib/stripe-client";
 
 type CartItem = {
   productId: string;
@@ -63,6 +61,7 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState<Step>("address");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [customerSessionSecret, setCustomerSessionSecret] = useState<string | null>(null);
   const [paymentTotal, setPaymentTotal] = useState(0);
   const [paymentCurrency, setPaymentCurrency] = useState("usd");
   // Authoritative breakdown returned by the API after PaymentIntent is created
@@ -170,6 +169,7 @@ export default function CheckoutPage() {
         return;
       }
       setClientSecret(data.clientSecret);
+      setCustomerSessionSecret(data.customerSessionClientSecret ?? null);
       setPaymentTotal(data.total);
       setPaymentCurrency(data.currency);
       // Store authoritative breakdown for display
@@ -198,7 +198,12 @@ export default function CheckoutPage() {
   }, {});
 
   const stripeOptions = clientSecret
-    ? { clientSecret, appearance: { theme: "stripe" as const } }
+    ? {
+        clientSecret,
+        // Enables the PaymentElement's saved-card list + "Save this card" option.
+        ...(customerSessionSecret ? { customerSessionClientSecret: customerSessionSecret } : {}),
+        appearance: { theme: "stripe" as const },
+      }
     : undefined;
 
   // For the summary panel: use authoritative server values in Step 2, estimates in Step 1

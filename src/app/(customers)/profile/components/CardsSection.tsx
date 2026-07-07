@@ -2,73 +2,19 @@
 
 import { useState } from "react";
 import { PaymentMethod } from "../../../../models/user";
-import { useToast } from "../../../../components/global/ToastProvider";
 import { useConfirm } from "../../../../components/global/ConfirmProvider";
+import AddCardForm from "./AddCardForm";
 
 interface CardsSectionProps {
   cards: PaymentMethod[];
-  onAddCard: (card: PaymentMethod) => Promise<void>;
+  onCardAdded: () => Promise<void>;
   onDeleteCard: (cardId: string) => Promise<void>;
 }
 
-export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSectionProps) {
-  const toast = useToast();
+export default function CardsSection({ cards, onCardAdded, onDeleteCard }: CardsSectionProps) {
   const confirm = useConfirm();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [newCard, setNewCard] = useState({ number: "", name: "", expiry: "", cvc: "" });
-
-  const validateCard = () => {
-    if (!/^\d{13,19}$/.test(newCard.number)) {
-      toast.error("Card number must be at least 13 digits");
-      return false;
-    }
-    if (!newCard.name) {
-      toast.error("Name on card is required");
-      return false;
-    }
-    if (!newCard.expiry || !/^\d{2}\/\d{2}$/.test(newCard.expiry)) {
-      toast.error("Expiry date must be in MM/YY format");
-      return false;
-    }
-    if (!/^\d{3,4}$/.test(newCard.cvc)) {
-      toast.error("CVC must be 3 or 4 digits");
-      return false;
-    }
-    return true;
-  };
-
-  const handleAddCard = async () => {
-    if (!validateCard()) return;
-
-    setIsSaving(true);
-    try {
-      const provider = newCard.number.startsWith("4")
-        ? "Visa"
-        : newCard.number.startsWith("3")
-          ? "Amex"
-          : newCard.number.startsWith("6")
-            ? "Discover"
-            : "Mastercard";
-      const last4 = newCard.number.slice(-4);
-
-      const cardPayload: PaymentMethod = {
-        id: crypto.randomUUID(),
-        provider,
-        last4,
-        expiry: newCard.expiry,
-      };
-
-      await onAddCard(cardPayload);
-      setNewCard({ number: "", name: "", expiry: "", cvc: "" });
-      setShowAddForm(false);
-    } catch (err) {
-      console.error("Error adding card:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleDelete = async (cardId: string) => {
     if (!(await confirm("Are you sure you want to delete this card?"))) return;
@@ -83,8 +29,8 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
     }
   };
 
-  const handleCancel = () => {
-    setNewCard({ number: "", name: "", expiry: "", cvc: "" });
+  const handleAdded = async () => {
+    await onCardAdded();
     setShowAddForm(false);
   };
 
@@ -151,78 +97,10 @@ export default function CardsSection({ cards, onAddCard, onDeleteCard }: CardsSe
       {showAddForm && (
         <div className="ui-subpanel mt-6 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Add New Payment Method</h3>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-              Card Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={newCard.number}
-              onChange={(e) => setNewCard((prev) => ({ ...prev, number: e.target.value.replace(/\D/g, "") }))}
-              placeholder="1234 5678 9012 3456"
-              className="ui-input w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-              Name on Card <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={newCard.name}
-              onChange={(e) => setNewCard((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Your Name"
-              className="ui-input w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                Expiry <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={newCard.expiry}
-                onChange={(e) => setNewCard((prev) => ({ ...prev, expiry: e.target.value }))}
-                placeholder="MM/YY"
-                maxLength={5}
-                className="ui-input w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
-                CVC <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={newCard.cvc}
-                onChange={(e) => setNewCard((prev) => ({ ...prev, cvc: e.target.value.replace(/\D/g, "") }))}
-                placeholder="123"
-                maxLength={4}
-                className="ui-input w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button
-              onClick={handleCancel}
-              disabled={isSaving}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddCard}
-              disabled={isSaving || !newCard.number || !newCard.name || !newCard.expiry || !newCard.cvc}
-              className="rounded-lg bg-[#4DB8B8] px-4 py-2 font-semibold text-white hover:bg-[#3aa3a3] transition disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Save Card"}
-            </button>
-          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Your card is securely saved with Stripe and will be available at checkout.
+          </p>
+          <AddCardForm onAdded={handleAdded} onCancel={() => setShowAddForm(false)} />
         </div>
       )}
     </section>
