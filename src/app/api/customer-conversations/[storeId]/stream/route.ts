@@ -37,6 +37,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     _id: (message._id as ObjectId).toString(),
     sender: message.senderRole,
     senderName: message.senderName,
+    senderAvatarUrl: (message.senderAvatarUrl as string | undefined) ?? undefined,
+    reactions: (message.reactions as Record<string, string[]> | undefined) ?? {},
     text: message.content,
     createdAt: message.createdAt,
     deleted: (message.deleted as boolean) ?? false,

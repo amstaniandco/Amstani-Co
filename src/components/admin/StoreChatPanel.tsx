@@ -3,6 +3,19 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import MessageBubble, { type Message } from "../chat/MessageBubble";
 
+function getCurrentUserId(): string {
+  if (typeof document === "undefined") return "";
+  const entry = document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith("token="));
+  if (!entry) return "";
+  try {
+    const token = decodeURIComponent(entry.slice("token=".length));
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return payload.id ?? "";
+  } catch {
+    return "";
+  }
+}
+
 type StoreEntry = {
   id: string;
   name: string;
@@ -46,6 +59,7 @@ export default function StoreChatPanel({
   const [sending, setSending] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [myUserId] = useState(getCurrentUserId);
 
   const messagesRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -185,6 +199,18 @@ export default function StoreChatPanel({
     }
   };
 
+  const handleReact = async (msgId: string, emoji: string) => {
+    const res = await fetch(`/api/conversations/${activeStoreId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "react", emoji }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
+
   const activeStore = stores.find((s) => s.id === activeStoreId);
 
   return (
@@ -268,6 +294,8 @@ export default function StoreChatPanel({
                   onReply={setReplyingTo}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onReact={handleReact}
+                  currentUserId={myUserId}
                 />
               ))
             )}

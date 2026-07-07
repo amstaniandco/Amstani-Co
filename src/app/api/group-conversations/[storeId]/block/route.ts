@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId, UpdateFilter, Document } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
+import { fetchBlockedUsers } from "../../../../../lib/blockedUsers";
 
 type Params = { params: Promise<{ storeId: string }> };
 
@@ -46,7 +47,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   await db.collection("stores").updateOne({ _id: storeObjectId }, update);
 
   const updated = await db.collection("stores").findOne({ _id: storeObjectId });
-  const blockedUserIds = ((updated?.blockedUserIds as ObjectId[]) ?? []).map((id) => id.toString());
+  const blockedObjectIds = (updated?.blockedUserIds as ObjectId[]) ?? [];
+  const blockedUserIds = blockedObjectIds.map((id) => id.toString());
+  const blockedUsers = await fetchBlockedUsers(db, blockedObjectIds);
 
-  return NextResponse.json({ blockedUserIds });
+  return NextResponse.json({ blockedUserIds, blockedUsers });
 }

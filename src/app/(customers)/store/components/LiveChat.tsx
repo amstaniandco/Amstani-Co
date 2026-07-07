@@ -163,8 +163,37 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
 
   useEffect(() => {
     const box = messagesRef.current;
-    if (box) box.scrollTop = box.scrollHeight;
-  }, [messages, groupMessages]);
+    if (!box) return;
+    // Defer to next frame so newly-rendered messages (and lazily-loaded avatars)
+    // are laid out before we jump to the bottom.
+    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+  }, [messages, groupMessages, view]);
+
+  const handleGroupReact = async (messageId: string, emoji: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/group-conversations/${storeId}/${messageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "react", emoji }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setGroupMessages((prev) => prev.map((message) => (message._id === messageId ? data.message : message)));
+    }
+  };
+
+  const handleReact = async (messageId: string, emoji: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/customer-conversations/${storeId}/${messageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "react", emoji }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMessages((prev) => prev.map((message) => (message._id === messageId ? data.message : message)));
+    }
+  };
 
   const handleGroupEdit = async (messageId: string, newText: string) => {
     if (!storeId) return;
@@ -362,6 +391,8 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
               onReply={setGroupReplyingTo}
               onEdit={handleGroupEdit}
               onDelete={handleGroupDelete}
+              onReact={handleGroupReact}
+              currentUserId={myUserId}
             />
           ))
         ) : (
@@ -377,6 +408,8 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
               onReply={setReplyingTo}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onReact={handleReact}
+              currentUserId={myUserId}
             />
           ))
         )}

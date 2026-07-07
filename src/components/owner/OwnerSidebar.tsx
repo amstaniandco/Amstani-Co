@@ -57,7 +57,7 @@ const sidebarItems: SidebarItem[] = [
   { label: "Payouts", href: "/owner/stripe", icon: CreditCard },
 ];
 
-type SidebarCounts = { orders: number; claims: number; notifications: number; listing_requests: number };
+type SidebarCounts = { orders: number; claims: number; notifications: number; listing_requests: number; chats: number };
 
 function getActiveLabel(pathname: string) {
   // Longest-prefix match so /products/catalog doesn't match /products
@@ -79,7 +79,7 @@ export default function OwnerSidebar() {
   const router = useRouter();
   const activeLabel = getActiveLabel(pathname || "");
   const [isOpen, setIsOpen] = useState(false);
-  const [counts, setCounts] = useState<SidebarCounts>({ orders: 0, claims: 0, notifications: 0, listing_requests: 0 });
+  const [counts, setCounts] = useState<SidebarCounts>({ orders: 0, claims: 0, notifications: 0, listing_requests: 0, chats: 0 });
 
   useEffect(() => {
     let cancelled = false;
@@ -103,12 +103,14 @@ export default function OwnerSidebar() {
       if (detail === "owner_claims") setCounts((p) => ({ ...p, claims: 0 }));
       if (detail === "owner_notifications") setCounts((p) => ({ ...p, notifications: 0 }));
       if (detail === "owner_listing_requests") setCounts((p) => ({ ...p, listing_requests: 0 }));
+      if (detail === "owner_chats") setCounts((p) => ({ ...p, chats: 0 }));
     };
     window.addEventListener("sb-seen", handler);
     return () => window.removeEventListener("sb-seen", handler);
   }, []);
 
   const BADGE_MAP: Record<string, number> = {
+    "/chats": counts.chats,
     "/orders": counts.orders,
     "/owner/claims": counts.claims,
     "/owner/notifications": counts.notifications,

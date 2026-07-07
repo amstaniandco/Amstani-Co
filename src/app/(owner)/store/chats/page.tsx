@@ -3,17 +3,20 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
+  Ban,
   Clock3,
   Loader2,
   Plus,
   Search,
   SendHorizontal,
   Store,
+  Trash2,
   Users,
 } from "lucide-react";
 import ownerCard from "@/src/app/imagess/ownercard.png";
 import MessageBubble, { type Message as ChatMessage } from "@/src/components/chat/MessageBubble";
 import GoLiveModal from "@/src/components/owner/GoLiveModal";
+import { useConfirm } from "@/src/components/global/ConfirmProvider";
 
 function FacebookBrandIcon() {
   return (
@@ -80,9 +83,25 @@ type ChannelItem = {
 type CustomerThread = {
   _id: string;
   customerName: string;
+  customerAvatarUrl?: string;
   lastMessage: string;
   updatedAt: string;
 };
+
+type ChatUnreads = { admin: number; group: number; customers: Record<string, number> };
+
+function totalUnread(u: ChatUnreads) {
+  return u.admin + u.group + Object.values(u.customers).reduce((sum, n) => sum + n, 0);
+}
+
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ml-2 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 const channels: ChannelItem[] = [
   { key: "facebook", title: "Facebook Live", icon: FacebookBrandIcon },
@@ -94,6 +113,19 @@ const channels: ChannelItem[] = [
 function messagePreview(message?: ChatMessage | null) {
   if (!message) return "No messages yet";
   return message.deleted ? "This message was deleted" : message.text;
+}
+
+function getCurrentUserId(): string {
+  if (typeof document === "undefined") return "";
+  const entry = document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith("token="));
+  if (!entry) return "";
+  try {
+    const token = decodeURIComponent(entry.slice("token=".length));
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return payload.id ?? "";
+  } catch {
+    return "";
+  }
 }
 
 function useCountdown(fromTime: string, isLive: boolean, liveSessionStartedAt: string | null) {
@@ -147,6 +179,10 @@ export default function OwnerChatsPage() {
   const [customerMessages, setCustomerMessages] = useState<ChatMessage[]>([]);
   const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
   const [groupBlockedUserIds, setGroupBlockedUserIds] = useState<string[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<{ id: string; name: string; avatarUrl: string }[]>([]);
+  const [unreads, setUnreads] = useState<ChatUnreads>({ admin: 0, group: 0, customers: {} });
+  const [myUserId] = useState(getCurrentUserId);
+  const confirm = useConfirm();
   const [replyText, setReplyText] = useState("");
   const [customerReplyText, setCustomerReplyText] = useState("");
   const [groupReplyText, setGroupReplyText] = useState("");
@@ -227,18 +263,86 @@ export default function OwnerChatsPage() {
     setCustomerThreads(data.chats ?? []);
   }, []);
 
+  const handleDeleteThread = useCallback(
+    async (thread: CustomerThread) => {
+      const ok = await confirm({
+        title: "Delete conversation",
+        message: `Delete your chat with ${thread.customerName}? This removes all messages and cannot be undone.`,
+        confirmLabel: "Delete",
+        danger: true,
+      });
+      if (!ok || !storeId) return;
+      const res = await fetch(`/api/customer-conversations/${storeId}?chatId=${thread._id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setCustomerThreads((prev) => prev.filter((t) => t._id !== thread._id));
+        setUnreads((prev) => {
+          const customers = { ...prev.customers };
+          delete customers[thread._id];
+          return { ...prev, customers };
+        });
+        if (selectedCustomerThread?._id === thread._id) {
+          esRef.current?.close();
+          setSelectedCustomerThread(null);
+          setCustomerMessages([]);
+          setActiveThread("admin");
+        }
+      }
+    },
+    [confirm, selectedCustomerThread, storeId]
+  );
+
+  const refreshUnreads = useCallback(async () => {
+    try {
+      const res = await fetch("/api/owner/chat-unreads");
+      if (res.ok) {
+        const data = await res.json();
+        setUnreads({ admin: data.admin ?? 0, group: data.group ?? 0, customers: data.customers ?? {} });
+      }
+    } catch {}
+  }, []);
+
+  // Clears a thread's unread badge locally. (Telling the nav sidebar to drop its
+  // Chats badge is handled by the effect below, once the total reaches zero — doing
+  // it inside the state updater would setState on another component mid-render.)
+  const markThreadRead = useCallback((thread: "admin" | "group") => {
+    setUnreads((prev) => ({ ...prev, [thread]: 0 }));
+    fetch("/api/owner/chat-reads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ thread }),
+    }).catch(() => {});
+  }, []);
+
+  const markCustomerRead = useCallback((chatId: string) => {
+    setUnreads((prev) => ({ ...prev, customers: { ...prev.customers, [chatId]: 0 } }));
+  }, []);
+
+  // Notify the nav sidebar when the owner has cleared all unread chats.
+  const prevTotalRef = useRef<number | null>(null);
+  useEffect(() => {
+    const total = totalUnread(unreads);
+    if (prevTotalRef.current !== null && prevTotalRef.current > 0 && total === 0) {
+      window.dispatchEvent(new CustomEvent("sb-seen", { detail: "owner_chats" }));
+    }
+    prevTotalRef.current = total;
+  }, [unreads]);
+
   const openAdminThread = useCallback(() => {
     setActiveThread("admin");
+    markThreadRead("admin");
     if (storeId) {
       startStream(storeId, messages.at(-1)?._id ?? "");
     }
-  }, [messages, startStream, storeId]);
+  }, [markThreadRead, messages, startStream, storeId]);
 
   const openCustomerThread = useCallback(
     async (thread: CustomerThread) => {
       if (!storeId) return;
       setActiveThread("customer");
       setSelectedCustomerThread(thread);
+      markCustomerRead(thread._id);
       const res = await fetch(`/api/customer-conversations/${storeId}?chatId=${thread._id}`);
       if (!res.ok) return;
       const data = await res.json();
@@ -246,7 +350,7 @@ export default function OwnerChatsPage() {
       setCustomerMessages(loadedMessages);
       startCustomerStream(storeId, thread._id, loadedMessages.at(-1)?._id ?? "");
     },
-    [startCustomerStream, storeId]
+    [markCustomerRead, startCustomerStream, storeId]
   );
 
   const startGroupStream = useCallback((sid: string, afterId: string) => {
@@ -267,6 +371,7 @@ export default function OwnerChatsPage() {
           );
         } else if (data.type === "blocked") {
           setGroupBlockedUserIds(data.blockedUserIds ?? []);
+          setBlockedUsers(data.blockedUsers ?? []);
         }
       } catch {}
     };
@@ -275,38 +380,47 @@ export default function OwnerChatsPage() {
   const openGroupThread = useCallback(async () => {
     if (!storeId) return;
     setActiveThread("group");
+    markThreadRead("group");
     const res = await fetch(`/api/group-conversations/${storeId}`);
     if (!res.ok) return;
     const data = await res.json();
     const loadedMessages: ChatMessage[] = data.messages ?? [];
     setGroupMessages(loadedMessages);
     setGroupBlockedUserIds(data.blockedUserIds ?? []);
+    setBlockedUsers(data.blockedUsers ?? []);
     startGroupStream(storeId, loadedMessages.at(-1)?._id ?? "");
-  }, [startGroupStream, storeId]);
+  }, [markThreadRead, startGroupStream, storeId]);
 
-  const handleGroupBlock = useCallback(
-    async (message: ChatMessage, block: boolean) => {
-      if (!storeId || !message.senderId) return;
-      // Optimistic update so the menu reflects the new state immediately.
+  const blockUser = useCallback(
+    async (userId: string, block: boolean) => {
+      if (!storeId || !userId) return;
+      // Optimistic update so the menu/list reflects the new state immediately.
       setGroupBlockedUserIds((prev) =>
-        block
-          ? (prev.includes(message.senderId!) ? prev : [...prev, message.senderId!])
-          : prev.filter((id) => id !== message.senderId)
+        block ? (prev.includes(userId) ? prev : [...prev, userId]) : prev.filter((id) => id !== userId)
       );
+      if (!block) setBlockedUsers((prev) => prev.filter((u) => u.id !== userId));
       const res = await fetch(`/api/group-conversations/${storeId}/block`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: message.senderId, action: block ? "block" : "unblock" }),
+        body: JSON.stringify({ userId, action: block ? "block" : "unblock" }),
       });
       if (res.ok) {
         const data = await res.json();
         setGroupBlockedUserIds(data.blockedUserIds ?? []);
+        setBlockedUsers(data.blockedUsers ?? []);
       }
     },
     [storeId]
   );
 
+  const handleGroupBlock = useCallback(
+    (message: ChatMessage, block: boolean) => blockUser(message.senderId ?? "", block),
+    [blockUser]
+  );
+
   useEffect(() => {
+    refreshUnreads();
+
     fetch("/api/owner/timings")
       .then((r) => r.json())
       .then((d) => {
@@ -336,7 +450,7 @@ export default function OwnerChatsPage() {
       })
       .catch(() => {});
     return () => { esRef.current?.close(); };
-  }, [loadCustomerThreads, startStream]);
+  }, [loadCustomerThreads, refreshUnreads, startStream]);
 
   const handleGoLive = async (liveLink: string) => {
     setGoingLive(true);
@@ -376,8 +490,11 @@ export default function OwnerChatsPage() {
 
   useEffect(() => {
     const box = messagesRef.current;
-    if (box) box.scrollTop = box.scrollHeight;
-  }, [messages, customerMessages, adminTyping]);
+    if (!box) return;
+    // Defer to next frame so newly-rendered messages (and lazily-loaded avatars)
+    // are laid out before we jump to the bottom.
+    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+  }, [messages, customerMessages, groupMessages, activeThread, selectedCustomerThread, adminTyping]);
 
   const sendTypingStatus = useCallback(
     (isTyping: boolean) => {
@@ -460,6 +577,45 @@ export default function OwnerChatsPage() {
             : thread
         )
       );
+    }
+  };
+
+  const handleReact = async (msgId: string, emoji: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "react", emoji }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
+
+  const handleCustomerReact = async (msgId: string, emoji: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/customer-conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "react", emoji }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setCustomerMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
+    }
+  };
+
+  const handleGroupReact = async (msgId: string, emoji: string) => {
+    if (!storeId) return;
+    const res = await fetch(`/api/group-conversations/${storeId}/${msgId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "react", emoji }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setGroupMessages((prev) => prev.map((m) => m._id === msgId ? data.message : m));
     }
   };
 
@@ -701,7 +857,11 @@ export default function OwnerChatsPage() {
             <button
               type="button"
               onClick={openAdminThread}
-              className="flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left bg-slate-100"
+              className={`flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left transition ${
+                activeThread === "admin"
+                  ? "bg-slate-200 ring-1 ring-inset ring-[#65bbc5]"
+                  : "hover:bg-slate-100"
+              }`}
             >
               <div className="h-12 w-12 rounded-full bg-[#65bbc5] flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">
                 A
@@ -709,11 +869,13 @@ export default function OwnerChatsPage() {
               <span className="flex flex-1 items-center justify-between gap-2">
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-[#65bbc5]">Super Admin</span>
-                  <span className="mt-0.5 flex items-center gap-2 truncate text-xs text-slate-700">
+                  <span className={`mt-0.5 flex items-center gap-2 truncate text-xs ${unreads.admin > 0 ? "font-semibold text-slate-900" : "text-slate-700"}`}>
                     {messagePreview(lastAdminMsg)}
                   </span>
                 </span>
-                <span className="mt-2 h-3 w-3 rounded-full bg-[#65bbc5]" />
+                {unreads.admin > 0
+                  ? <UnreadBadge count={unreads.admin} />
+                  : <span className="mt-2 h-3 w-3 rounded-full bg-[#65bbc5]" />}
               </span>
             </button>
 
@@ -721,8 +883,8 @@ export default function OwnerChatsPage() {
             <button
               type="button"
               onClick={openGroupThread}
-              className={`flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left ${
-                activeThread === "group" ? "bg-slate-100" : "hover:bg-slate-100"
+              className={`flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left transition ${
+                activeThread === "group" ? "bg-slate-200 ring-1 ring-inset ring-[#8a6fd6]" : "hover:bg-slate-100"
               }`}
             >
               <div className="h-12 w-12 rounded-full bg-[#8a6fd6] flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">
@@ -731,11 +893,13 @@ export default function OwnerChatsPage() {
               <span className="flex flex-1 items-center justify-between gap-2">
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-[#8a6fd6]">Group Chat</span>
-                  <span className="mt-0.5 flex items-center gap-2 truncate text-xs text-slate-700">
+                  <span className={`mt-0.5 flex items-center gap-2 truncate text-xs ${unreads.group > 0 ? "font-semibold text-slate-900" : "text-slate-700"}`}>
                     {messagePreview(groupMessages.at(-1))}
                   </span>
                 </span>
-                <span className="mt-2 h-3 w-3 rounded-full bg-[#8a6fd6]" />
+                {unreads.group > 0
+                  ? <UnreadBadge count={unreads.group} />
+                  : <span className="mt-2 h-3 w-3 rounded-full bg-[#8a6fd6]" />}
               </span>
             </button>
 
@@ -758,35 +922,56 @@ export default function OwnerChatsPage() {
                 </span>
               </button>
             ) : (
-              customerThreads.map((thread) => (
+              customerThreads.map((thread) => {
+                const isActive = selectedCustomerThread?._id === thread._id && activeThread === "customer";
+                const unread = unreads.customers[thread._id] ?? 0;
+                return (
+                <div key={thread._id} className="group relative">
                 <button
-                  key={thread._id}
                   type="button"
                   onClick={() => openCustomerThread(thread)}
-                  className={`flex w-full items-start gap-3 rounded-2xl px-2 py-2 text-left ${
-                    selectedCustomerThread?._id === thread._id && activeThread === "customer"
-                      ? "bg-slate-100"
+                  className={`flex w-full items-start gap-3 rounded-2xl px-2 py-2 pr-9 text-left transition ${
+                    isActive
+                      ? "bg-slate-200 ring-1 ring-inset ring-[#f04444]"
                       : "hover:bg-slate-100"
                   }`}
                 >
-                  <Image
-                    src={ownerCard}
-                    alt={thread.customerName}
-                    width={50}
-                    height={50}
-                    className="h-12 w-12 rounded-full border border-slate-300 object-cover"
-                  />
+                  {thread.customerAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thread.customerAvatarUrl}
+                      alt={thread.customerName}
+                      className="h-12 w-12 rounded-full border border-slate-300 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#f04444] text-lg font-bold text-white">
+                      {(thread.customerName?.[0] ?? "C").toUpperCase()}
+                    </div>
+                  )}
                   <span className="flex flex-1 items-center justify-between gap-2">
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-[#f04444]">{thread.customerName}</span>
-                      <span className="mt-0.5 block truncate text-xs text-slate-700">
+                      <span className={`mt-0.5 block truncate text-xs ${unread > 0 ? "font-semibold text-slate-900" : "text-slate-700"}`}>
                         {thread.lastMessage || "Customer chat"}
                       </span>
                     </span>
-                    <span className="mt-2 h-3 w-3 rounded-full bg-[#f04444]" />
+                    {unread > 0
+                      ? <UnreadBadge count={unread} />
+                      : <span className="mt-2 h-3 w-3 rounded-full bg-[#f04444]" />}
                   </span>
                 </button>
-              ))
+                <button
+                  type="button"
+                  onClick={() => handleDeleteThread(thread)}
+                  title="Delete conversation"
+                  aria-label={`Delete conversation with ${thread.customerName}`}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-1.5 text-slate-400 opacity-0 shadow-sm transition hover:bg-red-50 hover:text-red-500 focus:opacity-100 group-hover:opacity-100"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -825,6 +1010,8 @@ export default function OwnerChatsPage() {
                   onReply={setReplyingTo}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onReact={handleReact}
+                  currentUserId={myUserId}
                 />
               ))
             ) : activeThread === "group" ? (
@@ -842,6 +1029,8 @@ export default function OwnerChatsPage() {
                   onDelete={handleGroupDelete}
                   onBlock={handleGroupBlock}
                   blocked={!!message.senderId && groupBlockedUserIds.includes(message.senderId)}
+                  onReact={handleGroupReact}
+                  currentUserId={myUserId}
                 />
               ))
             ) : (
@@ -857,6 +1046,8 @@ export default function OwnerChatsPage() {
                   onReply={setCustomerReplyingTo}
                   onEdit={handleCustomerEdit}
                   onDelete={handleCustomerDelete}
+                  onReact={handleCustomerReact}
+                  currentUserId={myUserId}
                 />
               ))
             )}
@@ -958,6 +1149,46 @@ export default function OwnerChatsPage() {
           </form>
         </div>
       </section>
+
+      {/* Blocked users — quick unblock list */}
+      {blockedUsers.length > 0 && (
+        <section className="mt-4 rounded-[24px] border border-slate-200 bg-white p-4 lg:rounded-[30px]">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <Ban className="h-4 w-4 text-red-500" />
+            Blocked users ({blockedUsers.length})
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Blocked users can’t post in the group chat and their messages are hidden from everyone.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {blockedUsers.map((u) => (
+              <li
+                key={u.id}
+                className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  {u.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={u.avatarUrl} alt={u.name} className="h-9 w-9 rounded-full object-cover" />
+                  ) : (
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#8a6fd6] text-sm font-bold text-white">
+                      {(u.name?.[0] ?? "U").toUpperCase()}
+                    </span>
+                  )}
+                  <span className="truncate text-sm font-medium text-slate-800">{u.name}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => blockUser(u.id, false)}
+                  className="shrink-0 rounded-full border border-[#65bbc5] px-3 py-1.5 text-xs font-semibold text-[#65bbc5] transition hover:bg-[#eef9fa]"
+                >
+                  Unblock
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </>
   );
 }

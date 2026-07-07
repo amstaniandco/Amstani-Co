@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
+import { fetchBlockedUsers } from "../../../../../lib/blockedUsers";
 
 type Params = { params: Promise<{ storeId: string }> };
 
@@ -29,6 +30,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     sender: message.senderRole,
     senderName: message.senderName,
     senderId: (message.senderId as ObjectId)?.toString(),
+    senderAvatarUrl: (message.senderAvatarUrl as string | undefined) ?? undefined,
+    reactions: (message.reactions as Record<string, string[]> | undefined) ?? {},
     text: message.content,
     createdAt: message.createdAt,
     deleted: (message.deleted as boolean) ?? false,
@@ -61,11 +64,13 @@ export async function GET(req: NextRequest, { params }: Params) {
             { _id: storeObjectId },
             { projection: { blockedUserIds: 1 } }
           );
-          const blockedUserIds = ((storeDoc?.blockedUserIds as ObjectId[]) ?? []).map((id) => id.toString());
+          const blockedObjectIds = (storeDoc?.blockedUserIds as ObjectId[]) ?? [];
+          const blockedUserIds = blockedObjectIds.map((id) => id.toString());
           const blockedKey = blockedUserIds.slice().sort().join(",");
           if (blockedKey !== lastBlockedKey) {
             lastBlockedKey = blockedKey;
-            send({ type: "blocked", blockedUserIds });
+            const blockedUsers = user.role === "owner" ? await fetchBlockedUsers(db, blockedObjectIds) : [];
+            send({ type: "blocked", blockedUserIds, blockedUsers });
           }
 
           const messages = await db

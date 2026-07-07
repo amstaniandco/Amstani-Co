@@ -36,6 +36,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       createdAt: m.createdAt as Date,
       deleted: (m.deleted as boolean) ?? false,
       edited: (m.edited as boolean) ?? false,
+      reactions: (m.reactions as Record<string, string[]> | undefined) ?? {},
       replyTo: (m.replyTo as { _id: string; senderName: string; text: string; deleted?: boolean } | undefined) ?? undefined,
     })),
   });

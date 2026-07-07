@@ -61,6 +61,7 @@ export async function GET(req: NextRequest, { params }: Params) {
                 createdAt: msg.createdAt,
                 deleted: (msg.deleted as boolean) ?? false,
                 edited: (msg.edited as boolean) ?? false,
+                reactions: (msg.reactions as Record<string, string[]> | undefined) ?? {},
                 replyTo: msg.replyTo ?? undefined,
               },
             });
@@ -87,6 +88,7 @@ export async function GET(req: NextRequest, { params }: Params) {
                 createdAt: msg.createdAt,
                 deleted: (msg.deleted as boolean) ?? false,
                 edited: (msg.edited as boolean) ?? false,
+                reactions: (msg.reactions as Record<string, string[]> | undefined) ?? {},
                 replyTo: msg.replyTo ?? undefined,
               },
             });

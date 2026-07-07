@@ -14,6 +14,7 @@ function mapMsg(m: WithId<Document>) {
     createdAt: m.createdAt as Date,
     deleted: (m.deleted as boolean) ?? false,
     edited: (m.edited as boolean) ?? false,
+    reactions: (m.reactions as Record<string, string[]> | undefined) ?? {},
     replyTo: (m.replyTo as { _id: string; senderName: string; text: string; deleted?: boolean } | undefined) ?? undefined,
   };
 }
@@ -45,9 +46,33 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const msgDoc = await db.collection("store_messages").findOne({ _id: msgObjectId, storeId });
   if (!msgDoc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (msgDoc.sender !== user.role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { action, text } = await req.json();
+  const { action, text, emoji } = await req.json();
+
+  // Either party can react; only the author can edit/delete.
+  if (action === "react") {
+    if (!emoji || typeof emoji !== "string") {
+      return NextResponse.json({ error: "Emoji required" }, { status: 400 });
+    }
+    const reactions = { ...((msgDoc.reactions as Record<string, string[]>) ?? {}) };
+    const list = reactions[emoji] ?? [];
+    if (list.includes(user.id)) {
+      const next = list.filter((id) => id !== user.id);
+      if (next.length) reactions[emoji] = next;
+      else delete reactions[emoji];
+    } else {
+      reactions[emoji] = [...list, user.id];
+    }
+    await db.collection("store_messages").updateOne(
+      { _id: msgObjectId },
+      { $set: { reactions, updatedAt: new Date() } }
+    );
+    const updated = await db.collection("store_messages").findOne({ _id: msgObjectId });
+    if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ message: mapMsg(updated) });
+  }
+
+  if (msgDoc.sender !== user.role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   if (action === "delete") {
     await db.collection("store_messages").updateOne(

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { computeChatUnreads } from "../../../../lib/chatUnreads";
 
 export async function GET(req: Request) {
   const user = await getUserFromToken();
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
     { ownerId: new ObjectId(user.id) },
     { projection: { _id: 1 } },
   );
-  if (!store) return NextResponse.json({ orders: 0, claims: 0, notifications: 0, listing_requests: 0 });
+  if (!store) return NextResponse.json({ orders: 0, claims: 0, notifications: 0, listing_requests: 0, chats: 0 });
 
   const storeId = store._id.toString();
 
@@ -38,11 +39,12 @@ export async function GET(req: Request) {
   const requestsFilter: Record<string, unknown> = { storeId, status: { $ne: "pending" } };
   if (sinceRequests) requestsFilter.updatedAt = { $gte: new Date(sinceRequests) };
 
-  const [incomingOrders, openClaims, unreadNotifications, listingRequests] = await Promise.all([
+  const [incomingOrders, openClaims, unreadNotifications, listingRequests, chatUnreads] = await Promise.all([
     db.collection("orders").countDocuments(ordersFilter),
     db.collection("claims").countDocuments(claimsFilter),
     db.collection("notifications").countDocuments(notifFilter),
     db.collection("listing_requests").countDocuments(requestsFilter),
+    computeChatUnreads(db, user.id),
   ]);
 
   return NextResponse.json({
@@ -50,5 +52,6 @@ export async function GET(req: Request) {
     claims: openClaims,
     notifications: unreadNotifications,
     listing_requests: listingRequests,
+    chats: chatUnreads.total,
   });
 }

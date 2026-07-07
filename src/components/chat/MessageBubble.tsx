@@ -4,12 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Ban, MoreHorizontal, Pencil, Reply, Trash2, UserCheck } from "lucide-react";
 
+export const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"] as const;
+
 export type Message = {
   _id: string;
   sender: "admin" | "owner" | "customer";
   senderName: string;
   /** User id of whoever sent this — needed to tell apart "my own" messages from other customers' in a multi-party group chat */
   senderId?: string;
+  /** Profile picture of the sender — shown in the other party's avatar when present */
+  senderAvatarUrl?: string;
+  /** Emoji reactions: emoji -> list of user ids who reacted */
+  reactions?: Record<string, string[]>;
   text: string;
   createdAt: string;
   deleted?: boolean;
@@ -41,6 +47,10 @@ type Props = {
   onBlock?: (msg: Message, block: boolean) => void;
   /** Whether the sender of this message is currently blocked */
   blocked?: boolean;
+  /** When provided, enables emoji reactions (toggles the current user's reaction) */
+  onReact?: (msgId: string, emoji: string) => void;
+  /** Current user's id — used to highlight reactions they've added */
+  currentUserId?: string;
 };
 
 export default function MessageBubble({
@@ -55,6 +65,8 @@ export default function MessageBubble({
   onDelete,
   onBlock,
   blocked = false,
+  onReact,
+  currentUserId,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ bottom: number; left?: number; right?: number } | null>(null);
@@ -131,6 +143,20 @@ export default function MessageBubble({
           style={{ position: "fixed", bottom: menuPos.bottom, left: menuPos.left, right: menuPos.right }}
           className="z-[1000] min-w-[110px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
         >
+          {onReact && (
+            <div className="flex items-center gap-0.5 border-b border-slate-100 px-1.5 py-1">
+              {REACTION_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => { onReact(msg._id, emoji); setMenuOpen(false); }}
+                  className="rounded-md px-1 py-0.5 text-base leading-none transition hover:scale-125 hover:bg-slate-50"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => { onReply(msg); setMenuOpen(false); }}
@@ -189,11 +215,20 @@ export default function MessageBubble({
     >
       {/* Other party avatar */}
       {!isOwn && (
-        <div
-          className={`h-6 w-6 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${avatarClassName}`}
-        >
-          {avatarLabel}
-        </div>
+        msg.senderAvatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={msg.senderAvatarUrl}
+            alt={msg.senderName}
+            className="h-6 w-6 flex-shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <div
+            className={`h-6 w-6 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${avatarClassName}`}
+          >
+            {avatarLabel}
+          </div>
+        )
       )}
 
       <div className={`flex max-w-[200px] flex-col gap-0.5 sm:max-w-[280px] ${isOwn ? "items-end" : "items-start"}`}>
@@ -242,6 +277,30 @@ export default function MessageBubble({
             </div>
           )}
         </div>
+
+        {/* Emoji reactions */}
+        {msg.reactions && Object.entries(msg.reactions).some(([, ids]) => ids.length > 0) && (
+          <div className={`mt-0.5 flex flex-wrap gap-1 ${isOwn ? "justify-end" : "justify-start"}`}>
+            {Object.entries(msg.reactions).map(([emoji, ids]) =>
+              ids.length > 0 ? (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => onReact?.(msg._id, emoji)}
+                  disabled={!onReact}
+                  className={`inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[11px] leading-none transition ${
+                    currentUserId && ids.includes(currentUserId)
+                      ? "border-[#54b9c9] bg-[#e8f7f9] text-[#3f98a3]"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  } ${onReact ? "cursor-pointer" : "cursor-default"}`}
+                >
+                  <span>{emoji}</span>
+                  <span className="font-semibold">{ids.length}</span>
+                </button>
+              ) : null
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

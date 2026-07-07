@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId, WithId, Document } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { fetchBlockedUsers } from "../../../../lib/blockedUsers";
 
 type Params = { params: Promise<{ storeId: string }> };
 
@@ -11,6 +12,8 @@ function mapMessage(message: WithId<Document>) {
     sender: message.senderRole as "customer" | "owner",
     senderName: message.senderName as string,
     senderId: (message.senderId as ObjectId)?.toString(),
+    senderAvatarUrl: (message.senderAvatarUrl as string | undefined) ?? undefined,
+    reactions: (message.reactions as Record<string, string[]> | undefined) ?? {},
     text: message.content as string,
     createdAt: message.createdAt as Date,
     deleted: (message.deleted as boolean) ?? false,
@@ -45,12 +48,16 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .limit(200)
     .toArray();
 
-  const blockedUserIds = ((store.blockedUserIds as ObjectId[]) ?? []).map((id) => id.toString());
+  const blockedObjectIds = (store.blockedUserIds as ObjectId[]) ?? [];
+  const blockedUserIds = blockedObjectIds.map((id) => id.toString());
+  // Only the owner needs the blocked users' details (for the unblock list).
+  const blockedUsers = user.role === "owner" ? await fetchBlockedUsers(db, blockedObjectIds) : [];
 
   return NextResponse.json({
     storeName: (store.name as string) ?? "Store",
     messages: messages.map(mapMessage),
     blockedUserIds,
+    blockedUsers,
     // Whether the requesting customer has been blocked from this group chat
     blocked: user.role === "user" && blockedUserIds.includes(user.id),
   });
@@ -91,6 +98,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   const senderName = senderRole === "owner"
     ? ((store.name as string) ?? (senderDoc?.name as string) ?? "Store Owner")
     : ((senderDoc?.name as string) ?? "Customer");
+  const senderAvatarUrl = senderRole === "owner"
+    ? ((store.logoUrl as string) ?? (senderDoc?.avatarUrl as string) ?? "")
+    : ((senderDoc?.avatarUrl as string) ?? "");
 
   const now = new Date();
   const content = text.trim() as string;
@@ -100,6 +110,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     senderId: new ObjectId(user.id),
     senderRole,
     senderName,
+    senderAvatarUrl,
     content,
     createdAt: now,
   };
