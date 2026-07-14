@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { MongoClient, type Db } from "mongodb";
+import { MongoClient, ObjectId, type Db } from "mongodb";
 import { recomputeCatalogCounts } from "./catalog-counts";
 import { reapplyStoredAdjustment } from "./price-adjustment";
 
@@ -196,6 +196,7 @@ export type SyncResult = {
   priceAdjustedProducts: number;
   storeProductsRefreshed: number;
   ownerCatalogRefreshed: number;
+  ownerAdjustmentsReapplied: number;
   ownerCatalogSeeded: number;
   log: string[];
 };
@@ -219,6 +220,7 @@ async function propagateGlobalChangesToStores(
       _id: 1, name: 1, sku: 1, mainImage: 1, imageUrls: 1, images: 1,
       category: 1, brand: 1, description: 1, variants: 1,
       allowCustomOrders: 1, totalStock: 1, stock: 1, status: 1,
+      price: 1, adminAdjustedPrice: 1,
     })
     .toArray();
 
@@ -231,38 +233,80 @@ async function propagateGlobalChangesToStores(
   for (const p of globalProducts) {
     const productId = p._id.toString();
     const mainImage = (p.mainImage as string | null) ?? (p.imageUrls as string[] | undefined)?.[0] ?? null;
+    // Latest wholesale price from Supabase — the baseline every store snapshot
+    // shadows. (adminAdjustedPrice, when present, is layered on live at read
+    // time, so the snapshot baseline stays the raw wholesale price.)
+    const wholesale = Number(p.price ?? 0);
 
     // Customer listings read most fields live from global; only these snapshot
     // fields shadow the live values, so they are the ones that go stale.
+    // Price baseline is refreshed too: keep a manually-set sellingPrice, but drop
+    // an auto-set one (within a cent of the old baseline) so the new price flows.
     storeProductOps.push({
       updateMany: {
         filter: { productId },
-        update: { $set: { name: p.name, sku: p.sku ?? "", mainImage, updatedAt: now } },
+        update: [
+          {
+            $set: {
+              name: p.name,
+              sku: p.sku ?? "",
+              mainImage,
+              price: wholesale,
+              originalPrice: wholesale,
+              sellingPrice: {
+                $cond: [
+                  { $eq: [{ $ifNull: ["$sellingPrice", null] }, null] },
+                  null,
+                  {
+                    $cond: [
+                      { $lte: [{ $abs: { $subtract: ["$sellingPrice", "$originalPrice"] } }, 0.02] },
+                      null,
+                      "$sellingPrice",
+                    ],
+                  },
+                ],
+              },
+              updatedAt: now,
+            },
+          },
+        ],
       },
     });
 
-    // Owner catalog stores a fuller snapshot — refresh everything except the
-    // owner's price/discount fields and the originalPrice baseline.
+    // Owner catalog stores a fuller snapshot — refresh everything, and the price
+    // baseline too. The owner's price is preserved when they've customized it
+    // (price differs from the old originalPrice); non-customized entries follow
+    // the new wholesale price so a Supabase price edit shows up in the store.
     ownerCatalogOps.push({
       updateMany: {
         filter: { productId },
-        update: {
-          $set: {
-            name: p.name,
-            sku: p.sku ?? "",
-            description: p.description ?? "",
-            mainImage,
-            imageUrls: p.imageUrls ?? [],
-            images: p.images ?? [],
-            category: p.category ?? "",
-            brand: p.brand ?? null,
-            variants: p.variants ?? [],
-            allowCustomOrders: p.allowCustomOrders ?? false,
-            totalStock: p.totalStock ?? p.stock ?? 0,
-            status: p.status ?? "active",
-            updatedAt: now,
+        update: [
+          {
+            $set: {
+              name: p.name,
+              sku: p.sku ?? "",
+              description: p.description ?? "",
+              mainImage,
+              imageUrls: p.imageUrls ?? [],
+              images: p.images ?? [],
+              category: p.category ?? "",
+              brand: p.brand ?? null,
+              variants: p.variants ?? [],
+              allowCustomOrders: p.allowCustomOrders ?? false,
+              totalStock: p.totalStock ?? p.stock ?? 0,
+              status: p.status ?? "active",
+              price: {
+                $cond: [
+                  { $lte: [{ $abs: { $subtract: ["$price", "$originalPrice"] } }, 0.01] },
+                  wholesale,
+                  "$price",
+                ],
+              },
+              originalPrice: wholesale,
+              updatedAt: now,
+            },
           },
-        },
+        ],
       },
     });
   }
@@ -273,6 +317,64 @@ async function propagateGlobalChangesToStores(
   ]);
 
   return { storeProducts: storeRes.modifiedCount, ownerCatalog: ownerRes.modifiedCount };
+}
+
+// After base prices are refreshed, re-apply each store's saved bulk markup or
+// discount so it stays in effect on the NEW prices — the store-level parallel of
+// the admin's reapplyStoredAdjustment. Without this, a Supabase price change
+// would drop a store's markup (frozen at the old marked-up value) or its
+// discount would apply to a stale base. Mirrors the owner catalog bulk endpoint:
+//   • markup   → price = base × (1 + percent/100)
+//   • discount → price = base, discountPercent = percent, isOnSale = true
+// where base = live adminAdjustedPrice ?? the just-refreshed originalPrice.
+// Stores with no saved adjustment are left untouched (propagateGlobalChanges
+// already refreshed their non-customized prices and preserved manual ones).
+async function reapplyOwnerAdjustments(db: Db): Promise<number> {
+  const settings = await db.collection("owner_catalog_settings").find({}).toArray();
+
+  let storesTouched = 0;
+  for (const s of settings) {
+    const storeId = s._id as unknown as string;
+    const type = s.type as "markup" | "discount";
+    const percent = Number(s.percent);
+    if ((type !== "markup" && type !== "discount") || !(percent > 0)) continue;
+
+    const items = await db
+      .collection("owner_catalog")
+      .find({ storeId }, { projection: { productId: 1, originalPrice: 1 } })
+      .toArray();
+    if (!items.length) continue;
+
+    const globalIds = items
+      .map((c) => { try { return new ObjectId(c.productId as string); } catch { return null; } })
+      .filter(Boolean) as ObjectId[];
+    const globalDocs = globalIds.length
+      ? await db.collection("products").find({ _id: { $in: globalIds } }).project({ _id: 1, adminAdjustedPrice: 1 }).toArray()
+      : [];
+    const gpMap = new Map(globalDocs.map((d) => [d._id.toString(), d]));
+
+    const now = new Date();
+    const ops = items.map((c) => {
+      const gp = gpMap.get(c.productId as string);
+      const base = (gp?.adminAdjustedPrice as number) ?? (c.originalPrice as number) ?? 0;
+      const price = type === "markup" ? Math.round(base * (1 + percent / 100) * 100) / 100 : base;
+      const discountPercent = type === "discount" ? percent : 0;
+      const isOnSale = type === "discount" && percent > 0;
+      return {
+        updateOne: {
+          filter: { storeId, productId: c.productId as string },
+          update: { $set: { price, discountPercent, isOnSale, updatedAt: now } },
+        },
+      };
+    });
+
+    if (ops.length) {
+      await db.collection("owner_catalog").bulkWrite(ops, { ordered: false });
+      storesTouched++;
+    }
+  }
+
+  return storesTouched;
 }
 
 // Active-catalog filter — a product is visible to store owners only when it's
@@ -570,6 +672,10 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     const { storeProducts: storeProductsRefreshed, ownerCatalog: ownerCatalogRefreshed } =
       await propagateGlobalChangesToStores(db);
 
+    // Re-apply each store's saved bulk markup/discount on top of the refreshed
+    // base prices, so a Supabase price change never drops a store's adjustment.
+    const ownerAdjustmentsReapplied = await reapplyOwnerAdjustments(db);
+
     // Fan new products out into every store's catalog now, so owners don't have
     // to open their portal for new products to appear.
     const ownerCatalogSeeded = await seedNewProductsIntoStores(db);
@@ -594,6 +700,7 @@ export async function runSupabaseSync(): Promise<SyncResult> {
       priceAdjustedProducts,
       storeProductsRefreshed,
       ownerCatalogRefreshed,
+      ownerAdjustmentsReapplied,
       ownerCatalogSeeded,
       log: [
         `Fetched from Supabase (read-only): ${docs.length} products · ${brands.length} brands · ${categories.length} categories.`,
@@ -605,6 +712,9 @@ export async function runSupabaseSync(): Promise<SyncResult> {
           ? `Price adjustment re-applied to ${priceAdjustedProducts} products.`
           : "No saved price adjustment to re-apply.",
         `Store snapshots refreshed: ${storeProductsRefreshed} customer listings · ${ownerCatalogRefreshed} catalog entries.`,
+        ownerAdjustmentsReapplied > 0
+          ? `Store markup/discount re-applied for ${ownerAdjustmentsReapplied} store(s).`
+          : "No store markup/discount to re-apply.",
         ownerCatalogSeeded > 0
           ? `New products fanned out to store catalogs: ${ownerCatalogSeeded} entries added.`
           : "No new products to add to store catalogs.",
