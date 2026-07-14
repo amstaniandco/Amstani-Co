@@ -385,6 +385,7 @@ function OrderCard({ order }: { order: ListingOrder }) {
               <DetailRow label="Email" value={order.customerEmail} />
               <DetailRow label="Phone" value={order.customerPhone} />
               <DetailRow label="User ID" value={order.userId ? <span className="font-mono text-[11px]">{order.userId.slice(0, 18)}…</span> : "—"} />
+              <DetailRow label="Store ID" value={order.orderStoreId ? <span className="font-mono text-[11px]">{order.orderStoreId}</span> : "—"} />
             </SectionCard>
 
             {/* Fulfilment */}

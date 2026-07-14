@@ -95,18 +95,33 @@ async function resolveStoreForEmail(db: any, email: string): Promise<StoreMatch>
   return { storeId: store._id.toString(), storeName: store.name as string };
 }
 
-// Resolve a store directly by its id (the Supabase order's storeId column holds
-// the MongoDB store _id as a string). Returns null when the id is missing or no
-// such store exists.
+// Resolve a store directly by the Supabase order's storeId column. That column
+// may hold either the MongoDB store _id (a 24-hex string) OR the store's short
+// code prefixed with "#" (e.g. "#NZ585"). We try the _id first, then fall back
+// to matching the store's shortId. Returns null when nothing matches.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveStoreById(db: any, storeId: string): Promise<StoreMatch> {
   const clean = (storeId ?? "").trim();
-  if (!clean || !ObjectId.isValid(clean)) return null;
-  const store = await db
-    .collection("stores")
-    .findOne({ _id: new ObjectId(clean) }, { projection: { name: 1 } });
-  if (!store) return null;
-  return { storeId: store._id.toString(), storeName: store.name as string };
+  if (!clean) return null;
+
+  // 1. Direct MongoDB _id
+  if (ObjectId.isValid(clean)) {
+    const store = await db
+      .collection("stores")
+      .findOne({ _id: new ObjectId(clean) }, { projection: { name: 1 } });
+    if (store) return { storeId: store._id.toString(), storeName: store.name as string };
+  }
+
+  // 2. Store short code — Supabase sends it as "#NZ585"; stores hold it as shortId "NZ585".
+  const code = clean.replace(/^#/, "").toUpperCase();
+  if (code) {
+    const byCode = await db
+      .collection("stores")
+      .findOne({ shortId: code }, { projection: { name: 1 } });
+    if (byCode) return { storeId: byCode._id.toString(), storeName: byCode.name as string };
+  }
+
+  return null;
 }
 
 // ── GET: orders (person + products + fulfilment), read-only from Supabase ────
