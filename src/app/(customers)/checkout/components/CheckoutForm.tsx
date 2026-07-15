@@ -37,7 +37,7 @@ export default function CheckoutForm({
   onMapAddressSelect,
 }: CheckoutFormProps) {
   return (
-    <div className="ui-panel rounded-2xl bg-white p-8 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+    <div className="ui-panel rounded-2xl bg-white p-4 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 sm:p-8">
       <div className="flex justify-between items-start mb-1">
         <h1 className="text-xl font-bold tracking-tight text-black dark:text-slate-100 sm:text-3xl">
           Secure Checkout

@@ -67,9 +67,9 @@ export default function NotificationsPage() {
           Back
         </Link>
       </div>
-      <div className="ui-panel rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-[#111827]">
+      <div className="ui-panel rounded-3xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-[#111827] sm:p-6">
         <div className="mb-5">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Notifications</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">Notifications</h1>
         </div>
 
         <div className="space-y-3">
@@ -85,13 +85,13 @@ export default function NotificationsPage() {
                     : "border-slate-200 dark:border-slate-700"
                 }`}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   <BellIcon unread={!item.isRead} />
-                  <div>
-                    <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                  <div className="min-w-0">
+                    <h2 className="break-words text-base font-extrabold text-slate-900 dark:text-slate-100">
                       {item.title}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{item.message}</p>
+                    <p className="mt-1 break-words text-sm text-slate-600 dark:text-slate-300">{item.message}</p>
                   </div>
                 </div>
 

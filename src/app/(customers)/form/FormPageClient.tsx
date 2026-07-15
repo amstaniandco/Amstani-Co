@@ -121,9 +121,9 @@ export default function FormPageClient() {
       )}
       <div className="w-full rounded-4xl bg-white shadow-xl overflow-hidden dark:bg-slate-800">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 bg-[#3f4447] px-8 py-6">
+        <div className="flex items-start justify-between gap-4 bg-[#3f4447] px-4 py-4 sm:px-8 sm:py-6">
           <div>
-            <h1 className="text-2xl font-semibold text-white">
+            <h1 className="text-xl font-semibold text-white sm:text-2xl">
               Store Ownership Application
             </h1>
             <p className="text-sm text-gray-300 mt-1">
@@ -216,7 +216,7 @@ export default function FormPageClient() {
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col gap-4 px-8 py-6 sm:flex-row sm:items-center sm:justify-between bg-gray-50 shadow-inner dark:bg-slate-900">
+        <div className="flex flex-col gap-4 px-4 py-4 sm:px-8 sm:py-6 sm:flex-row sm:items-center sm:justify-between bg-gray-50 shadow-inner dark:bg-slate-900">
           <p className="flex items-center gap-2 text-sm text-black/70 dark:text-slate-300">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-white text-xs font-bold text-black dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
               i

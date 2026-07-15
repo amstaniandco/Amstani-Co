@@ -29,19 +29,19 @@ const DEFAULT_DURATION = 3200;
 
 function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   return (
-    <div className="toast-enter pointer-events-auto overflow-hidden rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-2 text-white shadow-[0_14px_36px_rgba(0,0,0,0.34)]">
+    <div className="toast-enter pointer-events-auto overflow-hidden rounded-xl border border-white/10 bg-zinc-950 px-3 py-2.5 text-white shadow-[0_14px_36px_rgba(0,0,0,0.34)]">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/45">{toast.title}</p>
-          <p className="mt-0.5 text-[12px] leading-4 text-white/88">{toast.message}</p>
+          <p className="mt-0.5 break-words text-[12px] leading-4 text-white/88">{toast.message}</p>
         </div>
         <button
           type="button"
           onClick={() => onDismiss(toast.id)}
-          className="rounded-full p-0.5 text-white/35 transition hover:bg-white/10 hover:text-white"
+          className="-mr-1 -mt-1 rounded-full p-1.5 text-white/35 transition hover:bg-white/10 hover:text-white"
           aria-label="Dismiss notification"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
         </button>
       </div>
       <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-white/10">
@@ -95,7 +95,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-2 top-2 z-[80] flex w-[calc(100vw-1rem)] max-w-[240px] flex-col gap-1.5 sm:right-3 sm:top-3">
+      <div className="pointer-events-none fixed left-1/2 top-20 z-[80] flex w-[calc(100vw-1.5rem)] max-w-[320px] -translate-x-1/2 flex-col gap-1.5 sm:left-auto sm:right-3 sm:top-3 sm:w-[240px] sm:translate-x-0">
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
