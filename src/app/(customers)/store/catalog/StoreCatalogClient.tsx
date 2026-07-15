@@ -301,7 +301,7 @@ export default function StoreCatalogClient() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse rounded-2xl bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
                 <div className="aspect-[3/4] bg-slate-200 dark:bg-slate-700" />
@@ -315,7 +315,7 @@ export default function StoreCatalogClient() {
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center text-slate-400">No products found.</div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
             {filtered.map((product) => {
               const img = product.imageUrls?.[0] ?? product.mainImage;
               return (

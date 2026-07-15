@@ -122,7 +122,7 @@ export default function ClaimExchangePanel({
   }
 
   return (
-    <div className="mx-5 mt-3 rounded-xl border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-900/20">
+    <div className="mx-3 mt-3 rounded-xl border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-900/20 sm:mx-5">
       {/* Collapsible header — click to show/hide the replacement selector */}
       <button
         type="button"

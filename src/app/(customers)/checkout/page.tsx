@@ -227,7 +227,7 @@ export default function CheckoutPage() {
             onMapAddressSelect={handleMapAddressSelect}
           />
         ) : (
-          <div className="ui-panel rounded-2xl bg-white p-8 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800">
+          <div className="ui-panel rounded-2xl bg-white p-4 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800 sm:p-8">
             <div className="flex justify-between items-start mb-1">
               <h1 className="text-xl font-bold tracking-tight text-black dark:text-slate-100 sm:text-3xl">
                 Secure Checkout
@@ -336,7 +336,7 @@ export default function CheckoutPage() {
                 <span className="text-[11px] font-bold uppercase tracking-widest text-gray-900 dark:text-slate-100">
                   Total
                 </span>
-                <span className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+                <span className="text-xl font-bold text-gray-900 dark:text-slate-100 sm:text-2xl">
                   ${displayTotal.toFixed(2)}
                 </span>
               </div>

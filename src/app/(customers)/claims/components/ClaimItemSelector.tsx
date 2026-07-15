@@ -66,8 +66,8 @@ export default function ClaimItemSelector({
                   className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
                 />
 
-                <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                  <div className="min-w-0 max-w-[50%]">
+                <div className="flex-1 min-w-0 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+                  <div className="min-w-0 flex-1 sm:max-w-[50%]">
                     <p className="text-xs font-semibold text-teal-500 tracking-widest uppercase">
                       {product.store}
                     </p>

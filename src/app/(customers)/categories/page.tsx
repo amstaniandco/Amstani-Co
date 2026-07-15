@@ -95,7 +95,7 @@ export default function CategoriesPage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="aspect-[3/2] animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
             ))}
@@ -105,7 +105,7 @@ export default function CategoriesPage() {
             {searchQuery.trim() ? `No categories match "${searchQuery}".` : "No categories found."}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 md:grid-cols-4">
             {filtered.map((cat) => (
               <Link
                 key={cat._id}
