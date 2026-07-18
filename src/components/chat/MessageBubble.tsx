@@ -268,11 +268,11 @@ export default function MessageBubble({
               This message was deleted
             </div>
           ) : (
-            <div className={`rounded-2xl px-3 py-1.5 text-xs ${isOwn ? ownBubbleCls : otherBubbleCls}`}>
+            <div className={`min-w-0 rounded-2xl px-3 py-1.5 text-xs ${isOwn ? ownBubbleCls : otherBubbleCls}`}>
               {!isOwn && (
                 <p className="mb-0.5 text-[10px] font-semibold opacity-60">{msg.senderName}</p>
               )}
-              <p className="leading-snug">{msg.text}</p>
+              <p className="break-words leading-snug">{msg.text}</p>
               {msg.edited && <p className="mt-0.5 text-[10px] opacity-60">(edited)</p>}
             </div>
           )}

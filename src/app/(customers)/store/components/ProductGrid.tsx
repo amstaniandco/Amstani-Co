@@ -581,7 +581,7 @@ export default function ProductGrid({ storeId, storeName = "" }: { storeId?: str
               </button>
             )}
           </div>
-          <div className="grid grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-8">
             {categoryNames.slice(0, 4).map((cat) => (
               <button
                 key={cat}

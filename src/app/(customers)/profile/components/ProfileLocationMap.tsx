@@ -50,6 +50,7 @@ type LeafletApi = {
       scrollWheelZoom: boolean;
       zoomControl: boolean;
       attributionControl: boolean;
+      dragging?: boolean;
     },
   ) => LeafletMap;
   tileLayer: (
@@ -155,10 +156,14 @@ export default function ProfileLocationMap({ onSelectAddress }: { onSelectAddres
       .then((leaflet) => {
         if (!active || !mapElementRef.current) return;
 
+        // Touch drags pan the map instead of scrolling the page, trapping
+        // mobile users — tap-to-select and zoom buttons still work.
+        const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
         map = leaflet.map(mapElementRef.current, {
           scrollWheelZoom: true,
           zoomControl: true,
           attributionControl: false,
+          dragging: !coarsePointer,
         });
 
         leaflet

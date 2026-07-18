@@ -64,10 +64,10 @@ export default function StoreHero() {
         />
       </div>
 
-      <div className="mt-4 p-5">
+      <div className="mt-4 p-1 sm:p-5">
         {/* Row 1: logo + name/bio (side-by-side on all sizes) */}
         <div className="flex items-start gap-3 sm:gap-4">
-          <div className="flex h-[80px] w-[80px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:h-16 sm:w-16">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xl font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:h-16 sm:w-16">
             {store?.logoUrl ? (
               <Image
                 src={store.logoUrl}
@@ -83,7 +83,7 @@ export default function StoreHero() {
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <h2 className="break-words text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">
                 {store?.name || "Name of the store"}
               </h2>
               {rank !== null && (
@@ -182,19 +182,19 @@ export default function StoreHero() {
         ) : null}
 
         {/* Row 3 (mobile only): stats + follow in one line */}
-        <div className="mt-4 flex items-center gap-5 sm:hidden">
-          <div className="flex gap-6">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 sm:hidden">
+          <div className="flex gap-5">
             <div className="text-center">
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 {statsLoaded ? formatCount(productCount) : "—"}
               </p>
-              <p className="text-xs uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">Products</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Products</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 {statsLoaded ? formatCount(followerCount) : "—"}
               </p>
-              <p className="text-xs uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">Followers</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Followers</p>
             </div>
           </div>
           <button
@@ -202,7 +202,7 @@ export default function StoreHero() {
             data-tutorial-id="customer-follow-btn"
             onClick={handleFollow}
             disabled={followLoading || !store?._id}
-            className={`inline-flex items-center gap-2 rounded-full px-7 py-2 text-sm font-semibold transition disabled:opacity-60 ${
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition disabled:opacity-60 ${
               isFollowing
                 ? "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-100"
                 : "bg-[#68B8C1] text-white hover:bg-[#4f9ea7]"

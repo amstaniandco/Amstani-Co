@@ -31,7 +31,7 @@ export default function NewArrivalsSection({ products }: { products: NewArrivalP
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SparkleIcon />
-          <h2 className="home-heading text-[24px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[28px]">
+          <h2 className="home-heading text-[20px] font-extrabold leading-none text-[#0f172a] dark:text-slate-100 sm:text-[28px]">
             New Arrivals
           </h2>
         </div>

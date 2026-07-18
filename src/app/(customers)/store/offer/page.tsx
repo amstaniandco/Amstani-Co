@@ -10,16 +10,16 @@ export default async function StoreOfferPage({
   return (
     <div className="w-full bg-[#f7f7f7] py-6">
       <div className="mx-auto w-full max-w-2xl items-center px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-600">Store</p>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
               Offering stores for purchase
             </h1>
           </div>
           <Link
             href="/store"
-            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="shrink-0 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             Back
           </Link>
