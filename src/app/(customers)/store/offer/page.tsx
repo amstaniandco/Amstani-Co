@@ -33,7 +33,7 @@ export default async function StoreOfferPage({
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <Link
-              href="/store/chat"
+              href={storeId ? `/store/chat?storeId=${storeId}` : "/store/chat"}
               className="flex h-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
             >
               Chat With Store Owner

@@ -114,7 +114,7 @@ export default function StoreMobileActions() {
       </div>
 
       <Link
-        href="/store/chat"
+        href={store?._id ? `/store/chat?storeId=${store._id}` : "/store/chat"}
         data-tutorial-id="customer-live-chat"
         className="flex items-center justify-between rounded-3xl border border-gray-200 bg-white px-4 py-5 text-sm font-semibold text-slate-900 transition hover:shadow-md"
       >
