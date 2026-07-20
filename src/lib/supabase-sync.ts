@@ -237,6 +237,12 @@ async function propagateGlobalChangesToStores(
     // shadows. (adminAdjustedPrice, when present, is layered on live at read
     // time, so the snapshot baseline stays the raw wholesale price.)
     const wholesale = Number(p.price ?? 0);
+    // The actual catalog base owners see/pay — admin's adjusted price when set,
+    // else raw wholesale. There is no per-product price override in owner_catalog
+    // (only a store-wide bulk markup/discount, tracked separately and reapplied
+    // right after this by reapplyOwnerAdjustments), so this is always the correct
+    // "un-adjusted" price for a store that hasn't set a bulk markup/discount.
+    const catalogBase = Number(p.adminAdjustedPrice ?? p.price ?? 0);
 
     // Customer listings read most fields live from global; only these snapshot
     // fields shadow the live values, so they are the ones that go stale.
@@ -273,10 +279,14 @@ async function propagateGlobalChangesToStores(
       },
     });
 
-    // Owner catalog stores a fuller snapshot — refresh everything, and the price
-    // baseline too. The owner's price is preserved when they've customized it
-    // (price differs from the old originalPrice); non-customized entries follow
-    // the new wholesale price so a Supabase price edit shows up in the store.
+    // Owner catalog stores a fuller snapshot — refresh everything, including the
+    // price. There's no per-product price override on this collection (only a
+    // store-wide bulk markup/discount via owner_catalog_settings, reapplied right
+    // after this by reapplyOwnerAdjustments), so price always tracks the current
+    // catalog base directly. The old logic tried to detect a "customized" price
+    // by comparing against originalPrice (raw wholesale) — but the catalog base
+    // is adminAdjustedPrice, not wholesale, so that comparison was true almost
+    // any time admin had an adjustment set, freezing price at a stale value.
     ownerCatalogOps.push({
       updateMany: {
         filter: { productId },
@@ -295,13 +305,7 @@ async function propagateGlobalChangesToStores(
               allowCustomOrders: p.allowCustomOrders ?? false,
               totalStock: p.totalStock ?? p.stock ?? 0,
               status: p.status ?? "active",
-              price: {
-                $cond: [
-                  { $lte: [{ $abs: { $subtract: ["$price", "$originalPrice"] } }, 0.01] },
-                  wholesale,
-                  "$price",
-                ],
-              },
+              price: catalogBase,
               originalPrice: wholesale,
               updatedAt: now,
             },
@@ -520,18 +524,21 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     // ── Products ─────────────────────────────────────────────────────────────
     // New products are fully inserted.
     // Existing products: everything is updated from Supabase EXCEPT stock
-    // fields (stock, totalStock, stockStatus) which are managed locally.
+    // fields (stock, totalStock, stockStatus) and allowCustomOrders, which are
+    // managed locally — Supabase has no "custom orders" concept, so mapProduct
+    // always defaults it to false, and a plain $set would silently reset an
+    // admin's toggle back to off on every sync.
     let newProducts = 0;
     let updatedProducts = 0;
     if (syncableDocs.length > 0) {
       const result = await productsCol.bulkWrite(
         syncableDocs.map((doc) => {
-          const { stock, totalStock, stockStatus, createdAt, ...updateFields } = doc;
+          const { stock, totalStock, stockStatus, createdAt, allowCustomOrders, ...updateFields } = doc;
           return {
             updateOne: {
               filter: { sourceProductId: doc.sourceProductId },
               update: {
-                $setOnInsert: { stock, totalStock, stockStatus, createdAt },
+                $setOnInsert: { stock, totalStock, stockStatus, createdAt, allowCustomOrders },
                 $set: { ...updateFields },
               },
               upsert: true,

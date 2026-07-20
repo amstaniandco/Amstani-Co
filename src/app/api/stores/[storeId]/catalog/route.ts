@@ -110,18 +110,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ storeId
     })
     .map((c) => {
     const gp = globalMap.get(c.productId as string);
-    // Admin-adjusted price is the authoritative base; fall back to catalog entry price
-    const adminBase: number = (gp?.adminAdjustedPrice as number) ?? (c.originalPrice as number) ?? (c.price as number) ?? 0;
-    const ownerPrice: number = c.price as number ?? adminBase;
-    // If owner hasn't set a custom price (price ≈ originalPrice), show adminBase
-    const originalPrice: number = c.originalPrice as number ?? 0;
-    const ownerCustomized = Math.abs(ownerPrice - originalPrice) > 0.01;
-    const displayPrice = ownerCustomized ? ownerPrice : adminBase;
+    // There's no per-product price override on owner_catalog — only a store-wide
+    // bulk markup/discount, which is already baked into the stored price by the
+    // sync (propagateGlobalChangesToStores + reapplyOwnerAdjustments). So the
+    // stored price is trusted as-is here; no live re-derivation needed.
+    const adminBase: number = (gp?.adminAdjustedPrice as number) ?? (gp?.price as number) ?? (c.price as number) ?? 0;
 
     return {
       ...c,
       adminAdjustedPrice: adminBase,
-      price: displayPrice,
     };
   });
 
