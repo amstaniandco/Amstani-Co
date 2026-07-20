@@ -170,8 +170,8 @@ function mapProduct(product: Record<string, unknown>) {
     isPublished:      (product.isPublished       as boolean) ?? false,
     tags:             (product.tags             as string[] | null) ?? [],
     // Supabase has no "custom orders" concept of its own — derive it instead
-    // from whether any variant is flagged as a custom size.
-    allowCustomOrders: variants.some((v) => Boolean(v.isCustomSize)),
+    // from whether any variant's size name mentions "custom" (e.g. "Custom Size").
+    allowCustomOrders: variants.some((v) => /custom/i.test(String(v.size ?? ""))),
     seoTitle:         (product.seoTitle         as string | null) ?? null,
     seoDescription:   (product.seoDescription   as string | null) ?? null,
     brandSuspended:   false,
