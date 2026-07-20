@@ -169,7 +169,9 @@ function mapProduct(product: Record<string, unknown>) {
     isFeatured:       (product.isFeatured       as boolean) ?? false,
     isPublished:      (product.isPublished       as boolean) ?? false,
     tags:             (product.tags             as string[] | null) ?? [],
-    allowCustomOrders:(product.allowCustomOrders as boolean | null) ?? false,
+    // Supabase has no "custom orders" concept of its own — derive it instead
+    // from whether any variant is flagged as a custom size.
+    allowCustomOrders: variants.some((v) => Boolean(v.isCustomSize)),
     seoTitle:         (product.seoTitle         as string | null) ?? null,
     seoDescription:   (product.seoDescription   as string | null) ?? null,
     brandSuspended:   false,
@@ -524,21 +526,21 @@ export async function runSupabaseSync(): Promise<SyncResult> {
     // ── Products ─────────────────────────────────────────────────────────────
     // New products are fully inserted.
     // Existing products: everything is updated from Supabase EXCEPT stock
-    // fields (stock, totalStock, stockStatus) and allowCustomOrders, which are
-    // managed locally — Supabase has no "custom orders" concept, so mapProduct
-    // always defaults it to false, and a plain $set would silently reset an
-    // admin's toggle back to off on every sync.
+    // fields (stock, totalStock, stockStatus) which are managed locally.
+    // allowCustomOrders IS updated every sync — it's derived from each
+    // product's variants (isCustomSize), which live in Supabase, so it's
+    // never a locally-managed field.
     let newProducts = 0;
     let updatedProducts = 0;
     if (syncableDocs.length > 0) {
       const result = await productsCol.bulkWrite(
         syncableDocs.map((doc) => {
-          const { stock, totalStock, stockStatus, createdAt, allowCustomOrders, ...updateFields } = doc;
+          const { stock, totalStock, stockStatus, createdAt, ...updateFields } = doc;
           return {
             updateOne: {
               filter: { sourceProductId: doc.sourceProductId },
               update: {
-                $setOnInsert: { stock, totalStock, stockStatus, createdAt, allowCustomOrders },
+                $setOnInsert: { stock, totalStock, stockStatus, createdAt },
                 $set: { ...updateFields },
               },
               upsert: true,
