@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import type { StatePricingRule } from "../../../../lib/pricing-config";
 
 const CONFIG_ID = "pricing_config";
 
 export type TaxRateEntry = { name: string; rate: number };
 export type ShippingBracket = { minKg: number; maxKg: number | null; ratePerKg: number };
+export type { StatePricingRule };
 export type PricingConfig = {
   taxRates: Record<string, TaxRateEntry>; // key = 2-letter state code
-  markupPercent: number;
-  discountCap: number;
+  markupPercent: number; // default markup limit, used when a store's state has no specific rule
+  discountCap: number; // default discount cap, used when a store's state has no specific rule
+  stateRules: Record<string, StatePricingRule>; // key = state name (see lib/us-states), per-state overrides
   // Wholesale-to-retail formula fields
   profitPercent: number;
   tariffPercent: number;
@@ -73,6 +76,7 @@ export const DEFAULT_CONFIG: PricingConfig = {
   },
   markupPercent: 20,
   discountCap: 20,
+  stateRules: {},
   profitPercent: 0,
   tariffPercent: 0,
   generalShippingPerKg: 0,
@@ -95,6 +99,7 @@ export async function GET() {
       taxRates: { ...DEFAULT_CONFIG.taxRates, ...(doc.taxRates ?? {}) },
       markupPercent: doc.markupPercent ?? DEFAULT_CONFIG.markupPercent,
       discountCap: doc.discountCap ?? DEFAULT_CONFIG.discountCap,
+      stateRules: (doc.stateRules as Record<string, StatePricingRule>) ?? DEFAULT_CONFIG.stateRules,
       profitPercent: doc.profitPercent ?? DEFAULT_CONFIG.profitPercent,
       tariffPercent: doc.tariffPercent ?? DEFAULT_CONFIG.tariffPercent,
       generalShippingPerKg: doc.generalShippingPerKg ?? DEFAULT_CONFIG.generalShippingPerKg,
@@ -119,6 +124,18 @@ export async function PUT(req: Request) {
     if (body.taxRates) update.taxRates = body.taxRates;
     if (typeof body.markupPercent === "number") update.markupPercent = Math.max(0, body.markupPercent);
     if (typeof body.discountCap === "number") update.discountCap = Math.max(0, Math.min(100, body.discountCap));
+    if (body.stateRules && typeof body.stateRules === "object") {
+      const sanitized: Record<string, StatePricingRule> = {};
+      for (const [state, rule] of Object.entries(body.stateRules as Record<string, Partial<StatePricingRule>>)) {
+        if (typeof rule?.markupPercent === "number" && typeof rule?.discountCap === "number") {
+          sanitized[state] = {
+            markupPercent: Math.max(0, rule.markupPercent),
+            discountCap: Math.max(0, Math.min(100, rule.discountCap)),
+          };
+        }
+      }
+      update.stateRules = sanitized;
+    }
     if (typeof body.profitPercent === "number") update.profitPercent = Math.max(0, body.profitPercent);
     if (typeof body.tariffPercent === "number") update.tariffPercent = Math.max(0, body.tariffPercent);
     if (typeof body.generalShippingPerKg === "number") update.generalShippingPerKg = Math.max(0, body.generalShippingPerKg);

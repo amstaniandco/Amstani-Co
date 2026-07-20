@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId, type Db } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { resolveEffectivePricingRule } from "../../../../lib/pricing-config";
 
 const CONFIG_ID = "pricing_config";
 
@@ -41,16 +42,21 @@ export async function GET() {
   const client = await clientPromise;
   const db = client.db(DB_NAME);
 
-  const [store, config] = await Promise.all([
+  const [store, config, ownerUser] = await Promise.all([
     db.collection("stores").findOne({ ownerId: new ObjectId(user.id) }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     db.collection("pricing_config").findOne({ _id: CONFIG_ID as any }),
+    db.collection("users").findOne({ _id: new ObjectId(user.id) }, { projection: { state: 1 } }),
   ]);
 
   if (!store) return NextResponse.json({ products: [], markupPercent: 20 });
 
   const storeId = store._id.toString();
-  const markupPercent: number = config?.markupPercent ?? 20;
+  const effectiveRule = resolveEffectivePricingRule(
+    { markupPercent: config?.markupPercent ?? 20, discountCap: config?.discountCap ?? 20, stateRules: config?.stateRules },
+    ownerUser?.state as string | undefined
+  );
+  const markupPercent: number = effectiveRule.markupPercent;
 
   // Check if owner catalog already seeded for this store
   const existing = await db.collection("owner_catalog").countDocuments({ storeId });
@@ -129,7 +135,7 @@ export async function GET() {
     }
   }
 
-  const discountCap: number = config?.discountCap ?? 20;
+  const discountCap: number = effectiveRule.discountCap;
 
   const catalogItems = await db
     .collection("owner_catalog")
@@ -198,10 +204,17 @@ export async function POST(req: Request) {
 
   const storeId = store._id.toString();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await db.collection("pricing_config").findOne({ _id: CONFIG_ID as any });
-  const markupPercent: number = config?.markupPercent ?? 20;
-  const discountCap: number = config?.discountCap ?? 20;
+  const [config, ownerUser] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    db.collection("pricing_config").findOne({ _id: CONFIG_ID as any }),
+    db.collection("users").findOne({ _id: new ObjectId(user.id) }, { projection: { state: 1 } }),
+  ]);
+  const effectiveRule = resolveEffectivePricingRule(
+    { markupPercent: config?.markupPercent ?? 20, discountCap: config?.discountCap ?? 20, stateRules: config?.stateRules },
+    ownerUser?.state as string | undefined
+  );
+  const markupPercent: number = effectiveRule.markupPercent;
+  const discountCap: number = effectiveRule.discountCap;
 
   if (type === "markup" && percent > markupPercent) {
     return NextResponse.json({ error: `Markup cannot exceed ${markupPercent}% (platform limit).` }, { status: 400 });

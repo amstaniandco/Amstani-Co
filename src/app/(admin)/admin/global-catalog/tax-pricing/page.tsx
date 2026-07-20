@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, RefreshCw, Shield } from "lucide-react";
+import { Building2, ChevronDown, RefreshCw, Shield } from "lucide-react";
+import { US_STATES } from "../../../../../lib/us-states";
+
+type StatePricingRule = { markupPercent: number; discountCap: number };
+type StateRuleDraft = { markupPercent: string; discountCap: string };
 
 type TaxRateEntry = { name: string; rate: number };
 type TaxRates = Record<string, TaxRateEntry>;
@@ -66,6 +70,8 @@ export default function TaxPricingPage() {
   const [taxRates, setTaxRates] = useState<TaxRates>({});
   const [markupPercent, setMarkupPercent] = useState("20");
   const [discountCap, setDiscountCap] = useState("20");
+  const [stateRules, setStateRules] = useState<Record<string, StateRuleDraft>>({});
+  const [selectedStateKey, setSelectedStateKey] = useState<string>("New York");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -83,8 +89,22 @@ export default function TaxPricingPage() {
           }
         }
         setTaxRates(merged);
-        setMarkupPercent(String(data.markupPercent ?? 20));
-        setDiscountCap(String(data.discountCap ?? 20));
+        const fallbackMarkup = String(data.markupPercent ?? 20);
+        const fallbackDiscount = String(data.discountCap ?? 20);
+        setMarkupPercent(fallbackMarkup);
+        setDiscountCap(fallbackDiscount);
+
+        // Every state gets its own explicit rule — states not yet configured
+        // by an admin start out at the platform fallback values.
+        const savedStateRules: Record<string, StatePricingRule> = data.stateRules ?? {};
+        const draftRules: Record<string, StateRuleDraft> = {};
+        for (const name of US_STATES) {
+          const saved = savedStateRules[name];
+          draftRules[name] = saved
+            ? { markupPercent: String(saved.markupPercent), discountCap: String(saved.discountCap) }
+            : { markupPercent: fallbackMarkup, discountCap: fallbackDiscount };
+        }
+        setStateRules(draftRules);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -128,12 +148,20 @@ export default function TaxPricingPage() {
     setSaving(true);
     setSaveMsg("");
     try {
+      const sanitizedStateRules: Record<string, StatePricingRule> = {};
+      for (const [state, rule] of Object.entries(stateRules)) {
+        sanitizedStateRules[state] = {
+          markupPercent: parseFloat(rule.markupPercent) || 0,
+          discountCap: Math.max(0, Math.min(100, parseFloat(rule.discountCap) || 0)),
+        };
+      }
       const res = await fetch("/api/admin/pricing-rules", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           markupPercent: parseFloat(markupPercent) || 0,
           discountCap: parseFloat(discountCap) || 0,
+          stateRules: sanitizedStateRules,
         }),
       });
       setSaveMsg(res.ok ? "Pricing rules saved." : "Failed to save.");
@@ -145,6 +173,30 @@ export default function TaxPricingPage() {
   const stateEntries = Object.entries(taxRates).sort(([, a], [, b]) =>
     a.name.localeCompare(b.name)
   );
+
+  const selectedStateName = selectedStateKey;
+  const displayMarkup = stateRules[selectedStateKey]?.markupPercent ?? "20";
+  const displayDiscount = stateRules[selectedStateKey]?.discountCap ?? "20";
+
+  const handleMarkupInputChange = (value: string) => {
+    setStateRules((prev) => ({
+      ...prev,
+      [selectedStateKey]: {
+        markupPercent: value,
+        discountCap: prev[selectedStateKey]?.discountCap ?? "20",
+      },
+    }));
+  };
+
+  const handleDiscountInputChange = (value: string) => {
+    setStateRules((prev) => ({
+      ...prev,
+      [selectedStateKey]: {
+        markupPercent: prev[selectedStateKey]?.markupPercent ?? "20",
+        discountCap: value,
+      },
+    }));
+  };
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -223,17 +275,38 @@ export default function TaxPricingPage() {
 
         <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mb-5">
           <p className="text-xs text-amber-800 font-medium">
-            These limits apply <strong>platform-wide</strong> to all stores. Store owners can set a selling price up to <strong>original price + markup%</strong> and a discount up to the <strong>discount cap</strong>.
+            Set these limits <strong>separately for each state</strong>. A store is matched to the rule for its owner&apos;s state. Store owners can set a selling price up to <strong>original price + markup%</strong> and a discount up to the <strong>discount cap</strong> that applies to their state.
           </p>
+        </div>
+
+        <div className="mb-5">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700 mb-1.5">
+            Select State
+          </label>
+          <div className="relative">
+            <select
+              value={selectedStateKey}
+              onChange={(e) => setSelectedStateKey(e.target.value)}
+              disabled={loading}
+              className="h-11 w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 pr-9 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6FAFB3] disabled:opacity-60"
+            >
+              {US_STATES.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          </div>
         </div>
 
         <div className="space-y-5">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700 mb-1.5">
-              Maximum Markup %
+              Maximum Markup % {selectedStateName && <span className="text-slate-400 normal-case">— {selectedStateName}</span>}
             </label>
             <p className="text-[11px] text-slate-500 mb-2">
-              Store owners can price up to this % above the original catalog price.
+              Store owners in this state can price up to this % above the original catalog price.
               e.g. 20% markup on a $100 product → max selling price $120.
             </p>
             <div className="flex items-center gap-2">
@@ -241,8 +314,8 @@ export default function TaxPricingPage() {
                 type="number"
                 min="0"
                 max="500"
-                value={markupPercent}
-                onChange={(e) => setMarkupPercent(e.target.value)}
+                value={displayMarkup}
+                onChange={(e) => handleMarkupInputChange(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6FAFB3]"
               />
               <span className="text-sm font-medium text-slate-600 flex-shrink-0">%</span>
@@ -251,18 +324,18 @@ export default function TaxPricingPage() {
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700 mb-1.5">
-              Maximum Discount Cap %
+              Maximum Discount Cap % {selectedStateName && <span className="text-slate-400 normal-case">— {selectedStateName}</span>}
             </label>
             <p className="text-[11px] text-slate-500 mb-2">
-              Store owners cannot offer a discount greater than this percentage.
+              Store owners in this state cannot offer a discount greater than this percentage.
             </p>
             <div className="flex items-center gap-2">
               <input
                 type="number"
                 min="0"
                 max="100"
-                value={discountCap}
-                onChange={(e) => setDiscountCap(e.target.value)}
+                value={displayDiscount}
+                onChange={(e) => handleDiscountInputChange(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6FAFB3]"
               />
               <span className="text-sm font-medium text-slate-600 flex-shrink-0">%</span>

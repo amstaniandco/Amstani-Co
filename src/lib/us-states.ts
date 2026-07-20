@@ -50,3 +50,14 @@ export const US_STATES = [
   "Wisconsin",
   "Wyoming",
 ];
+
+// Matches free-text state input (as entered at store signup) against the
+// canonical list above, case/whitespace-insensitive. Returns the canonical
+// name so it can be used as a lookup key, or null if it doesn't match any
+// known state.
+export function normalizeStateName(input?: string | null): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  return US_STATES.find((s) => s.toLowerCase() === trimmed.toLowerCase()) ?? null;
+}

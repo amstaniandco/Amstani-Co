@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../../lib/db";
 import { getUserFromToken } from "../../../../../lib/auth";
+import { resolveEffectivePricingRule } from "../../../../../lib/pricing-config";
 
 const CONFIG_ID = "pricing_config";
 
@@ -24,10 +25,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ produc
   const entry = await db.collection("owner_catalog").findOne({ storeId, productId });
   if (!entry) return NextResponse.json({ error: "Product not found in catalog" }, { status: 404 });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await db.collection("pricing_config").findOne({ _id: CONFIG_ID as any });
-  const markupPercent: number = config?.markupPercent ?? 20;
-  const discountCap: number = config?.discountCap ?? 20;
+  const [config, ownerUser] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    db.collection("pricing_config").findOne({ _id: CONFIG_ID as any }),
+    db.collection("users").findOne({ _id: new ObjectId(user.id) }, { projection: { state: 1 } }),
+  ]);
+  const effectiveRule = resolveEffectivePricingRule(
+    { markupPercent: config?.markupPercent ?? 20, discountCap: config?.discountCap ?? 20, stateRules: config?.stateRules },
+    ownerUser?.state as string | undefined
+  );
+  const markupPercent: number = effectiveRule.markupPercent;
+  const discountCap: number = effectiveRule.discountCap;
 
   // Fetch adminAdjustedPrice from global product — use it as the cap base
   let adminAdjustedPrice: number | null = null;
