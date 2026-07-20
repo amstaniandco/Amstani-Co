@@ -425,13 +425,11 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
 
       <form onSubmit={isGroup ? handleSendGroup : handleSend} className="ui-subpanel mt-5 flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-700">
         <div className="flex w-full flex-col gap-2">
-          {activeReplyingTo && (
+          {activeReplyingTo && !activeReplyingTo.deleted && (
             <div className="flex items-center justify-between rounded-lg border-l-2 border-[#68B8C1] bg-white px-3 py-1.5 text-xs dark:bg-slate-800">
               <div className="min-w-0">
                 <p className="font-semibold text-[#3f98a3]">Replying to {activeReplyingTo.senderName}</p>
-                <p className="truncate text-slate-500">
-                  {activeReplyingTo.deleted ? <em>This message was deleted</em> : activeReplyingTo.text}
-                </p>
+                <p className="truncate text-slate-500">{activeReplyingTo.text}</p>
               </div>
               <button
                 type="button"
@@ -466,10 +464,10 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
         <button
           type="button"
           onClick={isGroup ? openPrivate : openGroup}
-          className="rounded-xl border border-[#68B8C1] py-3 text-sm font-semibold text-[#68B8C1] transition hover:bg-[#eef9fa] dark:border-[#4f9ea7] dark:text-[#7dc8d1] dark:hover:bg-slate-700"
+          className="min-w-0 rounded-xl border border-[#68B8C1] px-2 py-3 text-xs font-semibold leading-tight text-[#68B8C1] transition hover:bg-[#eef9fa] dark:border-[#4f9ea7] dark:text-[#7dc8d1] dark:hover:bg-slate-700 sm:text-sm"
         >
-          <span className="inline-flex items-center gap-1.5">
-            {isGroup ? <Lock className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+          <span className="flex flex-wrap items-center justify-center gap-1.5 text-center">
+            {isGroup ? <Lock className="h-4 w-4 shrink-0" /> : <Users className="h-4 w-4 shrink-0" />}
             {isGroup ? "Private Chat" : "Group Chat"}
           </span>
         </button>
@@ -478,14 +476,14 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
             href={`https://wa.me/${store.ownerPhone.replace(/\D/g, "")}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white hover:bg-[#4f9ea7] flex items-center justify-center"
+            className="flex min-w-0 items-center justify-center rounded-xl bg-[#68B8C1] px-2 py-3 text-center text-xs font-semibold leading-tight text-white hover:bg-[#4f9ea7] sm:text-sm"
           >
             Open WhatsApp Chat
           </a>
         ) : (
           <button
             disabled
-            className="rounded-xl bg-[#68B8C1] py-3 text-sm font-semibold text-white opacity-50 cursor-not-allowed"
+            className="min-w-0 rounded-xl bg-[#68B8C1] px-2 py-3 text-center text-xs font-semibold leading-tight text-white opacity-50 cursor-not-allowed sm:text-sm"
           >
             Open WhatsApp Chat
           </button>

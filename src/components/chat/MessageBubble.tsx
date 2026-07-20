@@ -113,7 +113,7 @@ export default function MessageBubble({
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (delta > 60 && !msg.deleted) onReply(msg);
+    if (delta > 60) onReply(msg);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -207,6 +207,8 @@ export default function MessageBubble({
     </div>
   );
 
+  if (msg.deleted) return null;
+
   return (
     <div
       className={`group flex items-end gap-1.5 ${isOwn ? "justify-end" : "justify-start"}`}
@@ -232,19 +234,16 @@ export default function MessageBubble({
       )}
 
       <div className={`flex max-w-[200px] flex-col gap-0.5 sm:max-w-[280px] ${isOwn ? "items-end" : "items-start"}`}>
-        {/* Reply quote */}
-        {msg.replyTo && (
+        {/* Reply quote (omitted entirely if the quoted message was deleted) */}
+        {msg.replyTo && !msg.replyTo.deleted && (
           <div className="w-full rounded-lg border-l-2 border-slate-400 bg-slate-100 px-2 py-1 text-xs text-slate-500">
             <p className="font-semibold">{msg.replyTo.senderName}</p>
-            <p className="truncate">
-              {msg.replyTo.deleted ? <em>This message was deleted</em> : msg.replyTo.text}
-            </p>
+            <p className="truncate">{msg.replyTo.text}</p>
           </div>
         )}
 
         <div className={`flex items-end gap-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-          {/* Three-dot menu (hidden for deleted messages) */}
-          {!msg.deleted && menu}
+          {menu}
 
           {/* Bubble */}
           {editing ? (
@@ -263,10 +262,6 @@ export default function MessageBubble({
                 ✕
               </button>
             </form>
-          ) : msg.deleted ? (
-            <div className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm italic text-slate-400">
-              This message was deleted
-            </div>
           ) : (
             <div className={`min-w-0 rounded-2xl px-3 py-1.5 text-xs ${isOwn ? ownBubbleCls : otherBubbleCls}`}>
               {!isOwn && (
