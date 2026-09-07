@@ -23,7 +23,7 @@ export default function AboutPage() {
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100">About Us</h1>
       </div>
 
-      <div className="space-y-5 text-slate-600 dark:text-slate-400 leading-relaxed text-[15px]">
+      <div className="space-y-5 text-justify text-slate-600 dark:text-slate-400 leading-relaxed text-[15px]">
         <p>
           Welcome to Amstani &amp; Co, a multi-brand textile marketplace offering high-quality fabrics and textile products from trusted brands on irresistible prices for people all across America.
         </p>
