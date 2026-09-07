@@ -508,9 +508,6 @@ export default function AdminListingPage() {
                   <ClipboardList className="h-7 w-7" />
                   Order Listing
                 </h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  Orders from Supabase — customer, products and fulfilment. Use <b>List to Store</b> to list an order&apos;s products into the customer&apos;s store.
-                </p>
               </div>
               <button
                 onClick={() => load(true)}
