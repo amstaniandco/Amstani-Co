@@ -4,7 +4,6 @@ import clientPromise from "../../../../lib/db";
 export async function GET(request: Request) {
   try {
     const params = new URL(request.url).searchParams;
-    const stateFilter = params.get("state")?.trim() ?? "";
     const promotedOnly = params.get("promoted_only") === "true";
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DBNAME || "amstani");
@@ -38,10 +37,6 @@ export async function GET(request: Request) {
       },
       { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
     ];
-
-    if (stateFilter) {
-      pipeline.push({ $match: { "owner.state": stateFilter } });
-    }
 
     pipeline.push(
       { $sort: { createdAt: -1 } },

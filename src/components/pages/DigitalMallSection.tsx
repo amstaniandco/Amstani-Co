@@ -2,10 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, Store, Volume2, VolumeX } from "lucide-react";
-import {
-  getSelectedState,
-  subscribeSelectedState,
-} from "../../lib/state-preference";
 
 // Imperatively syncs `muted` on the underlying <video> element. React does not
 // reliably reflect the `muted` prop to the DOM, so we set it via a ref and
@@ -52,19 +48,17 @@ type StoreCard = {
 export default function DigitalMallSection() {
   const [stores, setStores] = useState<StoreCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedState, setSelectedState] = useState("");
   // Which store card's video is currently unmuted (only one plays audio at a time)
   const [unmutedId, setUnmutedId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
-    const loadStores = async (state: string) => {
+    const loadStores = async () => {
       try {
         setLoading(true);
         const url = new URL("/api/stores/browse", window.location.origin);
         url.searchParams.set("promoted_only", "true");
-        if (state) url.searchParams.set("state", state);
         const response = await fetch(url.toString());
         if (!response.ok) return;
 
@@ -107,18 +101,10 @@ export default function DigitalMallSection() {
       }
     };
 
-    const initialState = getSelectedState();
-    setSelectedState(initialState);
-    loadStores(initialState);
-
-    const unsubscribe = subscribeSelectedState((state) => {
-      setSelectedState(state);
-      loadStores(state);
-    });
+    loadStores();
 
     return () => {
       mounted = false;
-      unsubscribe();
     };
   }, []);
 
@@ -140,9 +126,7 @@ export default function DigitalMallSection() {
               Real stores from across the platform.
             </p>
             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#56aebb] dark:text-[#7fd3df]">
-              {selectedState
-                ? `${selectedState} • ${storeCountLabel}`
-                : storeCountLabel}
+              {storeCountLabel}
             </p>
           </div>
         </div>
@@ -157,12 +141,10 @@ export default function DigitalMallSection() {
               <Store className="h-7 w-7" />
             </div>
             <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
-              {selectedState ? `No stores in ${selectedState} yet` : "No stores available yet"}
+              No stores available yet
             </p>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {selectedState
-                ? "We're bringing stores to this state soon — check back later."
-                : "New stores are coming soon. Check back later."}
+              New stores are coming soon. Check back later.
             </p>
             <span className="mt-4 inline-flex items-center rounded-full bg-[#56aebb]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#56aebb] dark:bg-[#7fd3df]/15 dark:text-[#7fd3df]">
               Coming soon
