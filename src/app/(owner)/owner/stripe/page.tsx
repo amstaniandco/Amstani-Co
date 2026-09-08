@@ -141,8 +141,7 @@ function StripePageInner() {
           Stripe Payouts
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
-          Connect your Stripe account so Amstani can send your 80% share of
-          every sale directly to your bank.
+          Connect your Stripe account.
         </p>
 
         {didReturn && (
