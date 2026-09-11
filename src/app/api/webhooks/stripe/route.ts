@@ -33,6 +33,28 @@ export async function POST(req: Request) {
   const client = await clientPromise;
   const db = client.db(DB_NAME);
 
+  // Connect account status changes are delivered as account.updated events
+  // when the endpoint is configured to receive events from connected accounts.
+  if (event.type === "account.updated") {
+    const account = event.data.object as Stripe.Account;
+
+    await db.collection("stores").updateOne(
+      { stripeAccountId: account.id },
+      {
+        $set: {
+          stripeChargesEnabled: account.charges_enabled,
+          stripePayoutsEnabled: account.payouts_enabled,
+          stripeDetailsSubmitted: account.details_submitted,
+          stripeDisabledReason: account.requirements?.disabled_reason ?? null,
+          stripeRequirementsDue: account.requirements?.currently_due ?? [],
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    return NextResponse.json({ received: true });
+  }
+
   // ── Payment succeeded ─────────────────────────────────────────────────────
   if (event.type === "payment_intent.succeeded") {
     const pi = event.data.object as Stripe.PaymentIntent;

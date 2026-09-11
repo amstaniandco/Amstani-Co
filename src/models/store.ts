@@ -35,6 +35,13 @@ export type Store = {
   
   shortId?: string;
 
+  stripeAccountId?: string;
+  stripeChargesEnabled?: boolean;
+  stripePayoutsEnabled?: boolean;
+  stripeDetailsSubmitted?: boolean;
+  stripeDisabledReason?: string | null;
+  stripeRequirementsDue?: string[];
+
   status: "pending" | "active" | "suspended" | "inactive";
   isLive?: boolean;
   liveLink?: string | null;
