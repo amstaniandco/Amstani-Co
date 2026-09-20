@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import stripe from "../../../../lib/stripe";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { applyMonthlyImplementationFee } from "../../../../lib/store-billing";
+import { maintenanceFeeDeductedEmail, sendEmail } from "../../../../lib/email";
 
 type StoreBreakdownEntry = {
   storeId: string;
@@ -108,6 +109,30 @@ export async function POST(req: Request) {
           paymentIntentId: pi.id,
           transferAmountCents: entry.transferAmount,
         });
+
+        if (billing.deductedCents > 0 && ObjectId.isValid(entry.storeId)) {
+          const store = await db.collection("stores").findOne(
+            { _id: new ObjectId(entry.storeId) },
+            { projection: { name: 1, ownerId: 1 } },
+          );
+          const owner = store?.ownerId
+            ? await db.collection("users").findOne(
+                { _id: store.ownerId },
+                { projection: { name: 1, email: 1 } },
+              )
+            : null;
+
+          if (owner?.email) {
+            const feeEmail = maintenanceFeeDeductedEmail({
+              ownerName: owner.name,
+              storeName: store?.name,
+              amountCents: billing.deductedCents,
+              period: billing.period,
+              remainingCents: billing.remainingFeeCents,
+            });
+            void sendEmail({ to: owner.email, subject: feeEmail.subject, html: feeEmail.html });
+          }
+        }
 
         if (billing.netTransferCents <= 0) {
           await db.collection("orders").updateOne(

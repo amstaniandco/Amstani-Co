@@ -141,6 +141,26 @@ export function welcomeEmail(name: string) {
   };
 }
 
+export function maintenanceFeeDeductedEmail(d: {
+  ownerName?: string;
+  storeName?: string;
+  amountCents: number;
+  period: string;
+  remainingCents: number;
+}) {
+  return {
+    subject: `Monthly maintenance fee deducted for ${d.storeName || "your store"}`,
+    html: layout({
+      heading: "Monthly maintenance fee deducted",
+      preheader: `${money(d.amountCents / 100)} was deducted for ${d.period}.`,
+      bodyHtml:
+        para(`Hi ${d.ownerName || "there"}, <strong>${money(d.amountCents / 100)}</strong> has been deducted from your store earnings for the monthly maintenance fee for <strong>${d.period}</strong>.`) +
+        para(`<strong>${d.storeName || "Your store"}</strong> has ${money(d.remainingCents / 100)} remaining to be collected for this month's fee.`) +
+        button("Open your owner dashboard", `${APP_URL}/owner`),
+    }),
+  };
+}
+
 export function orderAcceptedEmail(d: OrderEmailData) {
   return {
     subject: `Your order ${d.orderNumber ?? ""} has been accepted ✅`,
