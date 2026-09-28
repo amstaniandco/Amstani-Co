@@ -699,7 +699,7 @@ export default function BecomeAStoreOwnerPage() {
                     Amstani
                   </p>
                   <p className="mt-1 text-[11px] leading-4 text-[#a6c8c7] sm:text-sm sm:leading-normal">
-                    Catalog and infrastructure
+                    Stores, Catalog, infrastructure
                   </p>
                 </div>
 
@@ -720,7 +720,7 @@ export default function BecomeAStoreOwnerPage() {
               Ready to build your store?
             </p>
             <h2 className="mt-4 text-4xl font-bold sm:text-6xl">
-              Ready to build your own Pakistani clothing store?
+              Ready to build your own American clothing store?
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-300">
               Join the first group of Amstani &amp; Co store owners and get
@@ -735,7 +735,7 @@ export default function BecomeAStoreOwnerPage() {
             <p className="mt-5 text-xs text-slate-400">
               Applications are reviewed individually. Approval is required.
             </p>
-            <p className="mt-3 text-sm text-slate-400">
+            <p className="mt-8 text-sm text-slate-400">
               Questions? Contact support through the Amstani &amp; Co contact
               page.
             </p>
