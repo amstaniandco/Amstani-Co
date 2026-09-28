@@ -109,9 +109,9 @@ function SectionHeading({
       </h2>
 
       {children && (
-        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500 dark:text-slate-400">
+        <div className="mt-4 max-w-2xl text-base leading-7 text-slate-500 dark:text-slate-400">
           {children}
-        </p>
+        </div>
       )}
     </div>
   );
@@ -119,34 +119,37 @@ function SectionHeading({
 export default function BecomeAStoreOwnerPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f4f8f8] text-slate-900 dark:bg-[#07191d] dark:text-slate-100">
-      <header className="border-b border-[#24545a] bg-[#0d3035] px-5 py-4 text-white shadow-[0_4px_20px_rgba(7,48,53,0.18)] dark:border-[#24545a] sm:px-8 lg:px-12">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
+      <header className="border-b border-[#24545a] bg-[#0d3035] px-4 py-3 text-white shadow-[0_4px_20px_rgba(7,48,53,0.18)] dark:border-[#24545a] sm:px-8 sm:py-4 lg:px-12">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]"
+            className="flex shrink-0 items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] sm:text-sm sm:tracking-[0.18em]"
           >
             <Image
               src="/assets/amstaniLogo.png"
               alt="Amstani & Co"
               width={28}
               height={28}
-              className="h-7 w-7 object-contain"
+              className="h-6 w-6 object-contain sm:h-7 sm:w-7"
             />
+
             <span>
               Amstani{" "}
               <span className="font-normal text-[#b9e8e5]">&amp; Co</span>
             </span>
           </Link>
-          <nav className="flex items-center gap-5 text-sm font-semibold sm:gap-8">
+
+          <nav className="flex shrink-0 items-center gap-2 text-xs font-semibold sm:gap-8 sm:text-sm">
             <a
               href="#how-it-works"
               className="text-[#c1dedd] transition hover:text-white"
             >
               How It Works
             </a>
+
             <Link
               href="/apply/store-owner"
-              className="rounded-xl bg-[#8bd3cf] px-4 py-2 text-[#0d3035] shadow-[0_6px_18px_rgba(139,211,207,0.2)] transition hover:bg-white"
+              className="rounded-lg bg-[#8bd3cf] px-3 py-2 text-[#0d3035] shadow-[0_6px_18px_rgba(139,211,207,0.2)] transition hover:bg-white sm:rounded-xl sm:px-4"
             >
               Apply
             </Link>
