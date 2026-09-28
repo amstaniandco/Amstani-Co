@@ -365,10 +365,11 @@ export default function StoreOwnerApplicationPage() {
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8bd3cf]">
                 Amstani &amp; Co store-owner application
               </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-5xl">
+              <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-5xl text-center lg:text-left ">
                 Become a Store Owner
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-[#c7e9e7]">
+
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-[#c7e9e7] text-justify lg:text-left ">
                 Tell us about yourself, your business interests, and your plans
                 for operating an online clothing store in the United States.
                 Submission does not guarantee acceptance or store approval.
