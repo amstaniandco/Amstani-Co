@@ -157,17 +157,17 @@ export default function BecomeAStoreOwnerPage() {
         </div>
       </header>
       <main className="overflow-hidden">
-        <section className="relative bg-[#0d3035] px-5 py-8 text-white shadow-[inset_0_-1px_0_rgba(139,211,207,0.16)] sm:px-8 lg:px-12">
+        <section className="relative bg-[#0d3035] px-5 py-5 text-white shadow-[inset_0_-1px_0_rgba(139,211,207,0.16)] sm:px-8 lg:px-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(139,211,207,0.22),transparent_35%)]" />
-          <div className="relative mx-auto grid max-w-7xl items-center gap-12 py-12 lg:grid-cols-[1fr_0.9fr] lg:py-20">
+          <div className="relative mx-auto grid max-w-7xl items-center gap-12 py-5 lg:grid-cols-[1fr_0.9fr] lg:py-20">
             <div>
-              <p className="mb-5 text-xs font-bold uppercase tracking-[0.22em] text-[#8bd3cf]">
+              <p className="mb-5 text-xs font-bold uppercase tracking-[0.22em] text-[#8bd3cf] text-center sm:text-left">
                 For store owners
               </p>
-              <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
+              <h1 className="max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-6xl text-center sm:text-left">
                 Start your own online American clothing store.
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg text-justify sm:text-left">
                 Your store. Our curated catalog. The infrastructure and
                 wholesale connection to build your own online clothing business
                 in the U.S.
@@ -179,10 +179,19 @@ export default function BecomeAStoreOwnerPage() {
                 Apply to become a store owner <ArrowRight size={17} />
               </Link>
 
-              <p className="mt-4 rounded-xl bg-[#e3f5f3] px-4 py-3 text-sm font-medium text-[#187d86] dark:bg-[#173f44] dark:text-[#8ed9d5]">
-                Limited-time offer: store access fee waived for the first 20
-                qualifying store owners.
-              </p>
+              <div className="mt-5 flex items-start gap-3 rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-white/80 backdrop-blur-sm">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-xs font-semibold text-white">
+                  !
+                </span>
+
+                <p className="text-sm leading-6">
+                  <span className="font-semibold text-white">
+                    Limited-time offer:
+                  </span>{" "}
+                  Store access fee waived for the first 20 qualifying store
+                  owners.
+                </p>
+              </div>
             </div>
             <div className="overflow-hidden rounded-3xl border border-[#8bd3cf]/35 bg-[#16454b] p-3 shadow-[0_24px_70px_rgba(2,20,23,0.38)]">
               <div className="rounded-2xl bg-white p-3 text-slate-800 shadow-[0_8px_25px_rgba(5,34,38,0.16)]">
@@ -211,23 +220,6 @@ export default function BecomeAStoreOwnerPage() {
           </div>
         </section>
 
-        <section className="border-b border-[#d5e6e5] bg-white px-5 py-7 shadow-[0_8px_24px_rgba(13,48,53,0.05)] dark:border-[#21474c] dark:bg-[#0e292e] sm:px-8 lg:px-12">
-          <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
-              <Store size={21} /> Your own store
-            </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
-              <Package size={21} /> Curated Pakistani fashion
-            </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
-              <Truck size={21} /> Wholesale fulfillment
-            </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
-              <Users size={21} /> Built for U.S. owners
-            </div>
-          </div>
-        </section>
-
         <section className="px-5 py-8 text-center sm:px-8 sm:py-10 md:text-left lg:px-12">
           <div className="mx-auto max-w-7xl">
             <SectionHeading
@@ -241,22 +233,21 @@ export default function BecomeAStoreOwnerPage() {
                 building customers and growing your business.
               </div>
             </SectionHeading>
-            <div className="mt-5 grid gap-3 md:grid-cols-4">
-              {[
-                "Pakistani brands & vendors",
-                "Amstani & Co",
-                "Your online store",
-                "Your customers",
-              ].map((item, index) => (
-                <div key={item} className="flex items-center gap-3">
-                  <div className="flex min-h-24 flex-1 items-center justify-center rounded-2xl border border-[#d4e4e3] bg-white px-4 text-center font-semibold shadow-[0_8px_24px_rgba(13,48,53,0.06)] dark:border-[#28565b] dark:bg-[#0e292e]">
-                    {item}
-                  </div>
-                  {index < 3 && (
-                    <ArrowRight className="hidden shrink-0 text-[#4daeb3] md:block" />
-                  )}
+            <div className="mt-8 text-center">
+              <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
+                  <Store size={21} /> Your own store
                 </div>
-              ))}
+                <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
+                  <Package size={21} /> Curated Pakistani fashion
+                </div>
+                <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
+                  <Truck size={21} /> Wholesale fulfillment
+                </div>
+                <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
+                  <Users size={21} /> Built for U.S. owners
+                </div>
+              </div>
             </div>
           </div>
         </section>
