@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Filter, Pencil, Search, X } from "lucide-react";
+import { Download, Eye, Mail, Pencil, Phone, Search, Trash2, X } from "lucide-react";
 import { US_STATES } from "../../lib/us-states";
 import Pagination from "./Pagination";
 
@@ -17,6 +17,7 @@ export type ApplicationRow = {
   vacancy: string;
   status: string;
   ownerSignupLink?: string;
+  details?: Record<string, unknown>;
 };
 
 type StateSettings = Record<string, { max: number }>;
@@ -40,6 +41,7 @@ function ApplicationsTable() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [selectedApplication, setSelectedApplication] = useState<ApplicationRow | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/stores/applications")
@@ -58,6 +60,7 @@ function ApplicationsTable() {
             vacancy: String(app.vacancy ?? "-"),
             status: String(app.status || "forwarded_to_admin"),
             ownerSignupLink: app.ownerSignupLink as string | undefined,
+            details: app.application as Record<string, unknown> | undefined,
           };
         });
         setRows(mapped);
@@ -72,9 +75,6 @@ function ApplicationsTable() {
     const matchesStatus = statusFilter === "all" || r.status === statusFilter;
     return matchesSearch && matchesStatus;
   }), [rows, search, statusFilter]);
-
-  // Reset to first page whenever the filters change
-  useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -96,7 +96,16 @@ function ApplicationsTable() {
     }));
   };
 
+  const deleteApplication = async (applicationId: string) => {
+    if (!window.confirm("Delete this application permanently?")) return;
+    const response = await fetch(`/api/admin/stores/applications/${applicationId}`, { method: "DELETE" });
+    if (!response.ok) return;
+    setRows((current) => current.filter((row) => row.id !== applicationId));
+    if (selectedApplication?.id === applicationId) setSelectedApplication(null);
+  };
+
   const statusLabel = (status: string) => {
+    if (status === "new") return "New";
     if (status === "approved_by_admin") return "Approved";
     if (status === "denied_by_admin") return "Denied";
     return "Pending";
@@ -110,7 +119,7 @@ function ApplicationsTable() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by name, email, state…"
             className="w-full bg-transparent outline-none"
           />
@@ -118,11 +127,12 @@ function ApplicationsTable() {
         <div className="flex items-center gap-2">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="rounded-xl border border-[#d8e2e8] bg-white px-3 py-2 text-sm text-slate-700 outline-none"
           >
             <option value="all">All Status</option>
-            <option value="forwarded_to_admin">Pending</option>
+            <option value="new">New</option>
+            <option value="forwarded_to_admin">Pending legacy</option>
             <option value="approved_by_admin">Approved</option>
             <option value="denied_by_admin">Denied</option>
           </select>
@@ -149,6 +159,10 @@ function ApplicationsTable() {
                 <div className="text-slate-600">{row.state}</div>
                 <div className="text-slate-700">{row.vacancy}</div>
                 <div className="flex justify-end gap-2 items-center">
+                  <button type="button" onClick={() => setSelectedApplication(row)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#8bcbd0] bg-[#f4fbfb] px-2.5 text-[10px] font-semibold text-[#267f8c] shadow-sm transition hover:border-[#2f9fa5] hover:bg-[#e4f7f6]" aria-label={`View application for ${row.name}`} title="View application">
+                    <Eye className="h-3.5 w-3.5" /> View
+                  </button>
                   <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
                     row.status === "approved_by_admin" ? "bg-green-100 text-green-700"
                     : row.status === "denied_by_admin" ? "bg-red-100 text-red-700"
@@ -166,6 +180,10 @@ function ApplicationsTable() {
                       </button>
                     </>
                   )}
+                  <button type="button" onClick={() => deleteApplication(row.id)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100" aria-label={`Delete application for ${row.name}`} title="Delete application">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -180,6 +198,55 @@ function ApplicationsTable() {
         pageSize={PAGE_SIZE}
         className="border-t border-[#edf2f5]"
       />
+      {selectedApplication && (
+        <ApplicationDetails application={selectedApplication} onClose={() => setSelectedApplication(null)} />
+      )}
+    </div>
+  );
+}
+
+function ApplicationDetails({ application, onClose }: { application: ApplicationRow; onClose: () => void }) {
+  const details = application.details ?? {};
+  const value = (key: string): string => {
+    const item = details[key];
+    if (Array.isArray(item)) return item.join(", ");
+    if (typeof item === "boolean") return item ? "Yes" : "No";
+    return String(item ?? "Not provided");
+  };
+
+  const fields: Array<[string, string]> = [
+    ["Full name", value("full_name")], ["Email", value("email")], ["Phone", value("phone")],
+    ["Preferred contact method", value("preferred_contact_method")], ["State", value("state")],
+    ["Business status", value("business_status")], ["Online selling experience", value("online_selling_experience")],
+    ["Platforms used", value("platforms_used")], ["Other platform", value("platforms_other")],
+    ["Reasons for interest", value("interest_reasons")], ["Other interest reason", value("interest_other")],
+    ["Sales channels", value("sales_channels")], ["Other sales channel", value("sales_other")],
+    ["Target customers", value("target_customers")], ["Other target customer", value("target_other")],
+    ["Weekly time commitment", value("weekly_time_commitment")], ["Planned start", value("planned_start_date")],
+    ["Minimum order acknowledgment", value("minimum_order_acknowledgment")], ["Readiness", value("readiness_level")],
+    ["Contact consent", value("contact_consent")], ["Privacy acknowledgment", value("privacy_acknowledgment")],
+  ];
+
+  const visibleFields = fields.filter(([, fieldValue]) => fieldValue && fieldValue !== "Not provided");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Complete store-owner application">
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-3xl border border-[#cfe0e1] bg-white shadow-[0_25px_80px_rgba(15,23,42,0.25)] dark:border-slate-700 dark:bg-slate-900">
+        <div className="flex items-start justify-between gap-4 border-b border-[#e4edef] bg-[#effafa] px-6 py-5 dark:border-slate-700 dark:bg-[#14383d]">
+          <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#2f9fa5]">Complete application</p><h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{application.name}</h2><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">Status: {application.status}</p></div>
+          <button type="button" onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#cfe0e1] text-slate-500 transition hover:bg-white dark:border-slate-600 dark:text-slate-300" aria-label="Close application details"><X size={17} /></button>
+        </div>
+        <div className="max-h-[calc(92vh-150px)] overflow-y-auto p-6">
+          <div className="mb-6 flex flex-wrap gap-3">
+            <a href={`mailto:${value("email")}`} className="inline-flex items-center gap-2 rounded-xl bg-[#2f9fa5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#267f8c]"><Mail size={16} /> Email applicant</a>
+            <a href={`tel:${value("phone")}`} className="inline-flex items-center gap-2 rounded-xl border border-[#9bcecf] px-4 py-2.5 text-sm font-semibold text-[#267f8c] transition hover:bg-[#effafa]"><Phone size={16} /> Call applicant</a>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {visibleFields.map(([label, fieldValue]) => <div key={label} className="rounded-2xl border border-[#e0ebeb] bg-[#fbfdfd] p-4 dark:border-slate-700 dark:bg-slate-800"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{label}</p><p className="mt-1 break-words text-sm leading-6 text-slate-800 dark:text-slate-100">{fieldValue}</p></div>)}
+          </div>
+          {value("applicant_questions") !== "Not provided" && <div className="mt-3 rounded-2xl border border-[#e0ebeb] bg-[#fbfdfd] p-4 dark:border-slate-700 dark:bg-slate-800"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Applicant questions</p><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-800 dark:text-slate-100">{value("applicant_questions")}</p></div>}
+        </div>
+      </div>
     </div>
   );
 }
@@ -301,14 +368,8 @@ function StateAvailabilityTable({
 
 export default function StoreApplicationsTables({
   monthlyLimit,
-  acceptingApplications,
-  onMonthlyLimitChange,
-  onAcceptingChange,
 }: {
   monthlyLimit: number;
-  acceptingApplications: boolean;
-  onMonthlyLimitChange: (val: number) => void;
-  onAcceptingChange: (val: boolean) => void;
 }) {
   const [stateSettings, setStateSettings] = useState<StateSettings>({});
   const [stateOccupied, setStateOccupied] = useState<StateOccupied>({});

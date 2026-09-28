@@ -334,6 +334,103 @@ a, li, dd, dt, table, td, th {
   }
 }
 
+.form-input {
+  margin-top: 0.5rem;
+  width: 100%;
+  border: 1px solid #d5e3e4;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0.75rem 1rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.form-input:focus {
+  border-color: #2f9fa5;
+  box-shadow: 0 0 0 3px rgba(47, 159, 165, 0.14);
+}
+
+.dark .form-input {
+  border-color: #28565b;
+  background: #102c31;
+  color: #e2e8f0;
+}
+
+main[class*="bg-[#f4f8f8]"] {
+  background: radial-gradient(circle at 8% 4%, rgba(139, 211, 207, 0.2), transparent 28%), radial-gradient(circle at 94% 28%, rgba(47, 159, 165, 0.1), transparent 24%), #f4f8f8;
+}
+
+main[class*="bg-[#f4f8f8]"] form {
+  border-top: 4px solid #2f9fa5;
+  box-shadow: 0 24px 65px rgba(13, 48, 53, 0.12);
+}
+
+main[class*="bg-[#f4f8f8]"] > div > div:first-child {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid #d5e6e5;
+  background: linear-gradient(135deg, #0d3035 0%, #164c52 65%, #247f84 100%);
+  padding: 1.5rem;
+  color: #ffffff;
+  box-shadow: 0 18px 45px rgba(13, 48, 53, 0.14);
+}
+
+main[class*="bg-[#f4f8f8]"] form > div {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  main[class*="bg-[#f4f8f8]"] form > div.space-y-6,
+  main[class*="bg-[#f4f8f8]"] form > div.space-y-7 {
+    max-width: 1180px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  main[class*="bg-[#f4f8f8]"] form > div.space-y-6 > label.block {
+    display: inline-block;
+    width: calc(50% - 0.65rem);
+    margin-right: 1rem;
+    vertical-align: top;
+  }
+
+  main[class*="bg-[#f4f8f8]"] form > div.space-y-6 > label.block:nth-of-type(2) {
+    margin-right: 0;
+  }
+}
+
+main[class*="bg-[#f4f8f8]"] > div > div:first-child h1,
+main[class*="bg-[#f4f8f8]"] > div > div:first-child p {
+  color: #ffffff;
+}
+
+main[class*="bg-[#f4f8f8]"] form h2 { margin-bottom: 0.35rem; color: #0d3035; font-size: 1.75rem; letter-spacing: -0.025em; }
+main[class*="bg-[#f4f8f8]"] form label.block { display: block; border-radius: 1rem; background: #f8fbfb; padding: 0.9rem; }
+main[class*="bg-[#f4f8f8]"] form label.block > span,
+main[class*="bg-[#f4f8f8]"] form fieldset legend > span,
+main[class*="bg-[#f4f8f8]"] form > div > div.space-y-3 > span { display: block; margin-bottom: 0.55rem; color: #164c52; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+main[class*="bg-[#f4f8f8]"] .form-input { margin-top: 0; min-height: 3.25rem; border-color: #cbdedd; border-radius: 0.75rem; background: #ffffff; box-shadow: 0 3px 10px rgba(13, 48, 53, 0.03); font-size: 0.95rem; }
+main[class*="bg-[#f4f8f8]"] textarea.form-input { min-height: 8rem; resize: vertical; }
+main[class*="bg-[#f4f8f8]"] form fieldset { border-radius: 1rem; background: #f8fbfb; padding: 1rem; }
+main[class*="bg-[#f4f8f8]"] form fieldset label,
+main[class*="bg-[#f4f8f8]"] form > div > div.space-y-3 > label { min-height: 3rem; align-items: center; border-color: #d5e3e4; background: #ffffff; box-shadow: 0 3px 10px rgba(13, 48, 53, 0.025); }
+main[class*="bg-[#f4f8f8]"] form input[type="radio"],
+main[class*="bg-[#f4f8f8]"] form input[type="checkbox"] { height: 1.05rem; width: 1.05rem; flex: 0 0 auto; accent-color: #2f9fa5; }
+main[class*="bg-[#f4f8f8]"] form button[type="button"],
+main[class*="bg-[#f4f8f8]"] form button[type="submit"] { min-height: 3.25rem; border-radius: 0.9rem; letter-spacing: 0.01em; transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
+main[class*="bg-[#f4f8f8]"] form button[type="button"]:hover,
+main[class*="bg-[#f4f8f8]"] form button[type="submit"]:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(47, 159, 165, 0.18); }
+
+.dark main[class*="bg-[#f4f8f8]"] { background: radial-gradient(circle at 8% 4%, rgba(47, 159, 165, 0.16), transparent 28%), #07191d; }
+.dark main[class*="bg-[#f4f8f8]"] form h2,
+.dark main[class*="bg-[#f4f8f8]"] form label.block > span,
+.dark main[class*="bg-[#f4f8f8]"] form fieldset legend > span,
+.dark main[class*="bg-[#f4f8f8]"] form > div > div.space-y-3 > span { color: #d7efed; }
+.dark main[class*="bg-[#f4f8f8]"] form label.block,
+.dark main[class*="bg-[#f4f8f8]"] form fieldset { background: #102c31; }
+
 .toast-enter {
   animation: toast-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }

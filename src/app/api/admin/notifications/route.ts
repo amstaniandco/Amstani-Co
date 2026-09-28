@@ -25,11 +25,16 @@ export async function GET() {
   const activeStores = await db.collection("stores").find({ status: "active" }).toArray();
   await Promise.all(activeStores.map((store) => evaluateWeeklyLiveCompliance(db, store)));
 
-  const [applications, signups, listings, claims, ownerMessages, adminLiveNotifications, liveWarnings] = await Promise.all([
+  const [applications, ownerApplications, signups, listings, claims, ownerMessages, adminLiveNotifications, liveWarnings] = await Promise.all([
     // Store applications forwarded to admin, awaiting review
     db.collection("store_applications")
       .find({ status: "forwarded_to_admin" })
       .sort({ forwardedToAdminAt: -1, createdAt: -1 })
+      .limit(15).toArray(),
+    // New public store-owner applications awaiting review
+    db.collection("store_owner_applications")
+      .find({ status: "new" })
+      .sort({ createdAt: -1 })
       .limit(15).toArray(),
     // New store signup requests, not yet reviewed
     db.collection("store_signup_requests")
@@ -92,6 +97,17 @@ export async function GET() {
       message: `${a.storeName || a.applicant?.name || "A store"} is awaiting your review.`,
       href: "/admin/stores/applications",
       createdAt: new Date(a.forwardedToAdminAt || a.createdAt || Date.now()).toISOString(),
+    });
+  }
+
+  for (const a of ownerApplications) {
+    notifications.push({
+      id: `owner-${a._id.toString()}`,
+      type: "application",
+      title: "New store-owner application",
+      message: `${a.full_name || "A new applicant"} submitted a store-owner application.`,
+      href: "/admin/stores/applications",
+      createdAt: new Date(a.createdAt || Date.now()).toISOString(),
     });
   }
 

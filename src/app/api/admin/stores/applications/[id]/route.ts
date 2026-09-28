@@ -17,6 +17,34 @@ export async function PATCH(
     if (tokenUser.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = await context.params;
+    const ownerApplicationId = id.startsWith("owner-") ? id.slice("owner-".length) : null;
+    if (ownerApplicationId) {
+      if (!ObjectId.isValid(ownerApplicationId)) {
+        return NextResponse.json({ error: "Invalid application id" }, { status: 400 });
+      }
+
+      const client = await clientPromise;
+      const db = client.db(DB_NAME);
+      const body = await req.json();
+      const action = body?.action as "approve" | "deny";
+      if (action !== "approve" && action !== "deny") {
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+      }
+
+      const result = await db.collection("store_owner_applications").updateOne(
+        { _id: new ObjectId(ownerApplicationId) },
+        {
+          $set: {
+            status: action === "approve" ? "approved_by_admin" : "denied_by_admin",
+            reviewedByAdminId: new ObjectId(tokenUser.id),
+            reviewedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        }
+      );
+      if (!result.matchedCount) return NextResponse.json({ error: "Application not found" }, { status: 404 });
+      return NextResponse.json({ message: `Application ${action}d successfully` }, { status: 200 });
+    }
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid application id" }, { status: 400 });
     }
@@ -84,6 +112,32 @@ export async function PATCH(
     return NextResponse.json({ message: `Application ${action}d successfully` }, { status: 200 });
   } catch (error) {
     console.error("PATCH /api/admin/stores/applications/[id] error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const tokenUser = await getUserFromToken();
+    if (!tokenUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (tokenUser.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { id } = await context.params;
+    const collectionName = id.startsWith("owner-") ? "store_owner_applications" : "store_applications";
+    const rawId = id.startsWith("owner-") ? id.slice("owner-".length) : id;
+    if (!ObjectId.isValid(rawId)) return NextResponse.json({ error: "Invalid application id" }, { status: 400 });
+
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const result = await db.collection(collectionName).deleteOne({ _id: new ObjectId(rawId) });
+    if (!result.deletedCount) return NextResponse.json({ error: "Application not found" }, { status: 404 });
+
+    return NextResponse.json({ message: "Application deleted successfully" }, { status: 200 });
+  } catch (error) {
+    console.error("DELETE /api/admin/stores/applications/[id] error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

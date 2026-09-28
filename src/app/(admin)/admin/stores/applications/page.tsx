@@ -114,9 +114,6 @@ export default function AdminStoreApplicationsPage() {
 
             <StoreApplicationsTables
               monthlyLimit={monthlyLimit}
-              acceptingApplications={acceptingApplications}
-              onMonthlyLimitChange={(val) => { setMonthlyLimit(val); setLimitInput(String(val)); }}
-              onAcceptingChange={setAccepting}
             />
           </section>
         </main>

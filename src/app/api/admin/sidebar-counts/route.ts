@@ -28,16 +28,17 @@ export async function GET(req: Request) {
   const chatsFilter: Record<string, unknown> = { sender: "owner" };
   if (sinceChats) chatsFilter.createdAt = { $gte: new Date(sinceChats) };
 
-  const [claims, pendingApplications, pendingSignupRequests, chatMessages] = await Promise.all([
+  const [claims, pendingApplications, newPublicApplications, pendingSignupRequests, chatMessages] = await Promise.all([
     db.collection("claims").countDocuments(claimsFilter),
     db.collection("store_applications").countDocuments(appFilter),
+    db.collection("store_owner_applications").countDocuments({ status: "new", ...(sinceStores ? { createdAt: { $gte: new Date(sinceStores) } } : {}) }),
     db.collection("store_signup_requests").countDocuments(signupFilter),
     db.collection("store_messages").countDocuments(chatsFilter),
   ]);
 
   return NextResponse.json({
     claims,
-    stores: pendingApplications + pendingSignupRequests,
+    stores: pendingApplications + newPublicApplications + pendingSignupRequests,
     chats: chatMessages,
   });
 }
