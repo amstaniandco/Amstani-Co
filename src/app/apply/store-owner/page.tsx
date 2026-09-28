@@ -90,8 +90,23 @@ export default function StoreOwnerApplicationPage() {
     return "";
   };
 
-  const next = () => { const message = validateStep(); if (message) { setError(message); return; } setError(""); setStep((current) => Math.min(5, current + 1)); };
-  const back = () => { setError(""); setStep((current) => Math.max(1, current - 1)); };
+  const scrollToStepTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const next = () => {
+    const message = validateStep();
+    if (message) { setError(message); return; }
+    setError("");
+    setStep((current) => Math.min(5, current + 1));
+    scrollToStepTop();
+  };
+
+  const back = () => {
+    setError("");
+    setStep((current) => Math.max(1, current - 1));
+    scrollToStepTop();
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
