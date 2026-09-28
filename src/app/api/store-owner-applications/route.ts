@@ -5,7 +5,7 @@ import { EMAIL_REPLY_TO, sendEmail } from "../../../lib/email";
 export const dynamic = "force-dynamic";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const arrayFields = ["platforms_used", "interest_reasons", "sales_channels", "target_customers"] as const;
+const arrayFields = ["platforms_used", "interest_reasons", "target_customers"] as const;
 
 function clean(value: unknown, max = 2000): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -56,7 +56,6 @@ export async function POST(request: Request) {
       business_status: clean(body.business_status, 160), online_selling_experience: clean(body.online_selling_experience, 160),
       platforms_used: lists.platforms_used, platforms_other: clean(body.platforms_other, 300),
       interest_reasons: lists.interest_reasons, interest_other: clean(body.interest_other, 300),
-      sales_channels: lists.sales_channels, sales_other: clean(body.sales_other, 300),
       target_customers: lists.target_customers, target_other: clean(body.target_other, 300),
       weekly_time_commitment: clean(body.weekly_time_commitment, 100), planned_start_date: clean(body.planned_start_date, 100),
       minimum_order_acknowledgment: clean(body.minimum_order_acknowledgment, 180), readiness_level: clean(body.readiness_level, 160),
@@ -64,7 +63,7 @@ export async function POST(request: Request) {
       utm: body.utm && typeof body.utm === "object" ? body.utm : {}, status: "new", createdAt: now, updatedAt: now,
     };
     const result = await db.collection("store_owner_applications").insertOne(application);
-    const rows = Object.entries({ Name: fullName, Email: email, Phone: phone, State: state, "Contact method": preferredContactMethod, "Business status": application.business_status, "Selling experience": application.online_selling_experience, "Platforms used": lists.platforms_used.join(", "), "Interest reasons": lists.interest_reasons.join(", "), "Sales channels": lists.sales_channels.join(", "), "Target customers": lists.target_customers.join(", "), "Time commitment": application.weekly_time_commitment, "Start timeline": application.planned_start_date, "Minimum order": application.minimum_order_acknowledgment, Readiness: application.readiness_level, Questions: application.applicant_questions || "No question provided." }).map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(value))}</p>`).join("");
+    const rows = Object.entries({ Name: fullName, Email: email, Phone: phone, State: state, "Contact method": preferredContactMethod, "Business status": application.business_status, "Selling experience": application.online_selling_experience, "Platforms used": lists.platforms_used.join(", "), "Interest reasons": lists.interest_reasons.join(", "), "Target customers": lists.target_customers.join(", "), "Time commitment": application.weekly_time_commitment, "Start timeline": application.planned_start_date, "Minimum order": application.minimum_order_acknowledgment, Readiness: application.readiness_level, Questions: application.applicant_questions || "No question provided." }).map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(value))}</p>`).join("");
     const adminEmail = process.env.STORE_OWNER_APPLICATION_EMAIL || EMAIL_REPLY_TO;
     const applicantEmail = email;
     await Promise.all([

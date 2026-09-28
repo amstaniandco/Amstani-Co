@@ -19,8 +19,6 @@ type FormData = {
   platforms_other: string;
   interest_reasons: string[];
   interest_other: string;
-  sales_channels: string[];
-  sales_other: string;
   target_customers: string[];
   target_other: string;
   weekly_time_commitment: string;
@@ -44,8 +42,6 @@ const initialForm: FormData = {
   platforms_other: "",
   interest_reasons: [],
   interest_other: "",
-  sales_channels: [],
-  sales_other: "",
   target_customers: [],
   target_other: "",
   weekly_time_commitment: "",
@@ -81,15 +77,6 @@ const interestOptions = [
   "I am interested in selling Pakistani clothing.",
   "I want to develop an additional source of business income.",
   "I am exploring business opportunities.",
-  "Other",
-];
-const salesOptions = [
-  "My own online store",
-  "Instagram",
-  "Facebook",
-  "TikTok",
-  "In-person events or pop-up shops",
-  "To friends and family",
   "Other",
 ];
 const customerOptions = [
@@ -185,12 +172,19 @@ const radioGroups: Record<
 function FieldLabel({
   children,
   required = true,
+  number,
 }: {
   children: React.ReactNode;
   required?: boolean;
+  number?: number;
 }) {
   return (
-    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+    <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+      {number && (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dff3f1] text-xs font-bold text-[#267f8c] shadow-sm dark:bg-[#173f44] dark:text-[#8bd3cf]">
+          {number}
+        </span>
+      )}
       {children}
       {required && <span className="ml-1 text-[#2f9fa5]">*</span>}
     </span>
@@ -199,11 +193,13 @@ function FieldLabel({
 
 function CheckboxGroup({
   label,
+  number,
   options,
   selected,
   onChange,
 }: {
   label: string;
+  number: number;
   options: string[];
   selected: string[];
   onChange: (value: string[]) => void;
@@ -211,13 +207,13 @@ function CheckboxGroup({
   return (
     <fieldset>
       <legend>
-        <FieldLabel>{label}</FieldLabel>
+        <FieldLabel number={number}>{label}</FieldLabel>
       </legend>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {options.map((option) => (
           <label
             key={option}
-            className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#d5e3e4] bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-[#55aeb4] dark:border-[#28565b] dark:bg-[#102c31] dark:text-slate-200"
+            className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#d5e3e4] bg-[#fbfefe] px-4 py-3 text-sm text-slate-700 shadow-[0_3px_10px_rgba(13,48,53,0.025)] transition hover:-translate-y-0.5 hover:border-[#55aeb4] hover:shadow-[0_8px_18px_rgba(13,48,53,0.08)] dark:border-[#28565b] dark:bg-[#102c31] dark:text-slate-200"
           >
             <input
               type="checkbox"
@@ -275,7 +271,6 @@ export default function StoreOwnerApplicationPage() {
     if (
       step === 3 &&
       (!form.interest_reasons.length ||
-        !form.sales_channels.length ||
         !form.target_customers.length ||
         !form.weekly_time_commitment ||
         !form.planned_start_date)
@@ -395,7 +390,7 @@ export default function StoreOwnerApplicationPage() {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Your Information</h2>
                 <label className="block">
-                  <FieldLabel>Full name</FieldLabel>
+                  <FieldLabel number={1}>Full name</FieldLabel>
                   <input
                     name="full_name"
                     value={form.full_name}
@@ -405,7 +400,7 @@ export default function StoreOwnerApplicationPage() {
                   />
                 </label>
                 <label className="block">
-                  <FieldLabel>Email address</FieldLabel>
+                  <FieldLabel number={2}>Email address</FieldLabel>
                   <input
                     type="email"
                     name="email"
@@ -416,7 +411,7 @@ export default function StoreOwnerApplicationPage() {
                   />
                 </label>
                 <label className="block">
-                  <FieldLabel>Phone number</FieldLabel>
+                  <FieldLabel number={3}>Phone number</FieldLabel>
                   <input
                     type="tel"
                     name="phone"
@@ -427,7 +422,7 @@ export default function StoreOwnerApplicationPage() {
                   />
                 </label>
                 <div className="space-y-3">
-                  <FieldLabel>Preferred contact method</FieldLabel>
+                  <FieldLabel number={4}>Preferred contact method</FieldLabel>
                   {radioGroups[1][0].options.map((option) => (
                     <label
                       key={option}
@@ -451,7 +446,7 @@ export default function StoreOwnerApplicationPage() {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Location and Background</h2>
                 <label className="block">
-                  <FieldLabel>
+                  <FieldLabel number={5}>
                     Which U.S. state do you currently live in?
                   </FieldLabel>
                   <select
@@ -468,11 +463,15 @@ export default function StoreOwnerApplicationPage() {
                 </label>
                 {radioGroups[2].map((group) => (
                   <div key={String(group.key)} className="space-y-3">
-                    <FieldLabel>{group.label}</FieldLabel>
+                    <FieldLabel
+                      number={group.key === "business_status" ? 6 : 7}
+                    >
+                      {group.label}
+                    </FieldLabel>
                     {group.options.map((option) => (
                       <label
                         key={option}
-                        className="flex items-start gap-3 text-sm"
+                        className="flex items-start gap-3 rounded-xl border border-[#d5e3e4] bg-[#fbfefe] px-4 py-3 text-sm text-slate-700 shadow-[0_3px_10px_rgba(13,48,53,0.025)] transition hover:-translate-y-0.5 hover:border-[#55aeb4] hover:shadow-[0_8px_18px_rgba(13,48,53,0.08)] dark:border-[#28565b] dark:bg-[#102c31] dark:text-slate-200"
                       >
                         <input
                           type="radio"
@@ -488,6 +487,7 @@ export default function StoreOwnerApplicationPage() {
                   </div>
                 ))}
                 <CheckboxGroup
+                  number={8}
                   label="Which online selling platforms have you used?"
                   options={platformOptions}
                   selected={form.platforms_used}
@@ -508,6 +508,7 @@ export default function StoreOwnerApplicationPage() {
               <div className="space-y-7">
                 <h2 className="text-2xl font-bold">Your Store Plans</h2>
                 <CheckboxGroup
+                  number={9}
                   label="Why are you interested in becoming an Amstani & Co store owner?"
                   options={interestOptions}
                   selected={form.interest_reasons}
@@ -523,21 +524,7 @@ export default function StoreOwnerApplicationPage() {
                   />
                 )}
                 <CheckboxGroup
-                  label="Where do you plan to sell your products?"
-                  options={salesOptions}
-                  selected={form.sales_channels}
-                  onChange={(value) => update("sales_channels", value)}
-                />
-                {form.sales_channels.includes("Other") && (
-                  <input
-                    name="sales_other"
-                    value={form.sales_other}
-                    onChange={handleInput}
-                    placeholder="Tell us more"
-                    className="mt-2 min-h-[3.25rem] w-full rounded-xl border border-[#cbdedd] bg-white px-4 py-3 text-[0.95rem] text-slate-900 outline-none shadow-[0_3px_10px_rgba(13,48,53,0.03)] transition focus:border-[#2f9fa5] focus:ring-4 focus:ring-[#2f9fa5]/15 dark:border-[#28565b] dark:bg-[#102c31] dark:text-slate-200"
-                  />
-                )}
-                <CheckboxGroup
+                  number={10}
                   label="Who do you primarily plan to sell to?"
                   options={customerOptions}
                   selected={form.target_customers}
@@ -554,11 +541,15 @@ export default function StoreOwnerApplicationPage() {
                 )}
                 {radioGroups[3].map((group) => (
                   <div key={String(group.key)} className="space-y-3">
-                    <FieldLabel>{group.label}</FieldLabel>
+                    <FieldLabel
+                      number={group.key === "weekly_time_commitment" ? 11 : 12}
+                    >
+                      {group.label}
+                    </FieldLabel>
                     {group.options.map((option) => (
                       <label
                         key={option}
-                        className="flex items-start gap-3 text-sm"
+                        className="flex items-start gap-3 rounded-xl border border-[#d5e3e4] bg-[#fbfefe] px-4 py-3 text-sm text-slate-700 shadow-[0_3px_10px_rgba(13,48,53,0.025)] transition hover:-translate-y-0.5 hover:border-[#55aeb4] hover:shadow-[0_8px_18px_rgba(13,48,53,0.08)] dark:border-[#28565b] dark:bg-[#102c31] dark:text-slate-200"
                       >
                         <input
                           type="radio"
@@ -582,11 +573,17 @@ export default function StoreOwnerApplicationPage() {
                 </h2>
                 {radioGroups[4].map((group) => (
                   <div key={String(group.key)} className="space-y-3">
-                    <FieldLabel>{group.label}</FieldLabel>
+                    <FieldLabel
+                      number={
+                        group.key === "minimum_order_acknowledgment" ? 13 : 14
+                      }
+                    >
+                      {group.label}
+                    </FieldLabel>
                     {group.options.map((option) => (
                       <label
                         key={option}
-                        className="flex items-start gap-3 text-sm"
+                        className="flex items-start gap-3 rounded-xl border border-[#d5e3e4] bg-[#fbfefe] px-4 py-3 text-sm text-slate-700 shadow-[0_3px_10px_rgba(13,48,53,0.025)] transition hover:-translate-y-0.5 hover:border-[#55aeb4] hover:shadow-[0_8px_18px_rgba(13,48,53,0.08)] dark:border-[#28565b] dark:bg-[#102c31] dark:text-slate-200"
                       >
                         <input
                           type="radio"
@@ -602,7 +599,7 @@ export default function StoreOwnerApplicationPage() {
                   </div>
                 ))}
                 <label className="block">
-                  <FieldLabel required={false}>
+                  <FieldLabel number={15} required={false}>
                     What questions would you like our team to answer?
                   </FieldLabel>
                   <textarea
@@ -618,40 +615,58 @@ export default function StoreOwnerApplicationPage() {
               </div>
             )}
             {step === 5 && (
-              <div className="space-y-7">
-                <h2 className="text-2xl font-bold">Contact Permission</h2>
-                <label className="flex items-start gap-3 rounded-2xl border border-[#d5e3e4] p-4 text-sm dark:border-[#28565b]">
+              <div className="space-y-5 sm:space-y-7">
+                <h2 className="text-xl font-bold sm:text-2xl">
+                  Contact Permission
+                </h2>
+
+                <label className="flex items-start gap-2.5 rounded-2xl border border-[#d5e3e4] p-3.5 text-sm leading-6 sm:gap-3 sm:p-4 dark:border-[#28565b]">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dff3f1] text-xs font-bold text-[#267f8c] shadow-sm dark:bg-[#173f44] dark:text-[#8bd3cf]">
+                    16
+                  </span>
+
                   <input
                     type="checkbox"
                     checked={form.contact_consent}
                     onChange={(event) =>
                       update("contact_consent", event.target.checked)
                     }
-                    className="mt-0.5 accent-[#2f9fa5]"
+                    className="mt-1 shrink-0 accent-[#2f9fa5]"
                   />
-                  Yes, I agree to be contacted regarding my application and
-                  related store-owner information.
-                  <span className="text-[#2f9fa5]">*</span>
+
+                  <span className="min-w-0 flex-1">
+                    Yes, I agree to be contacted regarding my application and
+                    related store-owner information.
+                    <span className="ml-1 text-[#2f9fa5]">*</span>
+                  </span>
                 </label>
-                <label className="flex items-start gap-3 rounded-2xl border border-[#d5e3e4] p-4 text-sm dark:border-[#28565b]">
+
+                <label className="flex items-start gap-2.5 rounded-2xl border border-[#d5e3e4] p-3.5 text-sm leading-6 sm:gap-3 sm:p-4 dark:border-[#28565b]">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dff3f1] text-xs font-bold text-[#267f8c] shadow-sm dark:bg-[#173f44] dark:text-[#8bd3cf]">
+                    17
+                  </span>
+
                   <input
                     type="checkbox"
                     checked={form.privacy_acknowledgment}
                     onChange={(event) =>
                       update("privacy_acknowledgment", event.target.checked)
                     }
-                    className="mt-0.5 accent-[#2f9fa5]"
+                    className="mt-1 shrink-0 accent-[#2f9fa5]"
                   />
-                  I have read and agree to the{" "}
-                  <Link
-                    href="/privacy"
-                    className="font-semibold text-[#267f8c] underline"
-                  >
-                    Privacy Policy
-                  </Link>
-                  . I understand the information will be used to review and
-                  respond to my application.
-                  <span className="text-[#2f9fa5]">*</span>
+
+                  <span className="min-w-0 flex-1">
+                    I have read and agree to the{" "}
+                    <Link
+                      href="/privacy"
+                      className="font-semibold text-[#267f8c] underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                    . I understand the information will be used to review and
+                    respond to my application.
+                    <span className="ml-1 text-[#2f9fa5]">*</span>
+                  </span>
                 </label>
               </div>
             )}
