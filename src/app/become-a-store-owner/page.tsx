@@ -45,7 +45,7 @@ function SectionHeading({ eyebrow, title, children }: { eyebrow: string; title: 
 
 export default function BecomeAStoreOwnerPage() {
   return (
-    <div className="min-h-screen bg-[#f4f8f8] text-slate-900 dark:bg-[#07191d] dark:text-slate-100">
+    <div className="owner-landing min-h-screen overflow-x-hidden bg-[#f4f8f8] text-slate-900 dark:bg-[#07191d] dark:text-slate-100">
       <header className="border-b border-[#24545a] bg-[#0d3035] px-5 py-4 text-white shadow-[0_4px_20px_rgba(7,48,53,0.18)] dark:border-[#24545a] sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
           <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">

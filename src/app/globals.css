@@ -357,6 +357,165 @@ a, li, dd, dt, table, td, th {
   color: #e2e8f0;
 }
 
+/* Store-owner landing page: fluid, mobile-first layout rules. */
+.owner-landing {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.owner-landing h1,
+.owner-landing h2,
+.owner-landing h3,
+.owner-landing p,
+.owner-landing a,
+.owner-landing li,
+.owner-landing span {
+  overflow-wrap: anywhere;
+}
+
+.owner-landing h1 {
+  font-size: clamp(2.15rem, 7vw, 4.5rem) !important;
+}
+
+.owner-landing h2 {
+  font-size: clamp(1.8rem, 4.5vw, 3rem) !important;
+}
+
+.owner-landing h3 {
+  font-size: clamp(1.05rem, 2.5vw, 1.35rem) !important;
+}
+
+.owner-landing section {
+  min-width: 0;
+}
+
+.owner-landing header > div,
+.owner-landing section > div {
+  min-width: 0;
+}
+
+.owner-landing header nav {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.owner-landing header nav a {
+  white-space: nowrap;
+}
+
+.owner-landing main section > div > div {
+  min-width: 0;
+}
+
+.owner-landing img {
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .owner-landing header {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .owner-landing header > div {
+    gap: 0.75rem;
+  }
+
+  .owner-landing header a:first-child {
+    max-width: 58%;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  .owner-landing header a:first-child img {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  .owner-landing header nav {
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .owner-landing header nav a:last-child {
+    padding: 0.45rem 0.7rem;
+  }
+
+  .owner-landing main > section {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+
+  .owner-landing main > section:first-child {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+  }
+
+  .owner-landing main > section:first-child > div {
+    gap: 2.25rem;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .owner-landing main > section:first-child p {
+    line-height: 1.6 !important;
+  }
+
+  .owner-landing main > section:first-child a {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .owner-landing main > section:first-child > div > div:last-child {
+    padding: 0.65rem;
+  }
+
+  .owner-landing main > section:first-child > div > div:last-child > div {
+    padding: 0.65rem;
+  }
+
+  .owner-landing section > div > div[class*="grid-cols-5"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .owner-landing section > div > div[class*="grid-cols-5"] > div {
+    width: 100%;
+  }
+
+  .owner-landing section > div > div[class*="grid-cols-5"] svg {
+    display: none;
+  }
+
+  .owner-landing main > section:last-child h2 {
+    font-size: 2rem !important;
+  }
+
+  .owner-landing main > section:last-child a {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .owner-landing main > section:first-child h1 {
+    max-width: 18ch;
+  }
+
+  .owner-landing main > section:first-child a,
+  .owner-landing main > section:last-child a {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+
+@media (min-width: 1024px) {
+  .owner-landing main > section > div {
+    width: 100%;
+  }
+}
+
 main[class*="bg-[#f4f8f8]"] {
   background: radial-gradient(circle at 8% 4%, rgba(139, 211, 207, 0.2), transparent 28%), radial-gradient(circle at 94% 28%, rgba(47, 159, 165, 0.1), transparent 24%), #f4f8f8;
 }
