@@ -192,13 +192,13 @@ export default function BecomeAStoreOwnerPage() {
                 </p>
               </div>
             </div>
-            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border-2 border-white shadow-[0_20px_45px_rgba(13,48,53,0.18)]">
+            <div className="relative aspect-[16/10] overflow-hidden rounded-3xl border-2 border-white shadow-[0_20px_45px_rgba(13,48,53,0.18)]">
               <Image
                 src="/assets/dummy5.png"
                 alt="Pakistani fashion product showcase"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-fit"
+                className="object-cover"
               />
             </div>
           </div>
