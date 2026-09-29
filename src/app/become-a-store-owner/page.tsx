@@ -19,7 +19,7 @@ const benefits = [
   [
     Package,
     "Curated catalog",
-    "Discover Pakistani clothing from selected brands and suppliers.",
+    "Discover Premium clothing from selected brands and suppliers.",
   ],
   [
     Users,
@@ -54,7 +54,7 @@ const steps = [
   [
     "04",
     "Choose products",
-    "Select products from the available Pakistani catalog.",
+    "Select products from the available Premium catalog.",
   ],
   ["05", "Order wholesale", "Build your order from the applicable minimum."],
   [
@@ -558,7 +558,7 @@ export default function BecomeAStoreOwnerPage() {
             </div>
             <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border-4 border-white shadow-[0_20px_45px_rgba(13,48,53,0.18)]">
               <Image
-                src="/assets/poster.png"
+                src="/assets/dummy8.png"
                 alt="Pakistani fashion product showcase"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -712,10 +712,10 @@ export default function BecomeAStoreOwnerPage() {
         <section className="bg-[#0f2026] px-5 py-8 text-center text-white sm:px-8 sm:py-10 lg:px-12">
           <div className="mx-auto max-w-3xl">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#7fd3df]">
-              Ready to build your store?
+              Ready to own your store?
             </p>
             <h2 className="mt-4 text-4xl font-bold sm:text-6xl">
-              Ready to build your own American clothing store?
+              Ready to own your American clothing store?
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-300">
               Join the first group of Amstani &amp; Co store owners and get
