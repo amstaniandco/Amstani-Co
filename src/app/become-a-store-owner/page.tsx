@@ -24,7 +24,7 @@ const benefits = [
   [
     Users,
     "Wholesale access",
-    "Order products through Amstani & Co starting from the applicable minimum.",
+    "Order products through Amstani & Co on competitive wholesale prices.",
   ],
   [
     Truck,
@@ -66,7 +66,7 @@ const steps = [
 
 const providedByAmstani = [
   "Online store infrastructure",
-  "Curated Pakistani catalog",
+  "Curated Premium catalog",
   "Wholesale product sourcing",
   "Fulfillment under applicable terms",
   "Inventory protection policy",
@@ -82,7 +82,6 @@ const managedByOwner = [
 
 const whoFor = [
   "You want to operate an online clothing store in the U.S.",
-  "You are interested in Pakistani fashion.",
   "You want wholesale access without building a supplier network from scratch.",
   "You are willing to market your store and build your own customers.",
   "You want to operate your own online business.",
@@ -174,7 +173,7 @@ export default function BecomeAStoreOwnerPage() {
               </p>
               <Link
                 href="/apply/store-owner"
-                className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#8bd3cf] px-6 text-sm font-semibold text-[#0d3035] shadow-[0_12px_28px_rgba(139,211,207,0.2)] transition hover:bg-white"
+                className="mx-auto mt-8 flex w-fit min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#8bd3cf] px-6 text-sm font-semibold text-[#0d3035] shadow-[0_12px_28px_rgba(139,211,207,0.2)] transition hover:bg-white lg:mx-0"
               >
                 Apply to become a store owner <ArrowRight size={17} />
               </Link>
@@ -228,7 +227,7 @@ export default function BecomeAStoreOwnerPage() {
             >
               <div className="text-justify sm:text-left">
                 Amstani &amp; Co connects U.S. store owners with a curated
-                wholesale catalog of Pakistani clothing. You get the
+                wholesale catalog of Premium clothing. You get the
                 infrastructure and product connection while you focus on
                 building customers and growing your business.
               </div>
@@ -239,7 +238,7 @@ export default function BecomeAStoreOwnerPage() {
                   <Store size={21} /> Your own store
                 </div>
                 <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
-                  <Package size={21} /> Curated Pakistani fashion
+                  <Package size={21} /> Curated Premium fashion
                 </div>
                 <div className="flex items-center gap-3 rounded-2xl border border-[#c8e5e3] bg-[#effafa] px-5 py-4 text-sm font-semibold text-[#267f8c] shadow-sm dark:border-[#28565b] dark:bg-[#14383d]">
                   <Truck size={21} /> Wholesale fulfillment
@@ -290,8 +289,8 @@ export default function BecomeAStoreOwnerPage() {
           <div className="mx-auto max-w-7xl">
             <div className="text-center sm:text-left">
               <SectionHeading
-                eyebrow="What you get"
-                title="Everything you need to get started."
+                eyebrow="What you get?"
+                title="Absolutely EVERYTHING you need to get started."
               />
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -438,9 +437,9 @@ export default function BecomeAStoreOwnerPage() {
               ))}
             </div>
             <p className="mt-8 text-xs leading-6 text-slate-500 dark:text-slate-400">
-              Shipping, customs, duties, taxes, import charges, eligible
-              destinations, and exclusions are subject to the applicable final
-              terms.
+              Shipping is FREE all across America. Custom and other eligible
+              charges are also taken care of by Amstani & Co. You just pay for
+              the clothes. Get started NOW.
             </p>
           </div>
         </section>
@@ -631,8 +630,8 @@ export default function BecomeAStoreOwnerPage() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 [
-                  "Pakistani fashion",
-                  "Access a curated range of Pakistani clothing.",
+                  "Premium fashion",
+                  "Access a curated range of premium clothing.",
                 ],
                 [
                   "Simplified setup",
