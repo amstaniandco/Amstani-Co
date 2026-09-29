@@ -200,14 +200,16 @@ export default function BecomeAStoreOwnerPage() {
                   <span className="h-2 w-2 rounded-full bg-[#70b9a5]" />
                   <span className="ml-3 h-2 w-28 rounded-full bg-slate-100" />
                 </div>
-                <div className="relative mt-3 aspect-[1.45] overflow-hidden rounded-xl">
-                  <Image
-                    src="/assets/AmstaniCover.png"
-                    alt="Amstani store preview"
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 42vw"
-                    className="object-cover"
-                  />
+                <div className="relative mt-3 aspect-[1.65] overflow-hidden rounded-xl">
+                  <a href="/ " className="hover:opacity-90 transition ">
+                    <Image
+                      src="/assets/dummy5.png"
+                      alt="Amstani store preview"
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 42vw"
+                      className="object-cover"
+                    />
+                  </a>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pt-3">
                   <div className="h-2 rounded bg-slate-100" />
@@ -576,23 +578,23 @@ export default function BecomeAStoreOwnerPage() {
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               <div className="rounded-3xl border border-[#d4e4e3] bg-white p-3 shadow-[0_12px_30px_rgba(13,48,53,0.07)] dark:border-[#28565b] dark:bg-[#0e292e]">
-                <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
+                <div className="mx-auto relative aspect-[16/10] overflow-hidden rounded-2xl">
                   <Image
-                    src="/assets/AmstaniCover.png"
-                    alt="Desktop storefront preview"
+                    src="/assets/dummy2.png"
+                    alt="Mobile storefront preview"
                     fill
-                    sizes="33vw"
+                    sizes="(max-width: 768px) 100vw, 400px"
                     className="object-cover"
                   />
                 </div>
                 <p className="px-3 py-4 text-sm font-semibold">
-                  Desktop storefront
+                  Desktop Storefront
                 </p>
               </div>
               <div className="rounded-3xl border border-[#d4e4e3] bg-white p-3 shadow-[0_12px_30px_rgba(13,48,53,0.07)] dark:border-[#28565b] dark:bg-[#0e292e]">
                 <div className="mx-auto relative aspect-[9/14] max-w-[180px] overflow-hidden rounded-2xl">
                   <Image
-                    src="/assets/poster.png"
+                    src="/assets/dummy9.png"
                     alt="Mobile storefront preview"
                     fill
                     sizes="180px"
@@ -604,16 +606,16 @@ export default function BecomeAStoreOwnerPage() {
                 </p>
               </div>
               <div className="rounded-3xl border border-[#d4e4e3] bg-white p-3 shadow-[0_12px_30px_rgba(13,48,53,0.07)] dark:border-[#28565b] dark:bg-[#0e292e]">
-                <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-[#0d3035] p-6">
-                  <div className="h-full rounded-xl bg-white p-4">
-                    <div className="h-2 w-1/2 rounded bg-[#dceff1]" />
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="h-24 rounded-lg bg-[#e8f1ef]" />
-                      <div className="h-24 rounded-lg bg-[#dceff1]" />
-                    </div>
-                  </div>
+                <div className="mx-auto relative aspect-[16/10] overflow-hidden rounded-2xl">
+                  <Image
+                    src="/assets/dummy1.png"
+                    alt="Mobile storefront preview"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    className="object-cover"
+                  />
                 </div>
-                <p className="px-3 py-4 text-sm font-semibold">Product page</p>
+                <p className="px-3 py-4 text-sm font-semibold">Product Page</p>
               </div>
             </div>
           </div>
