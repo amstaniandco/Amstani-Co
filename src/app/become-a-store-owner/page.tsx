@@ -192,31 +192,14 @@ export default function BecomeAStoreOwnerPage() {
                 </p>
               </div>
             </div>
-            <div className="overflow-hidden rounded-3xl border border-[#8bd3cf]/35 bg-[#16454b] p-3 shadow-[0_24px_70px_rgba(2,20,23,0.38)]">
-              <div className="rounded-2xl bg-white p-3 text-slate-800 shadow-[0_8px_25px_rgba(5,34,38,0.16)]">
-                <div className="flex items-center gap-1.5 border-b border-slate-100 pb-3">
-                  <span className="h-2 w-2 rounded-full bg-[#ef8b7b]" />
-                  <span className="h-2 w-2 rounded-full bg-[#e8c36a]" />
-                  <span className="h-2 w-2 rounded-full bg-[#70b9a5]" />
-                  <span className="ml-3 h-2 w-28 rounded-full bg-slate-100" />
-                </div>
-                <div className="relative mt-3 aspect-[1.65] overflow-hidden rounded-xl">
-                  <a href="/ " className="hover:opacity-90 transition ">
-                    <Image
-                      src="/assets/dummy5.png"
-                      alt="Amstani store preview"
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 42vw"
-                      className="object-cover"
-                    />
-                  </a>
-                </div>
-                <div className="grid grid-cols-3 gap-2 pt-3">
-                  <div className="h-2 rounded bg-slate-100" />
-                  <div className="h-2 rounded bg-slate-100" />
-                  <div className="h-2 rounded bg-slate-100" />
-                </div>
-              </div>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border-2 border-white shadow-[0_20px_45px_rgba(13,48,53,0.18)]">
+              <Image
+                src="/assets/dummy5.png"
+                alt="Pakistani fashion product showcase"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-fit"
+              />
             </div>
           </div>
         </section>
