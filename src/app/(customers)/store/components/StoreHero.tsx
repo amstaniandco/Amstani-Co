@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Eye, Loader2, Trophy } from "lucide-react";
 import { useStore } from "../../../../context/StoreContext";
+import { hasActiveSession } from "../../../../lib/guest-shopping";
 
 function formatCount(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -21,6 +22,12 @@ export default function StoreHero() {
   const [followLoading, setFollowLoading] = useState(false);
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [rank, setRank] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(hasActiveSession());
+  }, []);
+
   useEffect(() => {
     if (!store?._id) return;
     fetch(`/api/stores/${store._id}/stats`)
@@ -36,7 +43,7 @@ export default function StoreHero() {
   }, [store?._id]);
 
   const handleFollow = async () => {
-    if (!store?._id || followLoading) return;
+    if (!isLoggedIn || !store?._id || followLoading) return;
     setFollowLoading(true);
     try {
       const res = await fetch(`/api/stores/${store._id}/follow`, {
@@ -138,7 +145,8 @@ export default function StoreHero() {
               type="button"
               data-tutorial-id="customer-follow-btn"
               onClick={handleFollow}
-              disabled={followLoading || !store?._id}
+              disabled={!isLoggedIn || followLoading || !store?._id}
+              title={!isLoggedIn ? "Sign in to follow this store" : undefined}
               className={`ml-2 inline-flex items-center gap-2 rounded-full px-7 py-2 text-sm font-semibold transition disabled:opacity-60 ${
                 isFollowing
                   ? "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-100"
@@ -201,7 +209,8 @@ export default function StoreHero() {
             type="button"
             data-tutorial-id="customer-follow-btn"
             onClick={handleFollow}
-            disabled={followLoading || !store?._id}
+            disabled={!isLoggedIn || followLoading || !store?._id}
+            title={!isLoggedIn ? "Sign in to follow this store" : undefined}
             className={`inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition disabled:opacity-60 ${
               isFollowing
                 ? "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-100"

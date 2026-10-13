@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const next = searchParams.get("state")?.startsWith("/") ? searchParams.get("state") : null;
 
   if (error || !code) {
     return NextResponse.redirect(`${APP_URL}/login?error=oauth_failed`);
@@ -118,6 +119,7 @@ export async function GET(request: NextRequest) {
         .sign(secret);
 
       const redirectPath =
+        next ||
         user.role === "admin"
           ? "/admin/dashboard"
           : user.role === "owner"

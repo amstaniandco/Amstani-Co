@@ -1,3 +1,5 @@
+import { getGuestCart, hasActiveSession } from "./guest-shopping";
+
 export function dispatchCartUpdate(count: number) {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count } }));
@@ -5,6 +7,10 @@ export function dispatchCartUpdate(count: number) {
 }
 
 export async function fetchAndUpdateCartCount(): Promise<void> {
+  if (!hasActiveSession()) {
+    dispatchCartUpdate(getGuestCart().reduce((sum, item) => sum + item.quantity, 0));
+    return;
+  }
   try {
     const res = await fetch("/api/cart");
     if (!res.ok) return;

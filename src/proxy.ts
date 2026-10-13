@@ -6,9 +6,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development";
 
 // Only customers (role: "user") can access these
 const CUSTOMER_ONLY = [
-  "/home", "/cart", "/checkout", "/profile", "/wishlist",
-  "/product", "/our-products", "/new-arrivals", "/sale",
-  "/notifications", "/claims", "/form", "/store",
+  "/profile",
+  "/notifications", "/claims", "/form",
 ];
 
 // Only owners (role: "owner") can access these

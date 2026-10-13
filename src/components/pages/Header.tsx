@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useToast } from "../global/ToastProvider";
 import { getSelectedState, setSelectedState, subscribeSelectedState } from "../../lib/state-preference";
 import { US_STATES } from "../../lib/us-states";
+import { getGuestCart, getGuestWishlist, syncGuestShopping } from "../../lib/guest-shopping";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -226,7 +227,7 @@ export default function Header() {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      setUserState("");
+      setUserState(getSelectedState());
       setAvatarUrl("");
       setStateMenuOpen(false);
       return;
@@ -308,8 +309,8 @@ export default function Header() {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      setCartCount(0);
-      setWishlistCount(0);
+      setCartCount(getGuestCart().reduce((sum, item) => sum + item.quantity, 0));
+      setWishlistCount(getGuestWishlist().length);
       setNotificationCount(0);
       return;
     }
@@ -318,6 +319,13 @@ export default function Header() {
 
     async function loadCounts() {
       try {
+        const postAuthPath = localStorage.getItem("amstani:post-auth-path");
+        if (postAuthPath?.startsWith("/")) {
+          await syncGuestShopping();
+          localStorage.removeItem("amstani:post-auth-path");
+          router.push(postAuthPath);
+          return;
+        }
         const [cartResponse, wishlistResponse, notificationResponse] = await Promise.all([
           fetch("/api/cart"),
           fetch("/api/wishlist"),
@@ -357,7 +365,7 @@ export default function Header() {
       cancelled = true;
     };
   // Only re-fetch on login state change, not on every route — events handle incremental updates
-  }, [isLoggedIn]);
+  }, [isLoggedIn, router]);
 
   const showAuthenticatedNavbar = isLoggedIn;
   const isCustomer = !role || role === "user";
@@ -461,7 +469,7 @@ export default function Header() {
           <Logo />
 
           {/* Desktop Navigation - Hidden on mobile */}
-          {showAuthenticatedNavbar && (
+          {(showAuthenticatedNavbar || isCustomer) && (
             <>
               {/* Desktop Nav Links */}
               <nav className="hidden md:flex items-center gap-5 ml-4">
@@ -612,6 +620,17 @@ export default function Header() {
               </>
             ) : (
               <div className="flex items-center gap-3 shrink-0">
+                <select
+                  value={userState}
+                  onChange={(event) => handleStateChange(event.target.value)}
+                  aria-label="Select state"
+                  className="h-9 max-w-40 rounded-full border border-white/35 bg-transparent px-3 text-sm text-white outline-none focus:border-[#4DB8B8]"
+                >
+                  <option value="" className="text-slate-900">Select state</option>
+                  {US_STATES.map((state) => <option key={state} value={state} className="text-slate-900">{state}</option>)}
+                </select>
+                <Link href="/wishlist" aria-label="Wishlist" className="relative text-gray-200 hover:text-white transition-colors duration-200"><HeartIcon /><Badge count={wishlistCount} /></Link>
+                <Link href="/cart" aria-label="Cart" className="relative text-gray-200 hover:text-white transition-colors duration-200"><CartIcon /><Badge count={cartCount} /></Link>
                 <Link
                   href="/signup"
                   className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors duration-200"
@@ -641,7 +660,7 @@ export default function Header() {
         {/* Mobile Menu - Visible when mobileMenuOpen is true */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-3 pt-3 border-t border-white/10 max-w-full">
-            {showAuthenticatedNavbar ? (
+            {(showAuthenticatedNavbar || isCustomer) ? (
               <div className="space-y-3">
                 {/* Mobile Search Bar — customers only */}
                 {isCustomer && (
@@ -745,12 +764,12 @@ export default function Header() {
                       <Badge count={cartCount} />
                       <span className="text-xs">Cart</span>
                     </Link>
-                    <Link href="/notifications" onClick={handleMobileNavClick} aria-label="Notifications" data-tutorial-id="customer-notifications-bell-mobile" className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
+                    {showAuthenticatedNavbar && <Link href="/notifications" onClick={handleMobileNavClick} aria-label="Notifications" data-tutorial-id="customer-notifications-bell-mobile" className="relative flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
                       <BellIcon />
                       <Badge count={notificationCount} />
                       <span className="text-xs">Notify</span>
-                    </Link>
-                    <Link href="/profile" onClick={handleMobileNavClick} aria-label="Profile" className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
+                    </Link>}
+                    {showAuthenticatedNavbar && <Link href="/profile" onClick={handleMobileNavClick} aria-label="Profile" className="flex flex-col items-center gap-1 hover:text-white transition-colors duration-200 py-2 px-2 rounded hover:bg-white/5 text-gray-200 flex-1 min-w-fit">
                       <div className="relative w-6 h-6 rounded-full overflow-hidden border border-[#4DB8B8]/50">
                         {currentAvatar ? (
                           <Image src={currentAvatar} alt="User Avatar" fill sizes="24px" className="object-cover" />
@@ -761,7 +780,7 @@ export default function Header() {
                         )}
                       </div>
                       <span className="text-xs">Profile</span>
-                    </Link>
+                    </Link>}
                   </div>
                 )}
 
@@ -784,13 +803,17 @@ export default function Header() {
                 )}
 
                 {/* Logout Button */}
-                <button
+                {showAuthenticatedNavbar && <button
                   onClick={handleLogout}
                   className="w-full flex items-center justify-center gap-2 hover:text-red-400 transition-colors duration-200 py-2 px-3 rounded hover:bg-red-400/10 text-gray-400 border border-red-400/30 font-medium"
                 >
                   <LogoutIcon />
                   <span className="text-sm">Logout</span>
-                </button>
+                </button>}
+                {!showAuthenticatedNavbar && <div className="flex flex-col gap-2">
+                  <Link href="/signup" onClick={handleMobileNavClick} className="rounded-lg border border-white/30 px-4 py-2.5 text-sm font-semibold text-white text-center">Sign up</Link>
+                  <Link href="/login" onClick={handleMobileNavClick} className="rounded-lg bg-[#4DB8B8] px-4 py-2.5 text-sm font-semibold text-white text-center">Log in</Link>
+                </div>}
               </div>
             ) : (
               <div className="flex flex-col gap-2">

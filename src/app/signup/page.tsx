@@ -66,7 +66,8 @@ export default function SignupPage() {
       }
 
       toast.success("Signup successful! Please login.");
-      router.push("/login");
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
     } catch (err) {
       console.error("Signup error:", err);
       toast.error("An error occurred during signup");

@@ -10,6 +10,8 @@ import type { Address } from "../../../models/user";
 import { useToast } from "../../../components/global/ToastProvider";
 import { getSelectedState } from "../../../lib/state-preference";
 import { stripePromise } from "../../../lib/stripe-client";
+import { getGuestCart, hasActiveSession } from "../../../lib/guest-shopping";
+import AuthRequiredModal from "../../../components/customer/AuthRequiredModal";
 
 type CartItem = {
   productId: string;
@@ -70,8 +72,15 @@ export default function CheckoutPage() {
   const [serverDiscountAmount, setServerDiscountAmount] = useState<number | null>(null);
   const [serverTaxRate, setServerTaxRate] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
+    if (!hasActiveSession()) {
+      setCartItems(getGuestCart() as CartItem[]);
+      setCartLoading(false);
+      setShowAuth(true);
+      return;
+    }
     fetch("/api/cart")
       .then((r) => r.json())
       .then((d) => setCartItems(d.items ?? []))
@@ -213,6 +222,7 @@ export default function CheckoutPage() {
   const displayTotal = step === "payment" ? paymentTotal : estimatedTotal;
 
   return (
+    <>
     <div className="min-h-screen px-2 py-4 dark:bg-slate-950">
       <div className="mx-auto grid max-w-screen-xl grid-cols-1 items-start gap-7 lg:grid-cols-[1fr_440px]">
 
@@ -369,5 +379,7 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+    {showAuth && <AuthRequiredModal onClose={() => router.push("/cart")} />}
+    </>
   );
 }

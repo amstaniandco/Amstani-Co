@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { fetchAndUpdateCartCount } from "../../../lib/cart-events";
+import { addGuestCartItem, clearGuestWishlist, getGuestWishlist, hasActiveSession, removeGuestWishlistItem } from "../../../lib/guest-shopping";
+import { useToast } from "../../../components/global/ToastProvider";
 
 function dispatchWishlistUpdate(count: number) {
   if (typeof window !== "undefined") {
@@ -20,10 +22,18 @@ type WishlistItem = {
 };
 
 export default function WishlistPage() {
+  const toast = useToast();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hasActiveSession()) {
+      const guestItems = getGuestWishlist();
+      setItems(guestItems as WishlistItem[]);
+      setLoading(false);
+      dispatchWishlistUpdate(guestItems.length);
+      return;
+    }
     fetch("/api/wishlist")
       .then((r) => r.json())
       .then((d) => setItems(d.items ?? []))
@@ -32,6 +42,15 @@ export default function WishlistPage() {
   }, []);
 
   async function removeItem(productId: string, storeId: string) {
+    if (!hasActiveSession()) {
+      removeGuestWishlistItem(productId, storeId);
+      setItems((prev) => {
+        const next = prev.filter((i) => !(i.productId === productId && i.storeId === storeId));
+        dispatchWishlistUpdate(next.length);
+        return next;
+      });
+      return;
+    }
     await fetch("/api/wishlist", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -45,6 +64,12 @@ export default function WishlistPage() {
   }
 
   async function clearWishlist() {
+    if (!hasActiveSession()) {
+      clearGuestWishlist();
+      setItems([]);
+      dispatchWishlistUpdate(0);
+      return;
+    }
     await fetch("/api/wishlist", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -55,6 +80,18 @@ export default function WishlistPage() {
   }
 
   async function moveToCart(item: WishlistItem) {
+    if (!hasActiveSession()) {
+      const result = addGuestCartItem({ ...item, quantity: 1 });
+      if (result === "out_of_stock") {
+        toast.error("Item is out of stock.");
+        return;
+      }
+      removeGuestWishlistItem(item.productId, item.storeId);
+      setItems((prev) => prev.filter((i) => i.productId !== item.productId || i.storeId !== item.storeId));
+      fetchAndUpdateCartCount();
+      dispatchWishlistUpdate(Math.max(0, items.length - 1));
+      return;
+    }
     const res = await fetch("/api/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

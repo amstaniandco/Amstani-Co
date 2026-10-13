@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { hasActiveSession } from "../../../../lib/guest-shopping";
+import AuthRequiredModal from "../../../../components/customer/AuthRequiredModal";
 
 interface CartSummaryProps {
   subtotal: number;
 }
 
 export default function CartSummary({ subtotal }: CartSummaryProps) {
+  const [showAuth, setShowAuth] = useState(false);
+
   return (
     <aside className="ui-panel h-fit w-full rounded-lg border border-[#e5edf1] bg-white p-3 shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-6">
       {/* Promo code */}
@@ -40,12 +45,13 @@ export default function CartSummary({ subtotal }: CartSummaryProps) {
         </div>
       </div>
 
-      <Link
-        href="/checkout"
+      <button
+        type="button"
+        onClick={() => hasActiveSession() ? (window.location.href = "/checkout") : setShowAuth(true)}
         className="block w-full rounded-lg bg-[#56aebb] px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#489fad] sm:rounded-full sm:py-3 sm:text-base"
       >
         Continue to Checkout
-      </Link>
+      </button>
 
       <Link
         href="/our-products"
@@ -53,6 +59,7 @@ export default function CartSummary({ subtotal }: CartSummaryProps) {
       >
         Continue Shopping
       </Link>
+      {showAuth && <AuthRequiredModal onClose={() => setShowAuth(false)} />}
     </aside>
   );
 }

@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Ban, Languages, Lock, SendHorizontal, Users } from "lucide-react";
 import { useStore } from "../../../../context/StoreContext";
 import MessageBubble, { type Message as ChatMessage } from "@/src/components/chat/MessageBubble";
+import { hasActiveSession } from "../../../../lib/guest-shopping";
 
 type LiveChatProps = {
   className?: string;
@@ -35,6 +36,7 @@ function getCurrentUserId(): string {
 export default function LiveChat({ className = "", hideWrapper = false }: LiveChatProps) {
   const store = useStore();
   const [view, setView] = useState<"group" | "private">("group");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [myUserId] = useState(getCurrentUserId);
 
   // ── Group chat (public — every customer + the owner) ──────────────────────
@@ -142,6 +144,10 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
   );
 
   // The public group chat is the default view, loaded as soon as the store is known.
+  useEffect(() => {
+    setIsLoggedIn(hasActiveSession());
+  }, []);
+
   useEffect(() => {
     if (!storeId) return;
     loadGroup(storeId);
@@ -421,7 +427,7 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
           You have been blocked from this chat.
         </p>
       )}
-      {!iAmBlocked && activeAuthError && <p className="mt-3 text-xs font-medium text-red-500">{activeAuthError}</p>}
+      {!iAmBlocked && (activeAuthError || !isLoggedIn) && <p className="mt-3 text-xs font-medium text-amber-600">{activeAuthError || "Please sign in to chat with this store."}</p>}
 
       <form onSubmit={isGroup ? handleSendGroup : handleSend} className="ui-subpanel mt-5 flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-700">
         <div className="flex w-full flex-col gap-2">
@@ -445,12 +451,12 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
               value={activeDraft}
               onChange={(event) => (isGroup ? setGroupDraft(event.target.value) : setDraft(event.target.value))}
               placeholder={iAmBlocked ? "You are blocked from this chat" : "Say something..."}
-              disabled={iAmBlocked}
+              disabled={iAmBlocked || !isLoggedIn}
               className="ui-input w-full bg-transparent text-sm outline-none placeholder:text-gray-400 disabled:cursor-not-allowed dark:text-slate-100 dark:placeholder:text-slate-400"
             />
             <button
               type="submit"
-              disabled={activeSending || !activeDraft.trim() || !storeId || iAmBlocked}
+              disabled={activeSending || !activeDraft.trim() || !storeId || iAmBlocked || !isLoggedIn}
               className="text-[#68B8C1] transition hover:text-[#4f9ea7] disabled:opacity-50"
               aria-label="Send message"
             >
@@ -464,14 +470,15 @@ export default function LiveChat({ className = "", hideWrapper = false }: LiveCh
         <button
           type="button"
           onClick={isGroup ? openPrivate : openGroup}
-          className="min-w-0 rounded-xl border border-[#68B8C1] px-2 py-3 text-xs font-semibold leading-tight text-[#68B8C1] transition hover:bg-[#eef9fa] dark:border-[#4f9ea7] dark:text-[#7dc8d1] dark:hover:bg-slate-700 sm:text-sm"
+          disabled={!isLoggedIn}
+          className="min-w-0 rounded-xl border border-[#68B8C1] px-2 py-3 text-xs font-semibold leading-tight text-[#68B8C1] transition hover:bg-[#eef9fa] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#4f9ea7] dark:text-[#7dc8d1] dark:hover:bg-slate-700 sm:text-sm"
         >
           <span className="flex flex-wrap items-center justify-center gap-1.5 text-center">
             {isGroup ? <Lock className="h-4 w-4 shrink-0" /> : <Users className="h-4 w-4 shrink-0" />}
             {isGroup ? "Private Chat" : "Group Chat"}
           </span>
         </button>
-        {store?.ownerPhone ? (
+        {store?.ownerPhone && isLoggedIn ? (
           <a
             href={`https://wa.me/${store.ownerPhone.replace(/\D/g, "")}`}
             target="_blank"

@@ -95,6 +95,7 @@ export async function GET(request: Request) {
         mainImage: images[0] ?? null,
         images,
         variants: global?.variants ?? [],
+          quantity: row.quantity ?? 0,
         description: global?.description ?? global?.fullDescription ?? "",
         categoryTags,
       };

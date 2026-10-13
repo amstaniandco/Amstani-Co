@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/global/ToastProvider";
+import { syncGuestShopping } from "../../lib/guest-shopping";
 
 const GoogleIcon = () => (
   <svg
@@ -101,13 +102,15 @@ export default function LoginPage() {
       }
 
       // Redirect based on role
+      await syncGuestShopping();
+      const next = new URLSearchParams(window.location.search).get("next");
       const role = data.user.role;
       if (role === "admin") {
         router.push("/admin/dashboard");
       } else if (role === "owner") {
         router.push("/owner/profile");
       } else {
-        router.push("/home");
+        router.push(next || "/home");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -116,6 +119,12 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  function startOAuth(provider: "google" | "facebook" | "twitter") {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next?.startsWith("/")) window.localStorage.setItem("amstani:post-auth-path", next);
+    window.location.href = `/api/auth/${provider}${next?.startsWith("/") ? `?next=${encodeURIComponent(next)}` : ""}`;
+  }
 
   return (
     <main className="min-h-screen flex bg-[#f7f7f7] dark:bg-[#0b1220]">
@@ -150,7 +159,7 @@ export default function LoginPage() {
           <div className="space-y-5">
             <button
               type="button"
-              onClick={() => { window.location.href = "/api/auth/google"; }}
+              onClick={() => startOAuth("google")}
               className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
             >
               <GoogleIcon />
@@ -159,7 +168,7 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => { window.location.href = "/api/auth/facebook"; }}
+              onClick={() => startOAuth("facebook")}
               className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
             >
               <FacebookIcon />
@@ -168,7 +177,7 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => { window.location.href = "/api/auth/twitter"; }}
+              onClick={() => startOAuth("twitter")}
               className="w-full flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-[16px] font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-[0.98] dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:hover:bg-[#1a2538]"
             >
               <XIcon />

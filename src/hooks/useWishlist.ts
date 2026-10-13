@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useReducer } from "react";
+import { getGuestWishlist, hasActiveSession, toggleGuestWishlist, type GuestWishlistItem } from "../lib/guest-shopping";
 
 export type WishlistProduct = {
   productId: string;
@@ -61,7 +62,11 @@ function ensureLoaded() {
     lastUserId = userId;
   }
 
-  if (!userId) return Promise.resolve();
+  if (!userId) {
+    sharedKeys = new Set(getGuestWishlist().map((item) => `${item.productId}:${item.storeId}`));
+    notify();
+    return Promise.resolve();
+  }
   if (fetchPromise) return fetchPromise;
 
   fetchPromise = fetch("/api/wishlist")
@@ -104,6 +109,13 @@ export function useWishlist() {
   );
 
   const toggle = useCallback(async (product: WishlistProduct) => {
+    if (!hasActiveSession()) {
+      toggleGuestWishlist(product as GuestWishlistItem);
+      sharedKeys = new Set(getGuestWishlist().map((item) => `${item.productId}:${item.storeId}`));
+      notify();
+      dispatchWishlistUpdate();
+      return;
+    }
     const key = `${product.productId}:${product.storeId}`;
     const wasIn = sharedKeys.has(key);
 

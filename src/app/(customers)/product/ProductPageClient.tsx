@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "../../../components/global/ToastProvider";
 import { useWishlist } from "../../../hooks/useWishlist";
 import { fetchAndUpdateCartCount } from "../../../lib/cart-events";
+import { addGuestCartItem, hasActiveSession } from "../../../lib/guest-shopping";
 
 type Review = {
   _id: string;
@@ -231,10 +232,7 @@ export default function ProductPageClient() {
       toast.error(`Please select a ${missingVariant} before adding to cart.`);
       return;
     }
-    const res = await fetch("/api/cart", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const item = {
         productId, storeId,
         storeName: product.storeName ?? "",
         name: product.name,
@@ -249,16 +247,28 @@ export default function ProductPageClient() {
                 ...(selectedSize == null ? {} : { size: String(selectedSize) }),
                 ...(selectedColor ? { color: selectedColor } : {}),
               },
-      }),
-    });
-    if (res.ok) {
+        maxQuantity: maxQty,
+    };
+    if (!hasActiveSession()) {
+      const result = addGuestCartItem(item);
+      if (result === "out_of_stock") {
+        toast.error("Item is out of stock.");
+        return;
+      }
+      fetchAndUpdateCartCount();
+      setCartMsg("");
+      toast.success("Added to cart!");
+    } else {
+      const res = await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setCartMsg("");
+        toast.error(data.error ?? "Could not add to cart.");
+        return;
+      }
       setCartMsg("");
       toast.success("Added to cart!");
       fetchAndUpdateCartCount();
-    } else {
-      setCartMsg("");
-      const data = await res.json().catch(() => ({}));
-      toast.error(data.error ?? "Could not add to cart.");
     }
   }
 
@@ -310,10 +320,7 @@ export default function ProductPageClient() {
       }
 
       setCustomOrderMsg("Adding to cart…");
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const item = {
           productId,
           storeId,
           storeName: product.storeName ?? "",
@@ -333,9 +340,14 @@ export default function ProductPageClient() {
             description: customDesc.trim(),
             mediaUrls: uploadedUrls,
           },
-        }),
-      });
-      if (res.ok) {
+        maxQuantity: maxQty,
+      };
+      if (!hasActiveSession()) {
+        const result = addGuestCartItem(item);
+        if (result === "out_of_stock") {
+          setCustomOrderMsg("Item is out of stock.");
+          return;
+        }
         toast.success("Custom order added to cart!");
         fetchAndUpdateCartCount();
         setCustomOrderOpen(false);
@@ -344,8 +356,19 @@ export default function ProductPageClient() {
         setCustomMediaPreviews([]);
         setCustomOrderMsg("");
       } else {
-        const d = await res.json();
-        setCustomOrderMsg(d.error || "Failed to add to cart.");
+        const res = await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
+        if (!res.ok) {
+          const d = await res.json();
+          setCustomOrderMsg(d.error || "Failed to add to cart.");
+          return;
+        }
+        toast.success("Custom order added to cart!");
+        fetchAndUpdateCartCount();
+        setCustomOrderOpen(false);
+        setCustomDesc("");
+        setCustomMediaFiles([]);
+        setCustomMediaPreviews([]);
+        setCustomOrderMsg("");
       }
     } catch (err) {
       setCustomOrderMsg(err instanceof Error ? err.message : "Failed.");

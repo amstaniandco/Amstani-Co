@@ -8,6 +8,7 @@ import { useToast } from "../../../../components/global/ToastProvider";
 import { useWishlist } from "../../../../hooks/useWishlist";
 import { useCategoryImages, FALLBACK_CATEGORY_IMAGE } from "../../../../hooks/useCategoryImages";
 import { fetchAndUpdateCartCount } from "../../../../lib/cart-events";
+import { addGuestCartItem, hasActiveSession } from "../../../../lib/guest-shopping";
 
 const FALLBACK_CAT_IMG = FALLBACK_CATEGORY_IMAGE;
 
@@ -33,6 +34,7 @@ type CatalogProduct = {
   variants?: ProductVariant[];
   description?: string;
   categoryTags?: string[];
+  quantity?: number;
 };
 
 function isHex(str: string) {
@@ -110,6 +112,7 @@ function QuickViewModal({
   const needsSize = sizes.length > 0;
   const needsColor = availableColors.length > 0;
   const canAdd = (!needsSize || selectedSize !== null) && (!needsColor || selectedColor !== null);
+  const maxQty = product.quantity != null && product.quantity > 0 ? product.quantity : 0;
 
   const missingMsg = !canAdd
     ? [needsSize && selectedSize === null ? "size" : "", needsColor && selectedColor === null ? "color" : ""]
@@ -137,10 +140,7 @@ function QuickViewModal({
     if (!canAdd) return;
     setAdding(true);
     try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const item = {
           productId: product.productId,
           storeId: product.storeId,
           storeName: product.storeName,
@@ -153,15 +153,26 @@ function QuickViewModal({
             ...(selectedSize !== null ? { size: String(selectedSize) } : {}),
             ...(selectedColor ? { color: selectedColor } : {}),
           },
-        }),
-      });
-      if (res.ok) {
+          maxQuantity: maxQty || undefined,
+      };
+      if (!hasActiveSession()) {
+        const result = addGuestCartItem(item);
+        if (result === "out_of_stock") {
+          toast.error("Item is out of stock.");
+          return;
+        }
+        fetchAndUpdateCartCount();
+        toast.success("Added to cart!");
+        onClose();
+      } else {
+        const res = await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
+        if (!res.ok) throw new Error("Could not add to cart");
         toast.success("Added to cart!");
         fetchAndUpdateCartCount();
         onClose();
-      } else {
-        toast.error("Sign in to add items to cart.");
       }
+    } catch {
+      toast.error("Could not add to cart.");
     } finally {
       setAdding(false);
     }
@@ -298,7 +309,7 @@ function QuickViewModal({
               <button onClick={() => setQty((q) => Math.max(1, q - 1))}
                 className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base font-bold text-slate-600 transition hover:border-[#68B8C1] hover:text-[#68B8C1]">−</button>
               <span className="w-6 text-center text-sm font-bold text-slate-800">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)}
+              <button onClick={() => setQty((q) => Math.min(maxQty || 99, q + 1))} disabled={maxQty > 0 && qty >= maxQty}
                 className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base font-bold text-slate-600 transition hover:border-[#68B8C1] hover:text-[#68B8C1]">+</button>
             </div>
 
@@ -309,9 +320,9 @@ function QuickViewModal({
               >
                 Full Details
               </Link>
-              <button onClick={handleAddToCart} disabled={!canAdd || adding}
+              <button onClick={handleAddToCart} disabled={!canAdd || adding || maxQty === 0}
                 className="flex-1 py-3 rounded-2xl bg-[#68B8C1] hover:bg-[#4f9ea7] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition">
-                {adding ? "Adding…" : "Add to Cart"}
+                {adding ? "Adding…" : maxQty === 0 ? "Out of Stock" : "Add to Cart"}
               </button>
             </div>
           </div>

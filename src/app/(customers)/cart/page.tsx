@@ -4,14 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import CartSummary from "./components/CartSummary";
 import { useToast } from "../../../components/global/ToastProvider";
 import { fetchAndUpdateCartCount } from "../../../lib/cart-events";
+import { clearGuestCart, getGuestCart, hasActiveSession, removeGuestCartItem, updateGuestCartItem } from "../../../lib/guest-shopping";
 
 type CartItem = {
   productId: string;
   storeId: string;
-  storeName: string;
-  name: string;
-  sku: string;
-  price: number;
+  storeName?: string;
+  name?: string;
+  sku?: string;
+  price?: number;
   originalPrice?: number;
   weightKg?: number;
   mainImage?: string | null;
@@ -48,6 +49,12 @@ export default function CartPage() {
 
   const fetchCart = useCallback(() => {
     setLoading(true);
+    if (!hasActiveSession()) {
+      setItems(getGuestCart() as CartItem[]);
+      setLoading(false);
+      fetchAndUpdateCartCount();
+      return;
+    }
     fetch("/api/cart")
       .then((r) => r.json())
       .then((d) => setItems(d.items ?? []))
@@ -128,6 +135,12 @@ export default function CartPage() {
 
   async function updateQty(idx: number, quantity: number) {
     const item = items[idx];
+    if (!hasActiveSession()) {
+      updateGuestCartItem(idx, quantity);
+      setItems(getGuestCart() as CartItem[]);
+      fetchAndUpdateCartCount();
+      return;
+    }
     const isCustom = !!item.customOrderDetails;
 
     if (quantity <= 0) {
@@ -162,6 +175,12 @@ export default function CartPage() {
 
   async function removeItem(idx: number) {
     const item = items[idx];
+    if (!hasActiveSession()) {
+      removeGuestCartItem(idx);
+      setItems(getGuestCart() as CartItem[]);
+      fetchAndUpdateCartCount();
+      return;
+    }
     if (item.customOrderDetails) {
       await fetch("/api/cart", {
         method: "DELETE",
@@ -183,6 +202,12 @@ export default function CartPage() {
   }
 
   async function clearCart() {
+    if (!hasActiveSession()) {
+      clearGuestCart();
+      setItems([]);
+      fetchAndUpdateCartCount();
+      return;
+    }
     await fetch("/api/cart", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -192,7 +217,7 @@ export default function CartPage() {
     fetchAndUpdateCartCount();
   }
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + Number(i.price ?? 0) * i.quantity, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -252,7 +277,7 @@ export default function CartPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">
-                              ${(item.price * item.quantity).toLocaleString()}
+                              ${(Number(item.price ?? 0) * item.quantity).toLocaleString()}
                             </span>
                             {isCustom && (
                               <button onClick={() => openEdit(idx)}

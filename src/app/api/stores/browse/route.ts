@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   try {
     const params = new URL(request.url).searchParams;
     const promotedOnly = params.get("promoted_only") === "true";
+    const state = params.get("state")?.trim().toLowerCase() ?? "";
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DBNAME || "amstani");
 
@@ -37,6 +38,19 @@ export async function GET(request: Request) {
       },
       { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
     ];
+
+    if (state) {
+      pipeline.push({
+        $match: {
+          $expr: {
+            $eq: [
+              { $toLower: { $trim: { input: { $ifNull: ["$owner.state", ""] } } } },
+              state,
+            ],
+          },
+        },
+      });
+    }
 
     pipeline.push(
       { $sort: { createdAt: -1 } },

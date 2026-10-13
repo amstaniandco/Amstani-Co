@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { hasActiveSession } from "../../../../lib/guest-shopping";
 
 type Review = {
   _id: string;
@@ -40,6 +41,7 @@ export default function StoreRatingSection() {
   const [reviewText, setReviewText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const load = () => {
     if (!storeId) return;
@@ -54,7 +56,10 @@ export default function StoreRatingSection() {
       .catch(() => {});
   };
 
-  useEffect(() => { load(); }, [storeId]);
+  useEffect(() => {
+    setIsLoggedIn(hasActiveSession());
+    load();
+  }, [storeId]);
 
   async function handleSubmit() {
     if (!userRating) { setMsg("Select a star rating."); return; }
@@ -132,12 +137,13 @@ export default function StoreRatingSection() {
 
       <div className="mt-6">
         <div className="mb-2 font-medium text-gray-700 dark:text-slate-100">Write a Review</div>
-        <StarRow rating={userRating} interactive onRate={setUserRating} />
-        <textarea rows={3} value={reviewText} onChange={(e) => setReviewText(e.target.value)}
+        {!isLoggedIn && <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">Please sign in to write a review.</p>}
+        <StarRow rating={userRating} interactive={isLoggedIn} onRate={setUserRating} />
+        <textarea disabled={!isLoggedIn} rows={3} value={reviewText} onChange={(e) => setReviewText(e.target.value)}
           placeholder="Share your experience…"
           className="mt-3 w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm outline-none focus:border-[#5fb9c3] dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400" />
         {msg && <p className="text-sm text-teal-600 mt-1">{msg}</p>}
-        <button onClick={handleSubmit} disabled={submitting}
+        <button onClick={handleSubmit} disabled={submitting || !isLoggedIn}
           className="mt-3 rounded-xl bg-[#5fb9c3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#4aaab4] disabled:opacity-60">
           {submitting ? "Submitting…" : "Submit Review"}
         </button>

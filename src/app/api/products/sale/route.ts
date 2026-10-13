@@ -70,6 +70,7 @@ export async function GET() {
         mainImage: images[0] ?? null,
         images,
         variants: global?.variants ?? [],
+          quantity: sp.quantity ?? 0,
         description: global?.description ?? global?.fullDescription ?? "",
       };
     });

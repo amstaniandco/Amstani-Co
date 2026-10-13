@@ -14,13 +14,6 @@ import { useToast } from "./global/ToastProvider";
 import { getSelectedState, setSelectedState as publishSelectedState, subscribeSelectedState } from "../lib/state-preference";
 import { EXCLUDED_US_MAP_REGIONS, getStateLabelPosition, STATE_ABBREVIATIONS, type Position, type StateFeature } from "../lib/us-map-geo";
 
-function hasActiveSession(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie
-    .split(";")
-    .some((part) => part.trim().startsWith("token="));
-}
-
 function StateLabel({
   coordinates,
   name,
@@ -160,12 +153,6 @@ export default function AmericaMap() {
   }, []);
 
   const handleExplore = () => {
-    if (!hasActiveSession()) {
-      toast.error("Please log in to explore stores by state.");
-      router.push("/login");
-      return;
-    }
-
     if (!selectedState) {
       toast.error("Select a state first.");
       return;

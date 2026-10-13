@@ -7,6 +7,7 @@ import { useToast } from "../../../../components/global/ToastProvider";
 import { useWishlist } from "../../../../hooks/useWishlist";
 import { useCategoryImages, FALLBACK_CATEGORY_IMAGE } from "../../../../hooks/useCategoryImages";
 import { fetchAndUpdateCartCount } from "../../../../lib/cart-events";
+import { addGuestCartItem, hasActiveSession } from "../../../../lib/guest-shopping";
 
 const FALLBACK_CAT_IMG = FALLBACK_CATEGORY_IMAGE;
 
@@ -148,10 +149,7 @@ function QuickViewModal({
     if (!canAdd) return;
     setAdding(true);
     try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const item = {
           productId: product.productId,
           storeId,
           storeName,
@@ -164,16 +162,26 @@ function QuickViewModal({
             ...(selectedSize !== null ? { size: String(selectedSize) } : {}),
             ...(selectedColor ? { color: selectedColor } : {}),
           },
-        }),
-      });
-      if (res.ok) {
+          maxQuantity: product.quantity,
+      };
+      if (!hasActiveSession()) {
+        const result = addGuestCartItem(item);
+        if (result === "out_of_stock") {
+          toast.error("Item is out of stock.");
+          return;
+        }
+        fetchAndUpdateCartCount();
+        toast.success("Added to cart!");
+        onClose();
+      } else {
+        const res = await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
+        if (!res.ok) throw new Error("Could not add to cart");
         toast.success("Added to cart!");
         fetchAndUpdateCartCount();
         onClose();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(data.error ?? "Could not add to cart.");
       }
+    } catch {
+      toast.error("Could not add to cart.");
     } finally {
       setAdding(false);
     }
