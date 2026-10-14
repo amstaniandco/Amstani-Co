@@ -152,14 +152,19 @@ export default function AmericaMap() {
     return subscribeSelectedState((s) => setSelectedStateLocal(s));
   }, []);
 
+  const handleStateSelect = (state: string) => {
+    setSelectedStateLocal(state);
+    publishSelectedState(state);
+    router.push("/home");
+  };
+
   const handleExplore = () => {
     if (!selectedState) {
       toast.error("Select a state first.");
       return;
     }
 
-    publishSelectedState(selectedState);
-    router.push("/home");
+    handleStateSelect(selectedState);
   };
 
   return (
@@ -209,7 +214,7 @@ export default function AmericaMap() {
                             className={`am-map-state ${isHovered ? "am-map-state--hovered" : ""}`}
                             onMouseEnter={() => setHoveredState(stateName)}
                             onMouseLeave={() => setHoveredState(null)}
-                            onClick={() => setSelectedStateLocal(stateName)}
+                            onClick={() => handleStateSelect(stateName)}
                             style={{
                               default: {
                                 fill: "rgba(0, 207, 255, 0.06)",
