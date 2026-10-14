@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { StoreSignupFormData } from "../page";
+import { US_STATES } from "../../../lib/us-states";
 
 type StepProps = {
   formData: StoreSignupFormData;
@@ -35,12 +36,12 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
       const res = await fetch(`/api/store-signup?email=${encodeURIComponent(formData.email.trim())}`);
       const data = await res.json();
       if (!res.ok || !data.eligible) {
-        setError(data.error || "You are not eligible for store signup yet.");
+        setError(data.error || "This email cannot be used for store signup.");
         return;
       }
       onNext();
     } catch {
-      setError("Could not verify your application. Please try again.");
+      setError("Could not check this email. Please try again.");
     } finally {
       setChecking(false);
     }
@@ -110,17 +111,21 @@ export default function StepOne({ formData, updateFormData, onNext }: StepProps)
         {/* State */}
         <div>
           <label className="text-sm text-gray-700 dark:text-slate-300">State</label>
-          <input
-            type="text"
+          <select
             name="state"
             value={formData.state}
             onChange={handleChange}
-            placeholder="Enter your state"
             className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none dark:border-slate-600 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
-          />
+          >
+            <option value="">Select your state</option>
+            {US_STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Eligibility error */}
         {error && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
             {error}
