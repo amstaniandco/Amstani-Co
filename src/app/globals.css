@@ -193,6 +193,15 @@ a, li, dd, dt, table, td, th {
   width: 100%;
 }
 
+.admin-sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
 .admin-main-scroll {
   min-width: 0;
 }
@@ -342,4 +351,3 @@ a, li, dd, dt, table, td, th {
   transform-origin: left;
   animation: toast-progress var(--toast-duration, 3200ms) linear forwards;
 }
-

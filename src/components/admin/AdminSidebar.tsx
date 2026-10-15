@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users, ClipboardList, X } from "lucide-react";
+import { LayoutGrid, ShieldCheck, Store, WalletCards, Megaphone, FileWarning, LogOut, Users, ClipboardList, X, KeyRound } from "lucide-react";
 
 export type AdminSidebarItem = {
   label: string;
@@ -28,6 +28,7 @@ const defaultItems: AdminSidebarItem[] = [
   { label: "Finance & Stock", href: "/admin/finance-stock", icon: WalletCards },
   { label: "Communications", href: "/admin/communications", icon: Megaphone },
   { label: "Claims", href: "/admin/claims", icon: FileWarning },
+  { label: "Change Password", href: "/admin/change-password", icon: KeyRound },
 ];
 
 type SidebarCounts = { stores: number; claims: number; chats: number };
@@ -171,7 +172,7 @@ export default function AdminSidebar({
         </p>
       </div>
 
-      <nav className="relative flex-1 space-y-2 overflow-y-auto pr-1">
+      <nav className="admin-sidebar-nav relative flex-1 space-y-2 overflow-y-auto pr-1">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = resolvedActive === item.href || resolvedActive.startsWith(item.href + "/");
