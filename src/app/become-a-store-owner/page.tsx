@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, Package, Store, Truck, Users } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  Layers3,
+  Package,
+  Store,
+  Truck,
+  Users,
+} from "lucide-react";
 import Footer from "../../components/pages/Footer";
+import CatalogPreview from "../../components/pages/CatalogPreview";
 
 export const metadata: Metadata = {
   title: "Become a Store Owner — Amstani & Co",
@@ -41,6 +51,24 @@ const benefits = [
     "Promotional collaboration",
     "Amstani & Co may collaborate with store owners on promotional content.",
   ],
+] as const;
+
+const highlights = [
+  {
+    icon: Layers3,
+    title: "Curated edits",
+    text: "Season-ready collections",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Selected brands",
+    text: "Quality you can trust",
+  },
+  {
+    icon: Package,
+    title: "Ready to order",
+    text: "Wholesale-friendly picks",
+  },
 ] as const;
 
 const steps = [
@@ -297,6 +325,97 @@ export default function BecomeAStoreOwnerPage() {
                   </p>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="catalog-teaser-heading"
+          className="relative isolate overflow-hidden border-y border-[#8bd3cf]/20 bg-[#0d3035] px-5 py-10 text-white sm:px-8 sm:py-14 lg:px-12"
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-32 -top-32 -z-10 h-96 w-96 rounded-full bg-[#8bd3cf]/10 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-40 -left-32 -z-10 h-96 w-96 rounded-full bg-[#8bd3cf]/[0.06] blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10 opacity-[0.35] [background-image:radial-gradient(rgba(139,211,207,0.18)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
+          />
+
+          <div className="mx-auto grid max-w-7xl items-center gap-y-10 sm:gap-y-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-x-16 lg:gap-y-0">
+            <div className="relative text-center lg:text-left">
+              <p className="mx-auto inline-flex items-center gap-2 rounded-full border border-[#8bd3cf]/30 bg-[#8bd3cf]/10 px-3.5 py-1.5 text-sm font-medium text-[#8bd3cf] lg:mx-0">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#8bd3cf]" />
+                Explore before you apply
+              </p>
+
+              <h2
+                id="catalog-teaser-heading"
+                className="mx-auto mt-6 max-w-xl text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:mx-0 lg:text-6xl"
+              >
+                See what you could sell.
+              </h2>
+
+              <p className="mx-auto mt-6 max-w-md text-base leading-8 text-[#c1dedd] sm:text-lg lg:mx-0">
+                Browse the Amstani catalog before you build your store. Explore
+                real brands, categories, and premium clothing pieces available
+                through our wholesale collection.
+              </p>
+
+              <ul className="mx-auto mt-9 max-w-md divide-y divide-white/10 border-y border-white/10 text-left lg:mx-0">
+                {highlights.map(({ icon: Icon, title, text }) => (
+                  <li key={title} className="flex items-start gap-4 py-4">
+                    <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#8bd3cf]/30 bg-[#8bd3cf]/10">
+                      <Icon className="h-[18px] w-[18px] text-[#8bd3cf]" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{title}</p>
+                      <p className="mt-0.5 text-sm leading-6 text-[#a6c8c7]">
+                        {text}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+            </div>
+
+            <div>
+              <div className="relative">
+                <div
+                  aria-hidden
+                  className="absolute inset-0 translate-x-3 translate-y-3 rounded-[2rem] border border-[#8bd3cf]/25 sm:translate-x-5 sm:translate-y-5"
+                />
+                <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-[#0a2a2e] shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+                  <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-5 py-3.5">
+                    <div className="flex items-center gap-1.5" aria-hidden>
+                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#8bd3cf]/70" />
+                    </div>
+                    <p className="text-xs font-medium text-[#a6c8c7]">
+                      Amstani catalog preview
+                    </p>
+                  </div>
+                  <div className="p-4 sm:p-6">
+                    <CatalogPreview />
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                href="/catalog"
+                className="group mx-auto mt-8 flex min-h-14 w-fit max-w-full items-center justify-between gap-5 rounded-full bg-[#8bd3cf] py-2 pl-6 pr-2 text-base font-bold text-[#0d3035] shadow-[0_14px_32px_rgba(139,211,207,0.25)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#8bd3cf]/40 sm:mt-9 sm:pl-7"
+              >
+                <span>View the Amstani catalog</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0d3035] text-[#8bd3cf] transition motion-safe:group-hover:translate-x-0.5">
+                  <ArrowRight size={18} aria-hidden />
+                </span>
+              </Link>
             </div>
           </div>
         </section>
