@@ -158,7 +158,7 @@ function ProductCard({
   return (
     <article className="group flex h-full flex-col">
       <div
-        className={`relative overflow-hidden rounded-2xl bg-[#e6eeea] shadow-[0_10px_30px_rgba(23,60,61,0.08)] transition-shadow duration-500 group-hover:shadow-[0_22px_44px_rgba(23,60,61,0.18)] ${
+        className={`am-product-image relative overflow-hidden rounded-2xl bg-[#e6eeea] shadow-[0_10px_30px_rgba(23,60,61,0.08)] transition-shadow duration-500 group-hover:shadow-[0_22px_44px_rgba(23,60,61,0.18)] ${
           featured
             ? `${mobileAspect} lg:aspect-auto lg:min-h-[320px] lg:flex-1`
             : mobileAspect
@@ -196,12 +196,12 @@ function ProductCard({
 
       <div className={`px-1 pt-3 ${featured ? "lg:hidden" : ""}`}>
         <p
-          className={`truncate ${labelSize} font-medium tracking-wide text-[#4c9fa2] sm:text-xs`}
+          className={`am-product-label truncate ${labelSize} font-medium tracking-wide text-[#4c9fa2] sm:text-xs`}
         >
           {label}
         </p>
         <h3
-          className={`mt-0.5 line-clamp-2 font-serif ${nameSize} leading-snug text-[#173c3d] sm:text-lg`}
+          className={`am-product-title mt-0.5 line-clamp-2 font-serif ${nameSize} leading-snug text-[#173c3d] sm:text-lg`}
         >
           {product.name}
         </h3>
@@ -329,6 +329,15 @@ export default function CatalogShowcase() {
         .am-marquee { animation: am-marquee 38s linear infinite; }
         .am-marquee-wrap:hover .am-marquee { animation-play-state: paused; }
         .am-shimmer { background: linear-gradient(90deg, #e6eeea 25%, #f3f7f5 50%, #e6eeea 75%); background-size: 200% 100%; animation: am-shimmer 1.6s linear infinite; }
+
+        .dark .am-root { background: #0b1220 !important; color: #e5e7eb !important; }
+        .dark .am-root .am-product-image { background: #1e293b; }
+        .dark .am-root .am-product-title { color: #e5e7eb !important; }
+        .dark .am-root .am-product-label { color: #7dd3d0 !important; }
+        .dark .am-root .am-shimmer { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); background-size: 200% 100%; }
+        .dark .am-root .am-categories { background: #111827 !important; }
+        .dark .am-root .am-collection { background: #0b1220 !important; }
+        .dark .am-root .am-muted { color: #94a3b8 !important; }
 
         .am-reveal { opacity: 0; transform: translateY(28px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
         .am-reveal.am-in { opacity: 1; transform: none; }
@@ -487,18 +496,18 @@ export default function CatalogShowcase() {
       )}
 
       {error ? (
-        <div className="mx-auto max-w-2xl px-5 py-28 text-center">
+        <div className="am-status mx-auto max-w-2xl px-5 py-28 text-center">
           <h2 className="font-serif text-3xl">
             The collection is taking a moment.
           </h2>
-          <p className="mt-3 text-[#6d8585]">
+          <p className="am-muted mt-3 text-[#6d8585]">
             Refresh to see the latest pieces.
           </p>
         </div>
       ) : !data ? (
-        <section className="px-5 py-20 sm:px-8 lg:px-12">
+        <section className="am-status px-5 py-20 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-7xl">
-            <p className="mb-8 text-center text-[#6d8585]">
+            <p className="am-muted mb-8 text-center text-[#6d8585]">
               Loading the latest collection...
             </p>
             <SkeletonGrid />
@@ -508,7 +517,7 @@ export default function CatalogShowcase() {
         <>
           {/* -------------------------------------------------- Categories */}
           {
-            <section className="bg-[#e6eeea] px-5 py-14 sm:px-8 sm:py-28 lg:px-12">
+            <section className="am-categories bg-[#e6eeea] px-5 py-14 sm:px-8 sm:py-28 lg:px-12">
               <div className="mx-auto max-w-7xl">
                 <Reveal>
                   <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -520,7 +529,7 @@ export default function CatalogShowcase() {
                         Find your kind of beautiful.
                       </h2>
                     </div>
-                    <p className="max-w-xs text-sm leading-6 text-[#5f7979]">
+                    <p className="am-muted max-w-xs text-sm leading-6 text-[#5f7979]">
                       Important categories, photographed from the live
                       collection.
                     </p>
@@ -590,7 +599,7 @@ export default function CatalogShowcase() {
                     );
                   })}
                   {!categories.length && (
-                    <p className="col-span-full text-[#5f7979]">
+                    <p className="am-muted col-span-full text-[#5f7979]">
                       Categories will appear here as the collection grows.
                     </p>
                   )}
@@ -602,7 +611,7 @@ export default function CatalogShowcase() {
           {/* ------------------------------------------------- Collection */}
           <section
             id="collection"
-            className="scroll-mt-16 px-5 py-14 sm:px-8 sm:py-28 lg:px-12"
+            className="am-collection scroll-mt-16 px-5 py-14 sm:px-8 sm:py-28 lg:px-12"
           >
             <div className="mx-auto max-w-7xl">
               <Reveal>
@@ -615,7 +624,7 @@ export default function CatalogShowcase() {
                       Pieces with a story to tell.
                     </h2>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-[#6d8585]">
+                  <div className="am-muted flex items-center gap-2 text-sm text-[#6d8585]">
                     <Sparkles size={16} className="text-[#4c9fa2]" /> Live
                     collection
                   </div>
@@ -648,7 +657,7 @@ export default function CatalogShowcase() {
                   })}
                 </div>
               ) : (
-                <p className="mt-14 text-[#6d8585]">
+                <p className="am-muted mt-14 text-[#6d8585]">
                   Products will appear here as the collection grows.
                 </p>
               )}
