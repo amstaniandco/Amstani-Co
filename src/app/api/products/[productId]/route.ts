@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
+import { getWholesaleStock } from "../../../../lib/wholesale-stock";
 
 type Ctx = { params: Promise<{ productId: string }> };
 
 export async function GET(req: Request, { params }: Ctx) {
   const { productId } = await params;
-  const storeId = new URL(req.url).searchParams.get("storeId") ?? null;
+  const searchParams = new URL(req.url).searchParams;
+  const storeId = searchParams.get("storeId") ?? null;
+  const catalogRequested = searchParams.get("catalog") === "true";
 
   let id: ObjectId;
   try {
@@ -26,13 +29,17 @@ export async function GET(req: Request, { params }: Ctx) {
   let storeSellingPrice: number | null = null;
   let storeDiscountPercent: number = 0;
   let storeIsOnSale: boolean = false;
+  let isCatalogProduct = false;
 
   if (storeId) {
+    isCatalogProduct = catalogRequested;
     const sp = await db.collection("store_products").findOne(
       { storeId, productId },
       { projection: { quantity: 1, variantPrices: 1, sellingPrice: 1, discountPercent: 1, isOnSale: 1 } }
     );
-    stock            = sp?.quantity ?? null;
+    stock            = isCatalogProduct
+      ? await getWholesaleStock({ sku: product.sku })
+      : sp?.quantity ?? null;
     variantPrices    = (sp?.variantPrices as Record<string, number>) ?? {};
     storeSellingPrice   = sp?.sellingPrice ?? null;
     storeDiscountPercent = (sp?.isOnSale && sp?.discountPercent > 0) ? (sp.discountPercent as number) : 0;
@@ -41,7 +48,12 @@ export async function GET(req: Request, { params }: Ctx) {
 
   // Effective price from store (already accounts for discount in store_products route,
   // but here we compute it fresh for the single-product detail page)
-  const basePrice: number = storeSellingPrice ?? (product.adminAdjustedPrice as number) ?? (product.price as number) ?? 0;
+  const catalogEntry = storeId && isCatalogProduct
+    ? await db.collection("owner_catalog").findOne({ storeId, productId }, { projection: { price: 1 } })
+    : null;
+  const basePrice: number = isCatalogProduct
+    ? Number(catalogEntry?.price ?? product.adminAdjustedPrice ?? product.price ?? 0)
+    : storeSellingPrice ?? (product.adminAdjustedPrice as number) ?? (product.price as number) ?? 0;
   const effectivePrice: number = Math.round(basePrice * (1 - storeDiscountPercent / 100) * 100) / 100;
 
   // Merge store owner's variant price overrides so the customer sees the correct price
@@ -55,6 +67,7 @@ export async function GET(req: Request, { params }: Ctx) {
       ...product,
       variants,
       isCustomOrderEnabled: product.allowCustomOrders ?? false,
+      isCatalogProduct,
       // Store-specific pricing overlays
       price: effectivePrice,
       sellingPrice: basePrice,

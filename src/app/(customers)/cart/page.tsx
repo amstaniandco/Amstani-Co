@@ -19,6 +19,7 @@ type CartItem = {
   quantity: number;
   selectedVariants?: Record<string, string>;
   customOrderDetails?: { description: string; mediaUrls: string[] };
+  isCatalogProduct?: boolean;
 };
 
 function variantLabel(selectedVariants?: Record<string, string>) {
@@ -257,6 +258,11 @@ export default function CartPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#0f9488] sm:text-xs">{item.storeName}</p>
                           <p className="mt-0.5 text-sm font-semibold text-slate-900 line-clamp-2 dark:text-slate-100 sm:text-base">{item.name}</p>
+                          {item.isCatalogProduct && (
+                            <span className="mt-1 inline-block rounded-full bg-[#e8f7f8] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#318b96]">
+                              Catalog
+                            </span>
+                          )}
                           {item.sku && !isCustom && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">SKU: {item.sku}</p>}
                           {variantLabel(item.selectedVariants) && !isCustom && (
                             <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{variantLabel(item.selectedVariants)}</p>

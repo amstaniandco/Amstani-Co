@@ -27,6 +27,7 @@ export type OrderLineItem = {
   unitPrice: number;
   mainImage?: string | null;
   customOrderDetails?: { description: string; mediaUrls: string[] };
+  isCatalogProduct?: boolean;
 };
 
 export type OrderTimelineStep = {
@@ -70,6 +71,7 @@ type RawOrderItem = {
   mainImage?: string | null;
   selectedVariants?: Record<string, string>;
   customOrderDetails?: { description: string; mediaUrls: string[] };
+  isCatalogProduct?: boolean;
 };
 
 type RawOrder = {
@@ -209,6 +211,7 @@ export function mapOrderToRow(order: RawOrder): OrderRow {
       unitPrice: Number(item.price ?? item.unitPrice ?? 0),
       mainImage: item.mainImage ?? null,
       ...(item.customOrderDetails?.description ? { customOrderDetails: item.customOrderDetails } : {}),
+      isCatalogProduct: item.isCatalogProduct === true,
     })),
     shippingFee,
     taxAmount,

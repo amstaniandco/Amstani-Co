@@ -118,6 +118,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ storeId
 
     return {
       ...c,
+      isCatalogProduct: true,
       adminAdjustedPrice: adminBase,
     };
   });

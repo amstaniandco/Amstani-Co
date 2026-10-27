@@ -7,6 +7,7 @@ import stripe, {
 } from "../../../../lib/stripe";
 import clientPromise, { DB_NAME } from "../../../../lib/db";
 import { getUserFromToken } from "../../../../lib/auth";
+import { getWholesaleStock } from "../../../../lib/wholesale-stock";
 
 const CONFIG_ID = "pricing_config";
 
@@ -43,11 +44,13 @@ type CartItem = {
   storeName?: string;
   name?: string;
   sku?: string;
+  productSku?: string;
   price?: number;
   mainImage?: string | null;
   quantity: number;
   selectedVariants?: Record<string, string>;
   customOrderDetails?: { description: string; mediaUrls: string[] };
+  isCatalogProduct?: boolean;
 };
 
 function normalizeVariants(selectedVariants?: Record<string, string>) {
@@ -129,6 +132,19 @@ export async function POST(req: Request) {
     });
 
     const storeProd = storeProductByKey.get(`${item.storeId}:${item.productId}`);
+    const qty = Math.max(1, Number(item.quantity) || 1);
+    const isCatalogProduct = item.isCatalogProduct === true;
+    if (isCatalogProduct) {
+      const stock = await getWholesaleStock({
+        sku: product.sku,
+        variantSku: matchedVariant?.skuVariant ?? matchedVariant?.sku,
+        size: selectedVariants.size,
+        color: selectedVariants.color,
+      });
+      if (stock === null || stock < qty) {
+        return NextResponse.json({ error: `Insufficient catalog stock for "${product.name}".` }, { status: 400 });
+      }
+    }
     const basePrice = Number(
       matchedVariant?.priceOverride ??
       storeProd?.sellingPrice ??
@@ -139,18 +155,18 @@ export async function POST(req: Request) {
     const discountPct: number =
       storeProd?.isOnSale && (storeProd?.discountPercent ?? 0) > 0 ? storeProd.discountPercent : 0;
     const effectivePrice = Math.round(basePrice * (1 - discountPct / 100) * 100) / 100;
-    const qty = Math.max(1, Number(item.quantity) || 1);
-
     const resolvedItem: ResolvedItem = {
       productId: item.productId,
       storeId: item.storeId,
       storeName: store.name ?? item.storeName ?? "Store",
       name: product.name ?? item.name ?? "Product",
       sku: matchedVariant?.skuVariant ?? matchedVariant?.sku ?? product.sku ?? item.sku ?? "",
+      productSku: product.sku ?? item.productSku ?? item.sku ?? "",
       price: effectivePrice,
       mainImage: product.mainImage ?? item.mainImage ?? null,
       quantity: qty,
       selectedVariants,
+      isCatalogProduct,
       effectivePrice,
       discountAmount: Math.round((basePrice - effectivePrice) * qty * 100) / 100,
       ...(item.customOrderDetails?.description ? { customOrderDetails: item.customOrderDetails } : {}),
@@ -167,6 +183,7 @@ export async function POST(req: Request) {
   }
 
   const now = new Date();
+  const checkoutGroupId = new ObjectId().toString();
   const orderIds: string[] = [];
   const storeBreakdown: { storeId: string; orderId: string; stripeAccountId: string | null; transferAmount: number }[] = [];
   let totalCents = 0;
@@ -186,8 +203,9 @@ export async function POST(req: Request) {
     totalTaxCents += Math.round(taxAmount * 100);
     totalDiscountCents += Math.round(totalDiscount * 100);
 
-    const result = await db.collection("orders").insertOne({
+    const result = await db.collection("pending_checkouts").insertOne({
       orderNumber: orderNumber(),
+      checkoutGroupId,
       customerId: user.id,
       customerName: userDoc?.name || "Customer",
       customerEmail: userDoc?.email || "",
@@ -197,11 +215,13 @@ export async function POST(req: Request) {
         productId: i.productId,
         name: i.name,
         sku: i.sku,
+        productSku: i.productSku,
         price: i.effectivePrice,
         mainImage: i.mainImage ?? null,
         quantity: i.quantity,
         selectedVariants: i.selectedVariants,
         ...(i.customOrderDetails ? { customOrderDetails: i.customOrderDetails } : {}),
+        ...(i.isCatalogProduct ? { isCatalogProduct: true } : {}),
       })),
       subtotal,
       shippingFee: 0,
@@ -268,12 +288,6 @@ export async function POST(req: Request) {
     const message = err instanceof Error ? err.message : "Payment setup failed";
     return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  // Clear cart now that orders are created
-  await db.collection("carts").updateOne(
-    { userId: user.id },
-    { $set: { items: [], updatedAt: now } }
-  );
 
   return NextResponse.json({
     clientSecret: paymentIntent.client_secret,

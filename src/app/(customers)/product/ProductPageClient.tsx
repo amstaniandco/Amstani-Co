@@ -45,6 +45,7 @@ type ProductDetail = {
   categories?: Array<{ category: { name: string; slug?: string }; isPrimary?: boolean }>;
   isCustomOrderEnabled?: boolean;
   stock?: number;
+  isCatalogProduct?: boolean;
 };
 
 function StarRating({ rating, interactive = false, onRate }: { rating: number; interactive?: boolean; onRate?: (s: number) => void }) {
@@ -123,7 +124,9 @@ export default function ProductPageClient() {
 
   useEffect(() => {
     if (!productId) { setProductLoading(false); return; }
-    const url = storeId ? `/api/products/${productId}?storeId=${storeId}` : `/api/products/${productId}`;
+    const url = storeId
+      ? `/api/products/${productId}?storeId=${storeId}${searchParams.get("catalog") === "true" ? "&catalog=true" : ""}`
+      : `/api/products/${productId}`;
     fetch(url)
       .then((r) => r.json())
       .then((d) => setProduct(d.product ?? null))
@@ -248,6 +251,7 @@ export default function ProductPageClient() {
                 ...(selectedColor ? { color: selectedColor } : {}),
               },
         maxQuantity: maxQty,
+        isCatalogProduct: product.isCatalogProduct === true,
     };
     if (!hasActiveSession()) {
       const result = addGuestCartItem(item);
@@ -340,6 +344,7 @@ export default function ProductPageClient() {
             description: customDesc.trim(),
             mediaUrls: uploadedUrls,
           },
+          isCatalogProduct: product.isCatalogProduct === true,
         maxQuantity: maxQty,
       };
       if (!hasActiveSession()) {

@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Search, ShoppingCart, X } from "lucide-react";
+import { useWishlist } from "../../../../hooks/useWishlist";
+import { useToast } from "../../../../components/global/ToastProvider";
+import { fetchAndUpdateCartCount } from "../../../../lib/cart-events";
 
-type Variant = { size?: string; color?: string; stock?: number };
+type Variant = { size?: string; color?: string; stock?: number; priceOverride?: number | null };
 
 type CatalogProduct = {
   productId: string;
@@ -22,13 +25,14 @@ type CatalogProduct = {
   description?: string;
   variants?: Variant[];
   allowCustomOrders?: boolean;
+  isCatalogProduct?: boolean;
 };
 
-function isHex(s: string) { return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(s.trim()); }
-
-function ProductDetailModal({ product, onClose }: {
+function ProductDetailModal({ product, storeId, onClose, onAdd }: {
   product: CatalogProduct;
+  storeId: string;
   onClose: () => void;
+  onAdd: (product: CatalogProduct, quantity: number, selectedVariants: Record<string, string>) => void;
 }) {
   const imgs = [
     ...(product.images?.map((i) => i.imageUrl) ?? []),
@@ -57,6 +61,44 @@ function ProductDetailModal({ product, onClose }: {
 
   const sizes = [...new Set((product.variants ?? []).map((v) => v.size).filter(Boolean))] as string[];
   const colors = [...new Set((product.variants ?? []).map((v) => v.color).filter(Boolean))] as string[];
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [qty, setQty] = useState(1);
+  const [currentStock, setCurrentStock] = useState<number | null>(null);
+  const [stockLoading, setStockLoading] = useState(true);
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const wishlisted = isWishlisted(product.productId, storeId);
+  const availableColors = selectedSize
+    ? [...new Set((product.variants ?? []).filter((v) => v.size === selectedSize).map((v) => v.color).filter(Boolean))] as string[]
+    : colors;
+  const needsSize = sizes.length > 0;
+  const needsColor = availableColors.length > 0;
+  const canAdd = (!needsSize || selectedSize !== null) && (!needsColor || selectedColor !== null);
+  const maxQty = currentStock ?? 0;
+  const activeVariant = (selectedSize || selectedColor)
+    ? product.variants?.find((v) => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor))
+    : undefined;
+  const displayPrice = Number(activeVariant?.priceOverride ?? product.price);
+  const missing = [
+    needsSize && !selectedSize ? "size" : "",
+    needsColor && !selectedColor ? "color" : "",
+  ].filter(Boolean).join(" and ");
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/products/${product.productId}?storeId=${storeId}&catalog=true`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (active && typeof data?.product?.stock === "number") {
+          setCurrentStock(data.product.stock);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setStockLoading(false);
+      });
+    return () => { active = false; };
+  }, [product.productId, storeId]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -132,8 +174,52 @@ function ProductDetailModal({ product, onClose }: {
                 )}
               </div>
               <div className="flex-shrink-0 text-right">
-                <p className="text-lg sm:text-xl font-extrabold text-[#68B8C1]">${product.price.toFixed(2)}</p>
+                <p className="text-lg sm:text-xl font-extrabold text-[#68B8C1]">${displayPrice.toFixed(2)}</p>
               </div>
+            </div>
+
+            {needsSize && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                  Size {selectedSize === null && <span className="text-red-400 font-normal normal-case">— please select</span>}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {sizes.map((size) => (
+                    <button key={size} type="button" onClick={() => {
+                      setSelectedSize(size);
+                      if (selectedColor && !availableColors.includes(selectedColor)) setSelectedColor(null);
+                    }} className={`rounded-xl border px-3 py-1.5 text-sm font-semibold ${selectedSize === size ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 text-slate-700"}`}>
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {needsColor && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                  Color {selectedColor === null && <span className="text-red-400 font-normal normal-case">— please select</span>}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {availableColors.map((color) => (
+                    <button key={color} type="button" onClick={() => setSelectedColor(color)} className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${selectedColor === color ? "border-[#68B8C1] bg-[#68B8C1] text-white" : "border-slate-200 text-slate-700"}`}>
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {missing && <p className="text-xs font-medium text-red-500">Please select a {missing} before adding to cart.</p>}
+
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setQty((value) => Math.max(1, value - 1))} className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base font-bold">−</button>
+              <span className="w-6 text-center text-sm font-bold">{qty}</span>
+              <button type="button" onClick={() => setQty((value) => Math.min(maxQty || 99, value + 1))} disabled={maxQty > 0 && qty >= maxQty} className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base font-bold disabled:opacity-40">+</button>
+              <span className="text-xs text-slate-500">
+                {stockLoading ? "Checking stock…" : maxQty > 0 ? `${maxQty} in stock` : "Out of stock"}
+              </span>
             </div>
 
             {/* Category / brand / custom tags */}
@@ -159,50 +245,20 @@ function ProductDetailModal({ product, onClose }: {
               </div>
             )}
 
-            {/* Sizes */}
-            {sizes.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Available Sizes</p>
-                <div className="flex flex-wrap gap-2">
-                  {sizes.map((sz) => (
-                    <span key={sz} title={sz} className="inline-block max-w-[80px] truncate rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200">
-                      {sz}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Colors */}
-            {colors.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Available Colors</p>
-                <div className="flex flex-wrap gap-2">
-                  {colors.map((col) => isHex(col) ? (
-                    <span key={col} title={col} style={{ backgroundColor: col }}
-                      className="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm" />
-                  ) : (
-                    <span key={col} className="rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200">
-                      {col}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* All variants table if any */}
-            {product.variants && product.variants.length > 0 && sizes.length === 0 && colors.length === 0 && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Variants</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {product.variants.map((v, i) => (
-                    <span key={i} className="rounded-lg border border-slate-200 dark:border-slate-600 px-2.5 py-1 text-xs text-slate-600 dark:text-slate-300">
-                      {[v.size, v.color].filter(Boolean).join(" / ") || "—"}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="flex gap-3 pt-1">
+              <Link href={`/product?productId=${product.productId}&storeId=${storeId}&catalog=true`} className="flex-1 rounded-2xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-700">
+                Full Details
+              </Link>
+              <button type="button" onClick={() => onAdd(product, qty, {
+                ...(selectedSize ? { size: selectedSize } : {}),
+                ...(selectedColor ? { color: selectedColor } : {}),
+              })} disabled={!canAdd || stockLoading || maxQty === 0} className="flex-1 rounded-2xl bg-[#68B8C1] py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                <ShoppingCart className="mr-1 inline h-4 w-4" /> {stockLoading ? "Checking stock…" : "Add to Cart"}
+              </button>
+              <button type="button" onClick={() => void toggleWishlist({ productId: product.productId, storeId, name: product.name, sku: product.sku, price: displayPrice, mainImage: imgs[0] ?? null })} className={`rounded-2xl border px-3 ${wishlisted ? "border-red-300 text-red-500" : "border-slate-200 text-slate-500"}`} title="Add to wishlist">
+                <Heart className={`h-5 w-5 ${wishlisted ? "fill-current" : ""}`} />
+              </button>
+            </div>
 
           </div>
         </div>
@@ -222,9 +278,27 @@ export default function StoreCatalogClient() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selected, setSelected] = useState<CatalogProduct | null>(null);
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const toast = useToast();
+
+  async function addToCart(product: CatalogProduct, quantity = 1, selectedVariants: Record<string, string> = {}) {
+    const response = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: product.productId, storeId, quantity, selectedVariants, isCatalogProduct: true }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      toast.error(data.error ?? "Could not add this product to your cart.");
+      return;
+    }
+    toast.success("Added to cart!");
+    await fetchAndUpdateCartCount();
+    setSelected(null);
+  }
 
   useEffect(() => {
-    if (!storeId) { setLoading(false); return; }
+    if (!storeId) return;
     Promise.all([
       fetch(`/api/stores/${storeId}/catalog`).then((r) => r.json()),
       fetch(`/api/stores?storeId=${storeId}`).then((r) => r.json()),
@@ -319,49 +393,61 @@ export default function StoreCatalogClient() {
             {filtered.map((product) => {
               const img = product.imageUrls?.[0] ?? product.mainImage;
               return (
-                <button
+                <div
                   key={product.productId}
-                  type="button"
-                  onClick={() => setSelected(product)}
-                  className="group relative block aspect-[3/4] overflow-hidden rounded-3xl bg-slate-100 text-left shadow-sm ring-1 ring-slate-200/70 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-[#68B8C1]/20 dark:bg-slate-700 dark:ring-slate-700"
+                  className="ui-subpanel overflow-hidden rounded-3xl bg-white shadow-sm dark:border dark:border-slate-700 dark:bg-slate-800"
                 >
-                  {/* Full-bleed product image */}
-                  {img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={img}
-                      alt={product.name}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-200 text-sm text-slate-400 dark:bg-slate-600">
-                      No image
+                  <Link
+                    href={`/product?productId=${product.productId}&storeId=${storeId}&catalog=true`}
+                    className="relative block aspect-[3/4] overflow-hidden bg-slate-50 dark:bg-slate-900"
+                  >
+                    {img ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={img} alt={product.name} className="absolute inset-0 h-full w-full object-contain" />
+                    ) : <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />}
+                  </Link>
+                  <div className="p-3 sm:p-4">
+                    <Link
+                      href={`/product?productId=${product.productId}&storeId=${storeId}&catalog=true`}
+                      className="text-sm font-semibold leading-snug text-slate-800 hover:text-[#68B8C1] dark:text-slate-100"
+                    >
+                      {product.name}
+                    </Link>
+                    <p className="mt-0.5 text-xs font-semibold text-[#68B8C1]">
+                      {[product.brand?.name, product.category].filter(Boolean).join(" · ") || "Amstani & Co Catalog"}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">
+                        ${Number(product.price).toFixed(2)}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void toggleWishlist({
+                            productId: product.productId,
+                            storeId,
+                            name: product.name,
+                            sku: product.sku,
+                            price: product.price,
+                            mainImage: img ?? null,
+                          })}
+                          className={`flex h-9 w-9 items-center justify-center rounded-2xl border transition ${isWishlisted(product.productId, storeId) ? "border-red-300 text-red-500" : "border-slate-200 text-slate-400"}`}
+                          title="Add to wishlist"
+                        >
+                          <Heart className={`h-4 w-4 ${isWishlisted(product.productId, storeId) ? "fill-current" : ""}`} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelected(product)}
+                          className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#68B8C1] text-white transition hover:bg-[#4f9ea7]"
+                          title="Add to cart"
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Legibility gradient for the overlaid text */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-
-                  {/* Custom-orders badge */}
-                  {product.allowCustomOrders && (
-                    <span className="absolute left-2.5 top-2.5 rounded-full bg-purple-600/90 px-2.5 py-0.5 text-[10px] font-semibold text-white shadow">
-                      ✎ Custom
-                    </span>
-                  )}
-
-                  {/* Name, brand/category + green price pill (matches homepage categories) */}
-                  <div className="absolute inset-x-0 bottom-0 flex flex-col p-2.5 sm:p-3">
-                    <p className="text-xs sm:text-sm font-bold leading-tight text-white drop-shadow-sm line-clamp-2 sm:truncate sm:line-clamp-none">{product.name}</p>
-                    {(product.brand?.name || product.category) && (
-                      <p className="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">
-                        {[product.brand?.name, product.category].filter(Boolean).join(" · ")}
-                      </p>
-                    )}
-                    <span className="mt-1.5 sm:mt-2 inline-flex w-fit items-center rounded-full bg-[#68B8C1] px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-extrabold text-white shadow-lg ring-1 ring-white/25">
-                      ${product.price.toFixed(2)}
-                    </span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -369,7 +455,12 @@ export default function StoreCatalogClient() {
       </div>
 
       {selected && (
-        <ProductDetailModal product={selected} onClose={() => setSelected(null)} />
+        <ProductDetailModal
+          product={selected}
+          storeId={storeId}
+          onClose={() => setSelected(null)}
+          onAdd={(product, quantity, selectedVariants) => void addToCart(product, quantity, selectedVariants)}
+        />
       )}
     </div>
   );

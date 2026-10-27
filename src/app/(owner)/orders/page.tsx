@@ -332,8 +332,13 @@ function OrderDetail({
                 {order.items.map((item, idx) => {
                   const cod = item.customOrderDetails;
                   return (
-                    <div key={`${order.id}-${idx}`}
-                      className={`rounded-xl border overflow-hidden ${cod ? "border-purple-200" : "border-slate-100"}`}>
+                    <div key={`${order.id}-${idx}`}>
+                    {(idx === 0 || order.items[idx - 1]?.isCatalogProduct !== item.isCatalogProduct) && (
+                      <p className={`mb-1.5 mt-3 text-[10px] font-bold uppercase tracking-[0.14em] ${item.isCatalogProduct ? "text-[#318b96]" : "text-slate-400"}`}>
+                        {item.isCatalogProduct ? "Catalog products" : "Store products"}
+                      </p>
+                    )}
+                    <div className={`rounded-xl border overflow-hidden ${cod ? "border-purple-200" : "border-slate-100"}`}>
                       <div className="flex gap-3 p-3">
                         {item.mainImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -346,7 +351,14 @@ function OrderDetail({
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="text-xs font-semibold text-slate-900 leading-snug">{item.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-semibold text-slate-900 leading-snug">{item.name}</p>
+                              {item.isCatalogProduct && (
+                                <span className="shrink-0 rounded-full bg-[#e8f7f8] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#318b96]">
+                                  Catalog
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs font-bold text-slate-900 shrink-0 tabular-nums">${(item.unitPrice * item.quantity).toFixed(2)}</p>
                           </div>
                           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -378,6 +390,7 @@ function OrderDetail({
                           )}
                         </div>
                       )}
+                    </div>
                     </div>
                   );
                 })}

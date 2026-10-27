@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise, { DB_NAME } from "../../../lib/db";
 import { getUserFromToken } from "../../../lib/auth";
+import { getWholesaleStock } from "../../../lib/wholesale-stock";
 
 type SelectedVariants = Record<string, string>;
 
@@ -11,11 +12,13 @@ type CartItemInput = {
   storeName?: string;
   name?: string;
   sku?: string;
+  productSku?: string;
   price?: number;
   mainImage?: string | null;
   quantity?: number;
   selectedVariants?: SelectedVariants;
   customOrderDetails?: { description: string; mediaUrls: string[] };
+  isCatalogProduct?: boolean;
 };
 
 type ProductVariant = {
@@ -111,6 +114,7 @@ export async function POST(req: Request) {
     quantity = 1,
     selectedVariants,
     customOrderDetails,
+    isCatalogProduct = false,
   }: CartItemInput = await req.json();
   if (!productId || !storeId) return NextResponse.json({ error: "productId and storeId required" }, { status: 400 });
   if (!ObjectId.isValid(productId) || !ObjectId.isValid(storeId)) {
@@ -132,7 +136,24 @@ export async function POST(req: Request) {
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
-  const availableStock: number = storeProd?.quantity ?? Infinity;
+  if (isCatalogProduct) {
+    const catalogEntry = await db.collection("owner_catalog").findOne(
+      { storeId, productId },
+      { projection: { _id: 1 } },
+    );
+    if (!catalogEntry) {
+      return NextResponse.json({ error: "Catalog product is not available in this store." }, { status: 400 });
+    }
+  }
+  const wholesaleStock = isCatalogProduct
+    ? await getWholesaleStock({
+        sku: (product as ProductDoc).sku,
+        variantSku: findMatchingVariant(product as ProductDoc, normalizeSelectedVariants(selectedVariants))?.skuVariant,
+        size: normalizeSelectedVariants(selectedVariants).size,
+        color: normalizeSelectedVariants(selectedVariants).color,
+      })
+    : null;
+  const availableStock: number = isCatalogProduct ? (wholesaleStock ?? 0) : (storeProd?.quantity ?? 0);
   if (availableStock <= 0) {
     return NextResponse.json({ error: "This product is out of stock." }, { status: 400 });
   }
@@ -179,12 +200,14 @@ export async function POST(req: Request) {
     storeName: store.name ?? storeName ?? "Store",
     name: product.name ?? name ?? "Product",
     sku: derivedSku,
+    productSku: product.sku ?? sku ?? "",
     price: derivedPrice,
     originalPrice,
     weightKg,
     mainImage: derivedImage,
     quantity: Math.max(1, Number(quantity) || 1),
     selectedVariants: variantSnapshot,
+    isCatalogProduct: Boolean(isCatalogProduct),
     addedAt: now,
   };
   if (customOrderDetails?.description) {
@@ -267,11 +290,27 @@ export async function PATCH(req: Request) {
   } else {
     // Cap against available stock
     const item = cart.items[idx];
-    const sp = await db.collection("store_products").findOne(
-      { storeId: item.storeId, productId: item.productId },
-      { projection: { quantity: 1 } }
-    );
-    const available: number = sp?.quantity ?? Infinity;
+    let available: number;
+    if (item.isCatalogProduct === true) {
+      const product = await db.collection("products").findOne(
+        { _id: new ObjectId(item.productId) },
+        { projection: { sku: 1, variants: 1 } },
+      );
+      const selected = normalizeSelectedVariants(item.selectedVariants);
+      const variant = findMatchingVariant(product as ProductDoc, selected);
+      available = (await getWholesaleStock({
+        sku: product?.sku,
+        variantSku: variant?.skuVariant ?? variant?.sku,
+        size: selected.size,
+        color: selected.color,
+      })) ?? 0;
+    } else {
+      const sp = await db.collection("store_products").findOne(
+        { storeId: item.storeId, productId: item.productId },
+        { projection: { quantity: 1 } }
+      );
+      available = sp?.quantity ?? 0;
+    }
     const capped = Math.min(quantity, available);
     await db.collection("carts").updateOne(
       { userId: user.id },
