@@ -8,6 +8,7 @@ type PreviewProduct = {
   name: string;
   image: string | null;
   brand?: string | null;
+  category?: string | null;
 };
 
 function isFootwear(product: PreviewProduct & { category?: string | null; brand?: string | null }) {
@@ -17,6 +18,15 @@ function isFootwear(product: PreviewProduct & { category?: string | null; brand?
     .toLowerCase();
 
   return /\b(shoe|shoes|sneaker|sneakers|boot|boots|sandal|sandals|slipper|slippers|loafer|loafers|heels?|footwear)\b/.test(text);
+}
+
+function isPakistaniStyle(product: PreviewProduct) {
+  const text = [product.name, product.category, product.brand]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return /\b(pakistani|pakistan|shalwar|kameez|kurta|kurti|churidar|anarkali|sari|saree|salwar|dupatta|lehenga|gharara|sharara|desi|eastern|ethnic|traditional wear|asian wear|maria b|gul ahmed|khaadi|sapphire|limelight|nishat|alkaram|sana safinaz|asim jofa)\b/.test(text);
 }
 
 export default function CatalogPreview() {
@@ -29,7 +39,7 @@ export default function CatalogPreview() {
         setProducts(
           (data.products ?? [])
             .filter((product: PreviewProduct & { category?: string | null; brand?: string | null }) =>
-              product.image && !isFootwear(product),
+              product.image && !isFootwear(product) && !isPakistaniStyle(product),
             )
             .slice(0, 2),
         ),

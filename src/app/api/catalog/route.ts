@@ -31,9 +31,10 @@ export async function GET() {
           brandSuspended: { $ne: true },
         })
         .sort({ isFeatured: -1, createdAt: -1 })
-        .limit(60)
+        .limit(250)
         .project({
           name: 1,
+          sku: 1,
           brand: 1,
           category: 1,
           categories: 1,
@@ -74,6 +75,7 @@ export async function GET() {
       products: products.map((product) => ({
         id: product._id.toString(),
         name: product.name,
+        sku: product.sku ?? null,
         brand: product.brand?.name ?? null,
         category:
           product.category ??
