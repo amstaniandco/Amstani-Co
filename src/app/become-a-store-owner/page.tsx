@@ -331,11 +331,34 @@ export default function BecomeAStoreOwnerPage() {
 
         <section
           aria-labelledby="catalog-teaser-heading"
-          className="relative isolate overflow-hidden border-y border-[#8bd3cf]/20 bg-[#0d3035] px-5 py-10 text-white sm:px-8 sm:py-14 lg:px-12"
+          className="ct-root relative isolate overflow-hidden border-y border-[#8bd3cf]/20 bg-[#0d3035] px-5 py-14 text-white sm:px-8 sm:py-20 lg:px-12 lg:py-24"
         >
+          <style>{`
+    @keyframes ct-rise { from { opacity: 0; transform: translateY(36px); } to { opacity: 1; transform: none; } }
+    @keyframes ct-spin { to { transform: rotate(360deg); } }
+    @keyframes ct-drift { 0%,100% { translate: 0 0; } 50% { translate: -16px 18px; } }
+    @keyframes ct-ping { 75%,100% { transform: scale(2.4); opacity: 0; } }
+    @keyframes ct-shine { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(420%) skewX(-20deg); } }
+
+    .ct-spin { animation: ct-spin 70s linear infinite; }
+    .ct-drift { animation: ct-drift 11s ease-in-out infinite; }
+    .ct-ping { animation: ct-ping 2s cubic-bezier(0,0,.2,1) infinite; }
+    .ct-shine { transform: translateX(-120%) skewX(-20deg); }
+    .ct-cta:hover .ct-shine { animation: ct-shine .9s ease; }
+
+    @supports (animation-timeline: view()) {
+      .ct-in { animation: ct-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 55%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ct-root *, .ct-root *::before, .ct-root *::after { animation: none !important; transition: none !important; }
+    }
+  `}</style>
+
+          {/* Background */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-32 -top-32 -z-10 h-96 w-96 rounded-full bg-[#8bd3cf]/10 blur-3xl"
+            className="ct-drift pointer-events-none absolute -right-32 -top-32 -z-10 h-96 w-96 rounded-full bg-[#8bd3cf]/10 blur-3xl"
           />
           <div
             aria-hidden
@@ -346,77 +369,100 @@ export default function BecomeAStoreOwnerPage() {
             className="pointer-events-none absolute inset-0 -z-10 opacity-[0.35] [background-image:radial-gradient(rgba(139,211,207,0.18)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
           />
 
-          <div className="mx-auto grid max-w-7xl items-center gap-y-10 sm:gap-y-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-x-16 lg:gap-y-0">
-            <div className="relative text-center lg:text-left">
-              <p className="mx-auto inline-flex items-center gap-2 rounded-full border border-[#8bd3cf]/30 bg-[#8bd3cf]/10 px-3.5 py-1.5 text-sm font-medium text-[#8bd3cf] lg:mx-0">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#8bd3cf]" />
+          <div className="mx-auto grid max-w-7xl gap-y-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-x-16 lg:gap-y-0">
+            {/* Heading */}
+            {/* Heading */}
+            <div className="ct-in relative lg:col-start-1 lg:row-start-1">
+              <p className="mx-auto flex w-fit items-center gap-2.5 rounded-full border border-[#8bd3cf]/30 bg-[#8bd3cf]/10 px-3.5 py-1.5 text-sm font-medium text-[#8bd3cf] lg:mx-0">
+                <span className="relative flex h-2 w-2">
+                  <span className="ct-ping absolute inline-flex h-full w-full rounded-full bg-[#8bd3cf]" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8bd3cf]" />
+                </span>
                 Explore before you apply
               </p>
 
               <h2
                 id="catalog-teaser-heading"
-                className="mx-auto mt-6 max-w-xl text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:mx-0 lg:text-6xl"
+                className="mx-auto mt-6 max-w-xl text-balance text-center text-3xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:mx-0 lg:text-left lg:text-7xl"
               >
                 See what you could sell.
               </h2>
 
-              <p className="mx-auto mt-6 max-w-md text-base leading-8 text-[#c1dedd] sm:text-lg lg:mx-0">
+              <p className="mt-6 max-w-md text-base leading-8 text-[#c1dedd] sm:text-lg">
                 Browse the Amstani catalog before you build your store. Explore
                 real brands, categories, and premium clothing pieces available
                 through our wholesale collection.
               </p>
-
-              <ul className="mx-auto mt-9 max-w-md divide-y divide-white/10 border-y border-white/10 text-left lg:mx-0">
-                {highlights.map(({ icon: Icon, title, text }) => (
-                  <li key={title} className="flex items-start gap-4 py-4">
-                    <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#8bd3cf]/30 bg-[#8bd3cf]/10">
-                      <Icon className="h-[18px] w-[18px] text-[#8bd3cf]" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-white">{title}</p>
-                      <p className="mt-0.5 text-sm leading-6 text-[#a6c8c7]">
-                        {text}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
             </div>
 
-            <div>
-              <div className="relative">
+            {/* Preview stage */}
+            <div className="ct-in relative lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-center">
+              <div
+                aria-hidden
+                className="absolute inset-0 translate-x-3 translate-y-3 rounded-[2.5rem] border border-[#8bd3cf]/25 sm:translate-x-5 sm:translate-y-5"
+              />
+              <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-[#0a2a2e] px-5 pb-10 pt-20 shadow-[0_30px_80px_rgba(0,0,0,0.35)] sm:px-10 sm:pb-14 sm:pt-24">
                 <div
                   aria-hidden
-                  className="absolute inset-0 translate-x-3 translate-y-3 rounded-[2rem] border border-[#8bd3cf]/25 sm:translate-x-5 sm:translate-y-5"
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                >
+                  <div className="ct-spin aspect-square w-[115%] rounded-full border border-dashed border-[#8bd3cf]/15" />
+                </div>
+                <div
+                  aria-hidden
+                  className="ct-drift pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[#8bd3cf]/20 blur-3xl"
                 />
-                <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-[#0a2a2e] shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
-                  <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-5 py-3.5">
-                    <div className="flex items-center gap-1.5" aria-hidden>
-                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#8bd3cf]/70" />
-                    </div>
-                    <p className="text-xs font-medium text-[#a6c8c7]">
-                      Amstani catalog preview
-                    </p>
-                  </div>
-                  <div className="p-4 sm:p-6">
-                    <CatalogPreview />
-                  </div>
+
+                <p className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 text-xs font-medium text-[#a6c8c7] backdrop-blur sm:left-8 sm:top-7">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#8bd3cf]" />
+                  Amstani catalog preview
+                </p>
+
+                <div className="relative">
+                  <CatalogPreview />
                 </div>
               </div>
+            </div>
 
+            {/* Button */}
+            <div className="ct-in lg:col-start-1 lg:row-start-2 lg:pt-10">
               <Link
                 href="/catalog"
-                className="group mx-auto mt-8 flex min-h-14 w-fit max-w-full items-center justify-between gap-5 rounded-full bg-[#8bd3cf] py-2 pl-6 pr-2 text-base font-bold text-[#0d3035] shadow-[0_14px_32px_rgba(139,211,207,0.25)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#8bd3cf]/40 sm:mt-9 sm:pl-7"
+                className="ct-cta group relative flex min-h-14 w-full items-center justify-between gap-5 overflow-hidden rounded-full bg-[#8bd3cf] py-2 pl-6 pr-2 text-base font-bold text-[#0d3035] shadow-[0_14px_32px_rgba(139,211,207,0.25)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#8bd3cf]/40 sm:w-fit sm:pl-7"
               >
-                <span>View the Amstani catalog</span>
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0d3035] text-[#8bd3cf] transition motion-safe:group-hover:translate-x-0.5">
+                <span
+                  aria-hidden
+                  className="ct-shine pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-white/50"
+                />
+                <span className="relative">View the Amstani catalog</span>
+                <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#0d3035] text-[#8bd3cf] transition motion-safe:group-hover:translate-x-0.5">
                   <ArrowRight size={18} aria-hidden />
                 </span>
               </Link>
             </div>
+
+            {/* Highlights */}
+            <ul className="grid max-w-xl content-start gap-3 lg:col-start-1 lg:row-start-3 lg:pt-10">
+              {highlights.map(({ icon: Icon, title, text }) => (
+                <li
+                  key={title}
+                  className="ct-in group flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition duration-300 hover:-translate-y-0.5 hover:border-[#8bd3cf]/40 hover:bg-white/[0.07]"
+                >
+                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#8bd3cf]/30 bg-[#8bd3cf]/10 transition duration-300 group-hover:bg-[#8bd3cf]">
+                    <Icon
+                      className="h-[18px] w-[18px] text-[#8bd3cf] transition duration-300 group-hover:text-[#0d3035]"
+                      aria-hidden
+                    />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{title}</p>
+                    <p className="mt-0.5 text-sm leading-6 text-[#a6c8c7]">
+                      {text}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 

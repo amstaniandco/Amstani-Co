@@ -368,12 +368,12 @@ export default function CatalogShowcase() {
         <div className="relative mx-auto grid min-h-[620px] lg:min-h-[780px] max-w-7xl items-center gap-10 px-5 pb-14 pt-28 sm:pt-32 sm:px-8 lg:grid-cols-[1fr_1fr] lg:px-12">
           <div className="relative z-10">
             <p
-              className="am-fade text-xs font-semibold uppercase tracking-[0.3em] text-[#9bd8d2]"
+              className="am-fade text-center text-xs font-semibold uppercase tracking-[0.3em] text-[#9bd8d2] sm:text-left"
               style={{ "--d": "100ms" } as CSSProperties}
             >
               The Amstani edit
             </p>
-            <h1 className="mt-5 font-serif text-[2.6rem] leading-[1] tracking-[-0.035em] sm:text-7xl">
+            <h1 className="mt-5 text-center font-serif text-[2.25rem] leading-[0.82] tracking-[-0.045em] sm:text-left sm:text-7xl sm:leading-[1]">
               {["A world of", "texture, color,", "and character."].map(
                 (line, i) => (
                   <span
