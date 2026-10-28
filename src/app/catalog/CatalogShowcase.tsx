@@ -40,18 +40,23 @@ type CatalogData = {
    Helpers
 ---------------------------------------------------------------------------- */
 
-const SHOWCASE_CATEGORIES = [
+const PRODUCT_SHOWCASE_CATEGORIES = [
   "Activewears",
   "Blazers",
-  "Co-ord sets",
+  "Skirt",
   "Fall/Winter Edit",
   "Footwear",
   "Jackets",
   "Jeans",
   "Men",
   "Shirts",
-  "Women Vest",
+  "Pants",
+  "Co-ord Sets",
+  "Women vest",
 ] as const;
+const CATEGORY_SHOWCASE_CATEGORIES = PRODUCT_SHOWCASE_CATEGORIES.filter(
+  (category) => !["Co-ord Sets", "Women vest"].includes(category),
+);
 const MAX_SHOWCASE_PRODUCTS = 100;
 
 const categoryKey = (value: string | null | undefined) =>
@@ -62,7 +67,9 @@ const categoryKey = (value: string | null | undefined) =>
 
 function isShowcaseCategory(value: string | null | undefined) {
   const key = categoryKey(value);
-  return SHOWCASE_CATEGORIES.some((category) => categoryKey(category) === key);
+  return PRODUCT_SHOWCASE_CATEGORIES.some(
+    (category) => categoryKey(category) === key,
+  );
 }
 
 /** Random row layout for phones: each row holds 1, 2 or 3 cards. */
@@ -273,7 +280,7 @@ export default function CatalogShowcase() {
 
   const categories = useMemo(
     () =>
-      SHOWCASE_CATEGORIES.flatMap((name) => {
+      CATEGORY_SHOWCASE_CATEGORIES.flatMap((name) => {
         const category = (data?.categories ?? []).find(
           (c) => categoryKey(c.name) === categoryKey(name),
         );

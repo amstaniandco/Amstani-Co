@@ -388,7 +388,7 @@ export default function BecomeAStoreOwnerPage() {
                 See what you could sell.
               </h2>
 
-              <p className="mt-6 max-w-md text-base leading-8 text-[#c1dedd] sm:text-lg">
+              <p className="mt-6 max-w-md text-base leading-8 text-[#c1dedd] sm:text-lg  text-justify sm:text-left">
                 Browse the Amstani catalog before you build your store. Explore
                 real brands, categories, and premium clothing pieces available
                 through our wholesale collection.
