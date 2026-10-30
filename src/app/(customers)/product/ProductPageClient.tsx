@@ -167,18 +167,18 @@ export default function ProductPageClient() {
     : [];
 
   const colors: string[] = product?.variants
-    ? [...new Set(product.variants.map((v) => v.color).filter(Boolean).map((color) => String(color)))]
+    ? [...new Map(product.variants.map((v) => String(v.color ?? "").trim()).filter(Boolean).map((color) => [color.toLowerCase(), color])).values()]
     : [];
 
   // Only show colors that have a variant matching the selected size
   const availableColors: string[] = selectedSize != null
-    ? [...new Set(
+    ? [...new Map(
         (product?.variants ?? [])
           .filter((v) => v.size != null && String(v.size) === String(selectedSize))
-          .map((v) => v.color)
+          .map((v) => String(v.color ?? "").trim())
           .filter(Boolean)
-          .map(String)
-      )]
+          .map((color) => [color.toLowerCase(), color] as const)
+      ).values()]
     : colors;
 
   function handleSizeSelect(size: string | number) {
@@ -195,6 +195,14 @@ export default function ProductPageClient() {
   const canAddToCart =
     (!sizes.length || selectedSize !== null) &&
     (!availableColors.length || selectedColor !== null);
+
+  useEffect(() => {
+    if (sizes.length === 1) setSelectedSize(sizes[0]);
+    if (colors.length === 1) setSelectedColor(colors[0]);
+  }, [sizes.length, colors.length]);
+  useEffect(() => {
+    if (availableColors.length === 1) setSelectedColor(availableColors[0]);
+  }, [availableColors.length, selectedSize]);
 
   const missingVariant = sizes.length > 0 && selectedSize === null
     ? "size"
@@ -232,7 +240,9 @@ export default function ProductPageClient() {
   async function handleAddToCart() {
     if (!product || !storeId) { setCartMsg("Cannot add to cart."); return; }
     if (missingVariant) {
-      toast.error(`Please select a ${missingVariant} before adding to cart.`);
+      const message = `Please select a ${missingVariant} before adding to cart.`;
+      if (window.matchMedia("(max-width: 767px)").matches) setCartMsg(message);
+      else toast.error(message);
       return;
     }
     const item = {
@@ -256,22 +266,25 @@ export default function ProductPageClient() {
     if (!hasActiveSession()) {
       const result = addGuestCartItem(item);
       if (result === "out_of_stock") {
-        toast.error("Item is out of stock.");
+        if (window.matchMedia("(max-width: 767px)").matches) setCartMsg("Item is out of stock.");
+        else toast.error("Item is out of stock.");
         return;
       }
       fetchAndUpdateCartCount();
-      setCartMsg("");
-      toast.success("Added to cart!");
+      if (window.matchMedia("(max-width: 767px)").matches) setCartMsg("Added to cart!");
+      else { setCartMsg(""); toast.success("Added to cart!"); }
     } else {
       const res = await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setCartMsg("");
-        toast.error(data.error ?? "Could not add to cart.");
+        const message = data.error ?? "Could not add to cart.";
+        if (window.matchMedia("(max-width: 767px)").matches) setCartMsg(message);
+        else toast.error(message);
         return;
       }
-      setCartMsg("");
-      toast.success("Added to cart!");
+      if (window.matchMedia("(max-width: 767px)").matches) setCartMsg("Added to cart!");
+      else { setCartMsg(""); toast.success("Added to cart!"); }
       fetchAndUpdateCartCount();
     }
   }

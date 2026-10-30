@@ -82,22 +82,23 @@ function QuickViewModal({
     ? [...new Set(product.variants.map((v) => v.size).filter(Boolean))] as (string | number)[]
     : [];
   const colors = product.variants
-    ? [...new Set(product.variants.map((v) => v.color).filter(Boolean).map(String))]
+    ? [...new Map(product.variants.map((v) => String(v.color ?? "").trim()).filter(Boolean).map((color) => [color.toLowerCase(), color])).values()]
     : [];
 
   const [selectedSize, setSelectedSize] = useState<string | number | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
+  const [addedMessage, setAddedMessage] = useState("");
 
   const availableColors: string[] = selectedSize != null
-    ? [...new Set(
+    ? [...new Map(
         (product.variants ?? [])
           .filter((v) => v.size != null && String(v.size) === String(selectedSize))
-          .map((v) => v.color)
+          .map((v) => String(v.color ?? "").trim())
           .filter(Boolean)
-          .map(String)
-      )]
+          .map((color) => [color.toLowerCase(), color] as const)
+      ).values()]
     : colors;
 
   function handleSizeSelect(size: string | number) {
@@ -105,13 +106,20 @@ function QuickViewModal({
     setQty(1);
     const colorsForSize = (product.variants ?? [])
       .filter((v) => v.size != null && String(v.size) === String(size))
-      .map((v) => v.color).filter(Boolean).map(String);
+      .map((v) => String(v.color ?? "").trim()).filter(Boolean);
     if (selectedColor && !colorsForSize.includes(selectedColor)) setSelectedColor(null);
   }
 
   const needsSize = sizes.length > 0;
   const needsColor = availableColors.length > 0;
   const canAdd = (!needsSize || selectedSize !== null) && (!needsColor || selectedColor !== null);
+  useEffect(() => {
+    if (sizes.length === 1) setSelectedSize(sizes[0]);
+    if (colors.length === 1) setSelectedColor(colors[0]);
+  }, [sizes.length, colors.length]);
+  useEffect(() => {
+    if (availableColors.length === 1) setSelectedColor(availableColors[0]);
+  }, [availableColors.length, selectedSize]);
   const maxQty = product.quantity != null && product.quantity > 0 ? product.quantity : 0;
 
   const missingMsg = !canAdd
@@ -158,21 +166,29 @@ function QuickViewModal({
       if (!hasActiveSession()) {
         const result = addGuestCartItem(item);
         if (result === "out_of_stock") {
-          toast.error("Item is out of stock.");
+          if (window.matchMedia("(max-width: 639px)").matches) setAddedMessage("Item is out of stock.");
+          else toast.error("Item is out of stock.");
           return;
         }
         fetchAndUpdateCartCount();
-        toast.success("Added to cart!");
-        onClose();
+        if (window.matchMedia("(max-width: 639px)").matches) setAddedMessage("Added to cart!");
+        else { toast.success("Added to cart!"); onClose(); }
       } else {
         const res = await fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
-        if (!res.ok) throw new Error("Could not add to cart");
-        toast.success("Added to cart!");
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const message = data.error ?? "Could not add to cart.";
+          if (window.matchMedia("(max-width: 639px)").matches) setAddedMessage(message);
+          else toast.error(message);
+          return;
+        }
         fetchAndUpdateCartCount();
-        onClose();
+        if (window.matchMedia("(max-width: 639px)").matches) setAddedMessage("Added to cart!");
+        else { toast.success("Added to cart!"); onClose(); }
       }
     } catch {
-      toast.error("Could not add to cart.");
+      if (window.matchMedia("(max-width: 639px)").matches) setAddedMessage("Could not add to cart.");
+      else toast.error("Could not add to cart.");
     } finally {
       setAdding(false);
     }
@@ -304,6 +320,7 @@ function QuickViewModal({
             {missingMsg && (
               <p className="text-xs text-red-500 font-medium">Please select a {missingMsg} before adding to cart.</p>
             )}
+            {addedMessage && <p className="text-sm font-medium text-emerald-600">{addedMessage}</p>}
 
             <div className="flex items-center gap-3 pt-1">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))}

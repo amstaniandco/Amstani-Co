@@ -32,7 +32,7 @@ function ProductDetailModal({ product, storeId, onClose, onAdd }: {
   product: CatalogProduct;
   storeId: string;
   onClose: () => void;
-  onAdd: (product: CatalogProduct, quantity: number, selectedVariants: Record<string, string>) => void;
+  onAdd: (product: CatalogProduct, quantity: number, selectedVariants: Record<string, string>) => Promise<string>;
 }) {
   const imgs = [
     ...(product.images?.map((i) => i.imageUrl) ?? []),
@@ -60,16 +60,17 @@ function ProductDetailModal({ product, storeId, onClose, onAdd }: {
   };
 
   const sizes = [...new Set((product.variants ?? []).map((v) => v.size).filter(Boolean))] as string[];
-  const colors = [...new Set((product.variants ?? []).map((v) => v.color).filter(Boolean))] as string[];
+  const colors = [...new Map((product.variants ?? []).map((v) => String(v.color ?? "").trim()).filter(Boolean).map((color) => [color.toLowerCase(), color])).values()];
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [currentStock, setCurrentStock] = useState<number | null>(null);
   const [stockLoading, setStockLoading] = useState(true);
+  const [addedMessage, setAddedMessage] = useState("");
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const wishlisted = isWishlisted(product.productId, storeId);
   const availableColors = selectedSize
-    ? [...new Set((product.variants ?? []).filter((v) => v.size === selectedSize).map((v) => v.color).filter(Boolean))] as string[]
+    ? [...new Map((product.variants ?? []).filter((v) => v.size === selectedSize).map((v) => String(v.color ?? "").trim()).filter(Boolean).map((color) => [color.toLowerCase(), color])).values()]
     : colors;
   const needsSize = sizes.length > 0;
   const needsColor = availableColors.length > 0;
@@ -83,6 +84,14 @@ function ProductDetailModal({ product, storeId, onClose, onAdd }: {
     needsSize && !selectedSize ? "size" : "",
     needsColor && !selectedColor ? "color" : "",
   ].filter(Boolean).join(" and ");
+
+  useEffect(() => {
+    if (sizes.length === 1) setSelectedSize(sizes[0]);
+    if (colors.length === 1) setSelectedColor(colors[0]);
+  }, [sizes.length, colors.length]);
+  useEffect(() => {
+    if (availableColors.length === 1) setSelectedColor(availableColors[0]);
+  }, [availableColors.length, selectedSize]);
 
   useEffect(() => {
     let active = true;
@@ -212,6 +221,7 @@ function ProductDetailModal({ product, storeId, onClose, onAdd }: {
             )}
 
             {missing && <p className="text-xs font-medium text-red-500">Please select a {missing} before adding to cart.</p>}
+            {addedMessage && <p className="text-sm font-medium text-emerald-600">{addedMessage}</p>}
 
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setQty((value) => Math.max(1, value - 1))} className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base font-bold">−</button>
@@ -249,10 +259,13 @@ function ProductDetailModal({ product, storeId, onClose, onAdd }: {
               <Link href={`/product?productId=${product.productId}&storeId=${storeId}&catalog=true`} className="flex-1 rounded-2xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-700">
                 Full Details
               </Link>
-              <button type="button" onClick={() => onAdd(product, qty, {
-                ...(selectedSize ? { size: selectedSize } : {}),
-                ...(selectedColor ? { color: selectedColor } : {}),
-              })} disabled={!canAdd || stockLoading || maxQty === 0} className="flex-1 rounded-2xl bg-[#68B8C1] py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" onClick={async () => {
+                const error = await onAdd(product, qty, {
+                  ...(selectedSize ? { size: selectedSize } : {}),
+                  ...(selectedColor ? { color: selectedColor } : {}),
+                });
+                if (window.matchMedia("(max-width: 639px)").matches) setAddedMessage(error);
+              }} disabled={!canAdd || stockLoading || maxQty === 0} className="flex-1 rounded-2xl bg-[#68B8C1] py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
                 <ShoppingCart className="mr-1 inline h-4 w-4" /> {stockLoading ? "Checking stock…" : "Add to Cart"}
               </button>
               <button type="button" onClick={() => void toggleWishlist({ productId: product.productId, storeId, name: product.name, sku: product.sku, price: displayPrice, mainImage: imgs[0] ?? null })} className={`rounded-2xl border px-3 ${wishlisted ? "border-red-300 text-red-500" : "border-slate-200 text-slate-500"}`} title="Add to wishlist">
@@ -289,12 +302,14 @@ export default function StoreCatalogClient() {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      toast.error(data.error ?? "Could not add this product to your cart.");
-      return;
+      const message = data.error ?? "Could not add this product to your cart.";
+      if (!window.matchMedia("(max-width: 639px)").matches) toast.error(message);
+      return message;
     }
-    toast.success("Added to cart!");
+    if (!window.matchMedia("(max-width: 639px)").matches) toast.success("Added to cart!");
     await fetchAndUpdateCartCount();
-    setSelected(null);
+    if (!window.matchMedia("(max-width: 639px)").matches) setSelected(null);
+    return "Added to cart!";
   }
 
   useEffect(() => {
@@ -459,7 +474,7 @@ export default function StoreCatalogClient() {
           product={selected}
           storeId={storeId}
           onClose={() => setSelected(null)}
-          onAdd={(product, quantity, selectedVariants) => void addToCart(product, quantity, selectedVariants)}
+          onAdd={(product, quantity, selectedVariants) => addToCart(product, quantity, selectedVariants)}
         />
       )}
     </div>

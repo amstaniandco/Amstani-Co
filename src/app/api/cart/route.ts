@@ -57,10 +57,10 @@ function selectedVariantsKey(selectedVariants?: SelectedVariants) {
 
 function variantMatches(selectedVariants: SelectedVariants, variant: ProductVariant) {
   const normalizedVariant = {
-    size: variant.size?.trim().toLowerCase() ?? "",
-    color: variant.color?.trim().toLowerCase() ?? "",
-    sku: variant.sku?.trim().toLowerCase() ?? "",
-    skuVariant: variant.skuVariant?.trim().toLowerCase() ?? "",
+    size: String(variant.size ?? "").trim().toLowerCase(),
+    color: String(variant.color ?? "").trim().toLowerCase(),
+    sku: String(variant.sku ?? "").trim().toLowerCase(),
+    skuVariant: String(variant.skuVariant ?? "").trim().toLowerCase(),
   };
 
   return Object.entries(selectedVariants).every(([key, value]) => {
